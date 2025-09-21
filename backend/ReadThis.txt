@@ -1,0 +1,14 @@
+All of the .NET stuff will be in this backend folder, however
+im not sure how to set that up yet and I am a bit limited right now
+since im in galveston. I will look specifically for a .NET + React 
+setup once I am back home. 
+
+
+CHECKLIST OF THINGS TO HAVE:
+
+Download .NET 9.0 (dotnet.microsoft.com/en-us/download)
+
+Download Node if you dont have it already (Not sure which version since we will be using docker probably to have the code run the same in all cases)
+- Node will be used for installing npm packages for our frontend which is basically libraries/add-ons
+
+
