@@ -1,0 +1,11 @@
+All of the .NET stuff will be in the server folder, however im not sure how to set that up yet. 
+We also need to create a basic backend and then hook it up to the SQL server. 
+
+CHECKLIST OF THINGS TO HAVE:
+
+Download .NET 9.0 (dotnet.microsoft.com/en-us/download)
+
+Download Node if you dont have it already 
+- Node will be used for installing npm packages for our frontend which is basically libraries/add-ons
+
+
