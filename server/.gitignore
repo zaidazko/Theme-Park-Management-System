@@ -1,0 +1,24 @@
+# Build results
+bin/
+obj/
+
+# Visual Studio files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Secrets & local config
+appsettings.Development.json
+appsettings.*.local.json
+secrets.json
+
+# User secrets folder
+**/UserSecrets/
