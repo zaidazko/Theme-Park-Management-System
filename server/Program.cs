@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using server.Data;
 
-
+//Hello World!
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
