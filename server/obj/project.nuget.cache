@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "QnuG+4lw9lU=",
+  "dgSpecHash": "8w0Vmm4dRO0=",
   "success": true,
-  "projectFilePath": "/Users/zaid/ThemeParkManager/server_2/AmusementParkAPI.csproj",
+  "projectFilePath": "/Users/zaid/ThemeParkManager/server/AmusementParkAPI.csproj",
   "expectedPackageFiles": [
     "/Users/zaid/.nuget/packages/bcrypt.net-next/4.0.3/bcrypt.net-next.4.0.3.nupkg.sha512",
     "/Users/zaid/.nuget/packages/humanizer.core/2.14.1/humanizer.core.2.14.1.nupkg.sha512",

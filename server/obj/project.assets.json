@@ -2908,11 +2908,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/zaid/ThemeParkManager/server_2/AmusementParkAPI.csproj",
+      "projectUniqueName": "/Users/zaid/ThemeParkManager/server/AmusementParkAPI.csproj",
       "projectName": "AmusementParkAPI",
-      "projectPath": "/Users/zaid/ThemeParkManager/server_2/AmusementParkAPI.csproj",
+      "projectPath": "/Users/zaid/ThemeParkManager/server/AmusementParkAPI.csproj",
       "packagesPath": "/Users/zaid/.nuget/packages/",
-      "outputPath": "/Users/zaid/ThemeParkManager/server_2/obj/",
+      "outputPath": "/Users/zaid/ThemeParkManager/server/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/Users/zaid/.nuget/NuGet/NuGet.Config"
