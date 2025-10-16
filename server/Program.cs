@@ -1,18 +1,32 @@
 using Microsoft.EntityFrameworkCore;
-using server.Data;
+using AmusementParkAPI.Data;
 
-//Hello World!
 var builder = WebApplication.CreateBuilder(args);
+// Add database context
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
+    ));
+
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-var cs = builder.Configuration.GetConnectionString("Default");
+builder.Services.AddControllers();
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(cs, ServerVersion.AutoDetect(cs)));
-
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReact",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:3000")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
 
 var app = builder.Build();
 
@@ -22,16 +36,34 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// Middleware here if needed
+//app.UseHttpsRedirection();
 
-// Map Endpoints here
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapControllers();
 
-app.MapGet("/test", async (AppDbContext db) =>
+app.UseCors("AllowReact");
+
+var summaries = new[]
 {
-    var tables = await db.Database.GetDbConnection().GetSchemaAsync("Tables");
-    return new { connected = true, tableCount = tables.Rows.Count };
-});
+    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+};
+
+app.MapGet("/weatherforecast", () =>
+{
+    var forecast =  Enumerable.Range(1, 5).Select(index =>
+        new WeatherForecast
+        (
+            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+            Random.Shared.Next(-20, 55),
+            summaries[Random.Shared.Next(summaries.Length)]
+        ))
+        .ToArray();
+    return forecast;
+})
+.WithName("GetWeatherForecast");
 
 app.Run();
 
+record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+{
+    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+}
