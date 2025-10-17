@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { authAPI } from '../api';
+import React, { useState, useEffect } from "react";
+import { authAPI } from "../apis/api";
 
 function Profile({ user, onLogout }) {
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    dateOfBirth: '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    dateOfBirth: "",
   });
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,15 +23,15 @@ function Profile({ user, onLogout }) {
       const data = await authAPI.getProfile(user.customerId);
       setProfile(data);
       setFormData({
-        firstName: data.firstName || '',
-        lastName: data.lastName || '',
-        email: data.email || '',
-        phone: data.phone || '',
-        dateOfBirth: data.dateOfBirth ? data.dateOfBirth.split('T')[0] : '',
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        dateOfBirth: data.dateOfBirth ? data.dateOfBirth.split("T")[0] : "",
       });
       setLoading(false);
     } catch (err) {
-      console.error('Error loading profile:', err);
+      console.error("Error loading profile:", err);
       setLoading(false);
     }
   };
@@ -45,16 +45,16 @@ function Profile({ user, onLogout }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage('');
+    setMessage("");
 
     try {
       await authAPI.updateProfile(user.customerId, formData);
-      setMessage('Profile updated successfully!');
+      setMessage("Profile updated successfully!");
       setIsEditing(false);
       loadProfile();
     } catch (err) {
-      setMessage('Error updating profile. Please try again.');
-      console.error('Update error:', err);
+      setMessage("Error updating profile. Please try again.");
+      console.error("Update error:", err);
     }
   };
 
@@ -73,7 +73,9 @@ function Profile({ user, onLogout }) {
         </div>
 
         <div style={styles.welcomeText}>
-          <p>Welcome, <strong>{user.username}</strong>!</p>
+          <p>
+            Welcome, <strong>{user.username}</strong>!
+          </p>
           <p style={styles.userType}>User Type: {user.userType}</p>
         </div>
 
@@ -88,19 +90,19 @@ function Profile({ user, onLogout }) {
               <strong>Email:</strong> {profile?.email}
             </div>
             <div style={styles.infoRow}>
-              <strong>Phone:</strong> {profile?.phone || 'Not provided'}
+              <strong>Phone:</strong> {profile?.phone || "Not provided"}
             </div>
             <div style={styles.infoRow}>
-              <strong>Date of Birth:</strong>{' '}
+              <strong>Date of Birth:</strong>{" "}
               {profile?.dateOfBirth
                 ? new Date(profile.dateOfBirth).toLocaleDateString()
-                : 'Not provided'}
+                : "Not provided"}
             </div>
             <div style={styles.infoRow}>
-              <strong>Member Since:</strong>{' '}
+              <strong>Member Since:</strong>{" "}
               {profile?.createdAt
                 ? new Date(profile.createdAt).toLocaleDateString()
-                : 'N/A'}
+                : "N/A"}
             </div>
 
             <button
@@ -188,110 +190,110 @@ function Profile({ user, onLogout }) {
 
 const styles = {
   container: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '100vh',
-    backgroundColor: '#f5f5f5',
-    padding: '20px',
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: "100vh",
+    backgroundColor: "#f5f5f5",
+    padding: "20px",
   },
   profileBox: {
-    backgroundColor: 'white',
-    padding: '40px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    width: '100%',
-    maxWidth: '600px',
+    backgroundColor: "white",
+    padding: "40px",
+    borderRadius: "8px",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+    width: "100%",
+    maxWidth: "600px",
   },
   header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px',
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "20px",
   },
   logoutButton: {
-    padding: '8px 16px',
-    backgroundColor: '#dc3545',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
+    padding: "8px 16px",
+    backgroundColor: "#dc3545",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
   },
   welcomeText: {
-    backgroundColor: '#e7f3ff',
-    padding: '15px',
-    borderRadius: '4px',
-    marginBottom: '20px',
+    backgroundColor: "#e7f3ff",
+    padding: "15px",
+    borderRadius: "4px",
+    marginBottom: "20px",
   },
   userType: {
-    fontSize: '14px',
-    color: '#666',
-    marginTop: '5px',
+    fontSize: "14px",
+    color: "#666",
+    marginTop: "5px",
   },
   profileInfo: {
-    marginTop: '20px',
+    marginTop: "20px",
   },
   infoRow: {
-    padding: '12px',
-    borderBottom: '1px solid #eee',
+    padding: "12px",
+    borderBottom: "1px solid #eee",
   },
   editButton: {
-    marginTop: '20px',
-    width: '100%',
-    padding: '12px',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '16px',
-    cursor: 'pointer',
+    marginTop: "20px",
+    width: "100%",
+    padding: "12px",
+    backgroundColor: "#007bff",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    fontSize: "16px",
+    cursor: "pointer",
   },
   form: {
-    marginTop: '20px',
+    marginTop: "20px",
   },
   inputGroup: {
-    marginBottom: '15px',
+    marginBottom: "15px",
   },
   input: {
-    width: '100%',
-    padding: '10px',
-    fontSize: '16px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    boxSizing: 'border-box',
-    marginTop: '5px',
+    width: "100%",
+    padding: "10px",
+    fontSize: "16px",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    boxSizing: "border-box",
+    marginTop: "5px",
   },
   buttonGroup: {
-    display: 'flex',
-    gap: '10px',
-    marginTop: '20px',
+    display: "flex",
+    gap: "10px",
+    marginTop: "20px",
   },
   saveButton: {
     flex: 1,
-    padding: '12px',
-    backgroundColor: '#28a745',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '16px',
-    cursor: 'pointer',
+    padding: "12px",
+    backgroundColor: "#28a745",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    fontSize: "16px",
+    cursor: "pointer",
   },
   cancelButton: {
     flex: 1,
-    padding: '12px',
-    backgroundColor: '#6c757d',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '16px',
-    cursor: 'pointer',
+    padding: "12px",
+    backgroundColor: "#6c757d",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    fontSize: "16px",
+    cursor: "pointer",
   },
   message: {
-    padding: '10px',
-    backgroundColor: '#d4edda',
-    color: '#155724',
-    borderRadius: '4px',
-    marginBottom: '15px',
+    padding: "10px",
+    backgroundColor: "#d4edda",
+    color: "#155724",
+    borderRadius: "4px",
+    marginBottom: "15px",
   },
 };
 

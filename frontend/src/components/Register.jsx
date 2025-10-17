@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
-import { authAPI } from '../api';
+import React, { useState } from "react";
+import { authAPI } from "../apis/api";
 
 function Register({ onRegisterSuccess, onSwitchToLogin }) {
   const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    email: '',
-    firstName: '',
-    lastName: '',
-    phone: '',
-    dateOfBirth: '',
+    username: "",
+    password: "",
+    email: "",
+    firstName: "",
+    lastName: "",
+    phone: "",
+    dateOfBirth: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -23,16 +23,18 @@ function Register({ onRegisterSuccess, onSwitchToLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       const response = await authAPI.register(formData);
-      console.log('Registration successful:', response);
+      console.log("Registration successful:", response);
       onRegisterSuccess(response);
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
-      console.error('Registration error:', err);
+      setError(
+        err.response?.data?.message || "Registration failed. Please try again."
+      );
+      console.error("Registration error:", err);
     } finally {
       setLoading(false);
     }
@@ -129,12 +131,12 @@ function Register({ onRegisterSuccess, onSwitchToLogin }) {
           {error && <div style={styles.error}>{error}</div>}
 
           <button type="submit" disabled={loading} style={styles.button}>
-            {loading ? 'Registering...' : 'Register'}
+            {loading ? "Registering..." : "Register"}
           </button>
         </form>
 
         <p style={styles.switchText}>
-          Already have an account?{' '}
+          Already have an account?{" "}
           <span onClick={onSwitchToLogin} style={styles.link}>
             Login here
           </span>
@@ -146,55 +148,55 @@ function Register({ onRegisterSuccess, onSwitchToLogin }) {
 
 const styles = {
   container: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '100vh',
-    backgroundColor: '#f5f5f5',
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: "100vh",
+    backgroundColor: "#f5f5f5",
   },
   formBox: {
-    backgroundColor: 'white',
-    padding: '40px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    width: '100%',
-    maxWidth: '400px',
+    backgroundColor: "white",
+    padding: "40px",
+    borderRadius: "8px",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+    width: "100%",
+    maxWidth: "400px",
   },
   inputGroup: {
-    marginBottom: '15px',
+    marginBottom: "15px",
   },
   input: {
-    width: '100%',
-    padding: '10px',
-    fontSize: '16px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    boxSizing: 'border-box',
+    width: "100%",
+    padding: "10px",
+    fontSize: "16px",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    boxSizing: "border-box",
   },
   button: {
-    width: '100%',
-    padding: '12px',
-    backgroundColor: '#28a745',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '16px',
-    cursor: 'pointer',
-    marginTop: '10px',
+    width: "100%",
+    padding: "12px",
+    backgroundColor: "#28a745",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    fontSize: "16px",
+    cursor: "pointer",
+    marginTop: "10px",
   },
   error: {
-    color: 'red',
-    marginTop: '10px',
-    fontSize: '14px',
+    color: "red",
+    marginTop: "10px",
+    fontSize: "14px",
   },
   switchText: {
-    marginTop: '20px',
-    textAlign: 'center',
+    marginTop: "20px",
+    textAlign: "center",
   },
   link: {
-    color: '#007bff',
-    cursor: 'pointer',
-    textDecoration: 'underline',
+    color: "#007bff",
+    cursor: "pointer",
+    textDecoration: "underline",
   },
 };
 
