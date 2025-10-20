@@ -5,7 +5,7 @@ import Profile from './components/Profile';
 import './App.css';
 
 function App() {
-  const [currentView, setCurrentView] = useState('login'); // 'login', 'register', 'profile'
+  const [currentView, setCurrentView] = useState('login');
   const [user, setUser] = useState(null);
 
   const handleLoginSuccess = (userData) => {

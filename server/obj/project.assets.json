@@ -2903,24 +2903,31 @@
     ]
   },
   "packageFolders": {
-    "/Users/zaid/.nuget/packages/": {}
+    "C:\\Users\\trinh\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/zaid/ThemeParkManager/server/AmusementParkAPI.csproj",
+      "projectUniqueName": "C:\\Users\\trinh\\OneDrive\\Desktop\\Theme-Park-Management-System\\server\\AmusementParkAPI.csproj",
       "projectName": "AmusementParkAPI",
-      "projectPath": "/Users/zaid/ThemeParkManager/server/AmusementParkAPI.csproj",
-      "packagesPath": "/Users/zaid/.nuget/packages/",
-      "outputPath": "/Users/zaid/ThemeParkManager/server/obj/",
+      "projectPath": "C:\\Users\\trinh\\OneDrive\\Desktop\\Theme-Park-Management-System\\server\\AmusementParkAPI.csproj",
+      "packagesPath": "C:\\Users\\trinh\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\trinh\\OneDrive\\Desktop\\Theme-Park-Management-System\\server\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "/Users/zaid/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\trinh\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
       ],
       "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -2983,7 +2990,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.305/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
