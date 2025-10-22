@@ -32,6 +32,7 @@ function Profile({ user, onLogout }) {
       setLoading(false);
     } catch (err) {
       setLoading(false);
+      console.log(err)
     }
   };
 
@@ -48,6 +49,7 @@ function Profile({ user, onLogout }) {
       loadProfile();
     } catch (err) {
       setMessage('Error updating profile');
+      console.log(err)
     }
   };
 

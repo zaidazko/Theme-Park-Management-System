@@ -42,6 +42,8 @@ function App() {
       {currentView === 'profile' && user && (
         <Profile user={user} onLogout={handleLogout} />
       )}
+
+      
     </div>
   );
 }
