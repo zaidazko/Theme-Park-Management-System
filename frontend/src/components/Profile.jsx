@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { authAPI } from '../api';
+import React, { useState, useEffect } from "react";
+import { authAPI } from "../api";
 
-function Profile({ user, onLogout }) {
+function Profile({ user, onLogout, onBackToHome }) {
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    dateOfBirth: ''
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    dateOfBirth: "",
   });
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,16 +23,16 @@ function Profile({ user, onLogout }) {
       const data = await authAPI.getProfile(user.customerId);
       setProfile(data);
       setFormData({
-        firstName: data.firstName || '',
-        lastName: data.lastName || '',
-        email: data.email || '',
-        phone: data.phone || '',
-        dateOfBirth: data.dateOfBirth ? data.dateOfBirth.split('T')[0] : '',
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        dateOfBirth: data.dateOfBirth ? data.dateOfBirth.split("T")[0] : "",
       });
       setLoading(false);
     } catch (err) {
       setLoading(false);
-      console.log(err)
+      console.log(err);
     }
   };
 
@@ -44,138 +44,157 @@ function Profile({ user, onLogout }) {
     e.preventDefault();
     try {
       await authAPI.updateProfile(user.customerId, formData);
-      setMessage('Profile updated successfully!');
+      setMessage("Profile updated successfully!");
       setIsEditing(false);
       loadProfile();
     } catch (err) {
-      setMessage('Error updating profile');
-      console.log(err)
+      setMessage("Error updating profile");
+      console.log(err);
     }
   };
 
   if (loading) {
     return (
-      <div style={{ padding: '50px', textAlign: 'center' }}>
-        Loading...
-      </div>
+      <div style={{ padding: "50px", textAlign: "center" }}>Loading...</div>
     );
   }
 
   const containerStyle = {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '100vh',
-    backgroundColor: '#f5f5f5',
-    padding: '20px'
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: "100vh",
+    backgroundColor: "#f5f5f5",
+    padding: "20px",
   };
 
   const profileBoxStyle = {
-    backgroundColor: 'white',
-    padding: '40px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    width: '100%',
-    maxWidth: '600px'
+    backgroundColor: "white",
+    padding: "40px",
+    borderRadius: "8px",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+    width: "100%",
+    maxWidth: "600px",
   };
 
   const inputGroupStyle = {
-    marginBottom: '15px'
+    marginBottom: "15px",
   };
 
   const labelStyle = {
-    display: 'block',
-    marginBottom: '5px',
-    fontWeight: 'bold'
+    display: "block",
+    marginBottom: "5px",
+    fontWeight: "bold",
   };
 
   const inputStyle = {
-    width: '100%',
-    padding: '10px',
-    fontSize: '16px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    boxSizing: 'border-box'
+    width: "100%",
+    padding: "10px",
+    fontSize: "16px",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    boxSizing: "border-box",
   };
 
   return (
     <div style={containerStyle}>
       <div style={profileBoxStyle}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          marginBottom: '20px' 
-        }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "20px",
+          }}
+        >
           <h2>My Profile</h2>
-          <button 
-            onClick={onLogout} 
-            style={{ 
-              padding: '8px 16px', 
-              backgroundColor: '#dc3545', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '4px', 
-              cursor: 'pointer' 
-            }}
-          >
-            Logout
-          </button>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              onClick={onBackToHome}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#6c757d",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Back to Home
+            </button>
+            <button
+              onClick={onLogout}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#dc3545",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
-        <div style={{ 
-          backgroundColor: '#e7f3ff', 
-          padding: '15px', 
-          borderRadius: '4px', 
-          marginBottom: '20px' 
-        }}>
+        <div
+          style={{
+            backgroundColor: "#e7f3ff",
+            padding: "15px",
+            borderRadius: "4px",
+            marginBottom: "20px",
+          }}
+        >
           <p>
             Welcome, <strong>{user.username}</strong>!
           </p>
         </div>
 
         {message && (
-          <div style={{ 
-            padding: '10px', 
-            backgroundColor: '#d4edda', 
-            color: '#155724', 
-            borderRadius: '4px', 
-            marginBottom: '15px', 
-            textAlign: 'center' 
-          }}>
+          <div
+            style={{
+              padding: "10px",
+              backgroundColor: "#d4edda",
+              color: "#155724",
+              borderRadius: "4px",
+              marginBottom: "15px",
+              textAlign: "center",
+            }}
+          >
             {message}
           </div>
         )}
 
         {!isEditing ? (
           <div>
-            <div style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+            <div style={{ padding: "12px", borderBottom: "1px solid #eee" }}>
               <strong>Name:</strong> {profile?.firstName} {profile?.lastName}
             </div>
-            <div style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+            <div style={{ padding: "12px", borderBottom: "1px solid #eee" }}>
               <strong>Email:</strong> {profile?.email}
             </div>
-            <div style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-              <strong>Phone:</strong> {profile?.phone || 'Not provided'}
+            <div style={{ padding: "12px", borderBottom: "1px solid #eee" }}>
+              <strong>Phone:</strong> {profile?.phone || "Not provided"}
             </div>
-            <div style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-              <strong>Date of Birth:</strong>{' '}
+            <div style={{ padding: "12px", borderBottom: "1px solid #eee" }}>
+              <strong>Date of Birth:</strong>{" "}
               {profile?.dateOfBirth
                 ? new Date(profile.dateOfBirth).toLocaleDateString()
-                : 'Not provided'}
+                : "Not provided"}
             </div>
-            
-            <button 
-              onClick={() => setIsEditing(true)} 
-              style={{ 
-                marginTop: '20px', 
-                width: '100%', 
-                padding: '12px', 
-                backgroundColor: '#007bff', 
-                color: 'white', 
-                border: 'none', 
-                borderRadius: '4px', 
-                cursor: 'pointer' 
+
+            <button
+              onClick={() => setIsEditing(true)}
+              style={{
+                marginTop: "20px",
+                width: "100%",
+                padding: "12px",
+                backgroundColor: "#007bff",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
               }}
             >
               Edit Profile
@@ -193,7 +212,7 @@ function Profile({ user, onLogout }) {
                 style={inputStyle}
               />
             </div>
-            
+
             <div style={inputGroupStyle}>
               <label style={labelStyle}>Last Name:</label>
               <input
@@ -204,7 +223,7 @@ function Profile({ user, onLogout }) {
                 style={inputStyle}
               />
             </div>
-            
+
             <div style={inputGroupStyle}>
               <label style={labelStyle}>Email:</label>
               <input
@@ -215,7 +234,7 @@ function Profile({ user, onLogout }) {
                 style={inputStyle}
               />
             </div>
-            
+
             <div style={inputGroupStyle}>
               <label style={labelStyle}>Phone:</label>
               <input
@@ -226,7 +245,7 @@ function Profile({ user, onLogout }) {
                 style={inputStyle}
               />
             </div>
-            
+
             <div style={inputGroupStyle}>
               <label style={labelStyle}>Date of Birth:</label>
               <input
@@ -237,33 +256,33 @@ function Profile({ user, onLogout }) {
                 style={inputStyle}
               />
             </div>
-            
-            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-              <button 
-                type="submit" 
-                style={{ 
-                  flex: 1, 
-                  padding: '12px', 
-                  backgroundColor: '#28a745', 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '4px', 
-                  cursor: 'pointer' 
+
+            <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+              <button
+                type="submit"
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  backgroundColor: "#28a745",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
                 }}
               >
                 Save
               </button>
-              <button 
-                type="button" 
-                onClick={() => setIsEditing(false)} 
-                style={{ 
-                  flex: 1, 
-                  padding: '12px', 
-                  backgroundColor: '#6c757d', 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '4px', 
-                  cursor: 'pointer' 
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  backgroundColor: "#6c757d",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
                 }}
               >
                 Cancel
