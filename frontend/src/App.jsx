@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import Login from './components/Login';
 import Register from './components/Register';
 import Profile from './components/Profile';
+import TicketPurchase from './components/TicketPurchase';
+import TicketSales from './components/TicketSales';
+import CommodityPurchase from './components/CommodityPurchase';
+import CommoditySales from './components/CommoditySales';
 import './App.css';
 
 function App() {
@@ -10,21 +14,74 @@ function App() {
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
     setCurrentView('profile');
   };
 
   const handleRegisterSuccess = (userData) => {
     setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
     setCurrentView('profile');
   };
 
   const handleLogout = () => {
     setUser(null);
+    localStorage.removeItem('user');
     setCurrentView('login');
   };
 
+  // Check if user is employee or manager
+  const isEmployee = user?.userType === 'Employee' || user?.userType === 'Manager';
+
   return (
     <div className="App">
+      {/* Navigation Bar - Show only when logged in */}
+      {user && (
+        <nav style={styles.nav}>
+          <h2 style={styles.title}>🎢 Amusement Park</h2>
+          <div style={styles.navButtons}>
+            <button onClick={() => setCurrentView('profile')} style={styles.navButton}>
+              Profile
+            </button>
+            
+            {/* EMPLOYEE VIEW */}
+            {isEmployee && (
+              <>
+                <button onClick={() => setCurrentView('ticket-sales')} style={styles.navButton}>
+                  Ticket Sales
+                </button>
+                <button onClick={() => setCurrentView('commodity-sales')} style={styles.navButton}>
+                  Commodity Sales
+                </button>
+              </>
+            )}
+            
+            {/* CUSTOMER VIEW */}
+            {!isEmployee && (
+              <>
+                <button onClick={() => setCurrentView('buy-tickets')} style={styles.navButton}>
+                  Buy Tickets
+                </button>
+                <button onClick={() => setCurrentView('buy-items')} style={styles.navButton}>
+                  Buy Items
+                </button>
+                <button onClick={() => setCurrentView('my-tickets')} style={styles.navButton}>
+                  My Purchased Tickets
+                </button>
+                <button onClick={() => setCurrentView('my-purchases')} style={styles.navButton}>
+                  My Purchased Items
+                </button>
+              </>
+            )}
+            
+            <button onClick={handleLogout} style={styles.logoutButton}>
+              Logout
+            </button>
+          </div>
+        </nav>
+      )}
+
+      {/* Pages */}
       {currentView === 'login' && (
         <Login
           onLoginSuccess={handleLoginSuccess}
@@ -42,8 +99,75 @@ function App() {
       {currentView === 'profile' && user && (
         <Profile user={user} onLogout={handleLogout} />
       )}
+
+      {/* Customer Pages */}
+      {currentView === 'buy-tickets' && user && !isEmployee && (
+        <TicketPurchase />
+      )}
+
+      {currentView === 'buy-items' && user && !isEmployee && (
+        <CommodityPurchase />
+      )}
+
+      {currentView === 'my-tickets' && user && !isEmployee && (
+        <TicketSales />
+      )}
+
+      {currentView === 'my-purchases' && user && !isEmployee && (
+        <CommoditySales />
+      )}
+
+      {/* Employee Pages */}
+      {currentView === 'ticket-sales' && user && isEmployee && (
+        <TicketSales />
+      )}
+
+      {currentView === 'commodity-sales' && user && isEmployee && (
+        <CommoditySales />
+      )}
     </div>
   );
 }
+
+const styles = {
+  nav: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '15px 30px',
+    backgroundColor: '#007bff',
+    color: '#fff',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  },
+  title: {
+    margin: 0,
+    fontSize: '24px',
+  },
+  navButtons: {
+    display: 'flex',
+    gap: '10px',
+    flexWrap: 'wrap',
+  },
+  navButton: {
+    padding: '8px 16px',
+    backgroundColor: '#fff',
+    color: '#007bff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+  },
+  logoutButton: {
+    padding: '8px 16px',
+    backgroundColor: '#dc3545',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+  },
+};
 
 export default App;
