@@ -47,5 +47,28 @@ namespace AmusementParkAPI.Controllers
 
             return CreatedAtAction(nameof(GetCustomer), new { id = customer.CustomerId }, customer);
         }
+
+        // DELETE: api/customers/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCustomer(int id)
+        {
+            var customer = await _context.Customers.FindAsync(id);
+            if (customer == null)
+            {
+                return NotFound();
+            }
+
+            // Also delete associated user login if it exists
+            var userLogin = await _context.UserLogins.FirstOrDefaultAsync(u => u.CustomerId == id);
+            if (userLogin != null)
+            {
+                _context.UserLogins.Remove(userLogin);
+            }
+
+            _context.Customers.Remove(customer);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }

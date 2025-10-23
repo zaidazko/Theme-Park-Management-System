@@ -33,4 +33,14 @@ export const authAPI = {
     );
     return response.data;
   },
+
+  getAllCustomers: async () => {
+    const response = await axios.get(`${API_BASE_URL}/customers`);
+    return response.data;
+  },
+
+  deleteCustomer: async (customerId) => {
+    const response = await axios.delete(`${API_BASE_URL}/customers/${customerId}`);
+    return response.data;
+  },
 };
