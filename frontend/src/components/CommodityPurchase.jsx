@@ -19,6 +19,7 @@ const CommodityPurchase = () => {
       setCommodities(data);
     } catch (err) {
       setError('Failed to load items');
+      console.log(err)
     }
   };
 
@@ -59,6 +60,7 @@ const CommodityPurchase = () => {
       }
     } catch (err) {
       setError('Failed to process purchase');
+      console.log(err)
     } finally {
       setLoading(false);
     }
