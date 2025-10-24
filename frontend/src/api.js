@@ -206,6 +206,14 @@ export const maintenanceRequestAPI = {
     );
     return response.data;
   },
+
+  assignMaintenanceRequest: async (requestId, employeeId) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/maintenancerequest/${requestId}/assign`,
+      { assignedTo: employeeId }
+    );
+    return response.data;
+  },
 };
 
 export const UserPermissionsAPI = {

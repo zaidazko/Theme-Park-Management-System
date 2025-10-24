@@ -134,6 +134,43 @@ namespace AmusementParkAPI.Controllers
                 .ToListAsync();
         }
 
+        // PUT: api/maintenancerequest/{id}/assign
+        [HttpPut("{id}/assign")]
+        public async Task<IActionResult> AssignMaintenanceRequest(int id, [FromBody] AssignMaintenanceRequestRequest request)
+        {
+            var maintenanceRequest = await _context.MaintenanceRequests
+                .Include(m => m.Ride)
+                .Include(m => m.Assignee)
+                .FirstOrDefaultAsync(m => m.RequestId == id);
+
+            if (maintenanceRequest == null)
+            {
+                return NotFound(new { message = "Maintenance request not found" });
+            }
+
+            // Verify that the assigned employee exists
+            var assignedEmployee = await _context.Employees.FindAsync(request.AssignedTo);
+            if (assignedEmployee == null)
+            {
+                return BadRequest(new { message = "Assigned employee not found" });
+            }
+
+            // Update maintenance request
+            maintenanceRequest.AssignedTo = request.AssignedTo;
+            maintenanceRequest.Status = "In Progress";
+
+            await _context.SaveChangesAsync();
+
+            // Load the updated request with related data
+            var updatedRequest = await _context.MaintenanceRequests
+                .Include(m => m.Ride)
+                .Include(m => m.Reporter)
+                .Include(m => m.Assignee)
+                .FirstOrDefaultAsync(m => m.RequestId == id);
+
+            return Ok(new { message = "Maintenance request assigned successfully", maintenanceRequest = updatedRequest });
+        }
+
         // PUT: api/maintenancerequest/{id}/complete
         [HttpPut("{id}/complete")]
         public async Task<IActionResult> CompleteMaintenanceRequest(int id)
