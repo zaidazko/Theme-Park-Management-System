@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using AmusementParkAPI.Data;
+using System.Text.Json.Serialization;  // Add this line
+
 
 var builder = WebApplication.CreateBuilder(args);
 // Add database context
@@ -10,11 +12,16 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     ));
 
 
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
+
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-builder.Services.AddControllers();
 
 // Add CORS
 builder.Services.AddCors(options =>

@@ -20,7 +20,9 @@ function Profile({ user, onLogout, onBackToHome }) {
 
   const loadProfile = async () => {
     try {
-      const data = await authAPI.getProfile(user.customerId);
+      const userId =
+        user.userType === "Employee" ? user.employeeId : user.customerId;
+      const data = await authAPI.getProfile(userId, user.userType);
       setProfile(data);
       setFormData({
         firstName: data.firstName || "",
@@ -43,7 +45,9 @@ function Profile({ user, onLogout, onBackToHome }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await authAPI.updateProfile(user.customerId, formData);
+      const userId =
+        user.userType === "Employee" ? user.employeeId : user.customerId;
+      await authAPI.updateProfile(userId, formData, user.userType);
       setMessage("Profile updated successfully!");
       setIsEditing(false);
       loadProfile();

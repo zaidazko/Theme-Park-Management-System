@@ -77,6 +77,70 @@ namespace AmusementParkAPI.Controllers
             });
         }
 
+        // POST: api/auth/register-employee
+        [HttpPost("register-employee")]
+        public async Task<ActionResult<LoginResponse>> RegisterEmployee(RegisterEmployeeRequest request)
+        {
+            // Check if username already exists
+            if (await _context.UserLogins.AnyAsync(u => u.Username == request.Username))
+            {
+                return BadRequest(new { message = "Username already exists" });
+            }
+
+            // Check if email already exists in customers or employees
+            if (await _context.Customers.AnyAsync(c => c.Email == request.Email) ||
+                await _context.Employees.AnyAsync(e => e.Email == request.Email))
+            {
+                return BadRequest(new { message = "Email already exists" });
+            }
+
+            // Create employee
+            var employee = new Employee
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Email = request.Email,
+                Phone = request.Phone,
+                HireDate = request.HireDate,
+                Salary = request.Salary,
+                DepartmentId = request.DepartmentId,
+                RoleId = request.RoleId
+            };
+
+            _context.Employees.Add(employee);
+            await _context.SaveChangesAsync();
+
+            // Hash password
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+            // Create user login
+            var userLogin = new UserLogin
+            {
+                Username = request.Username,
+                Password = hashedPassword,
+                EmployeeId = employee.EmployeeId, // Use EmployeeId for employee accounts
+                CustomerId = null, // Explicitly set CustomerId to null for employees
+                UserType = "Employee",
+                LastLogin = DateTime.Now
+            };
+
+            _context.UserLogins.Add(userLogin);
+            await _context.SaveChangesAsync();
+
+            return Ok(new LoginResponse
+            {
+                UserId = userLogin.UserId,
+                Username = userLogin.Username,
+                UserType = userLogin.UserType,
+                CustomerId = null,
+                EmployeeId = employee.EmployeeId,
+                FirstName = employee.FirstName,
+                LastName = employee.LastName,
+                Email = employee.Email,
+                Message = "Employee registration successful"
+            });
+        }
+
         // POST: api/auth/login
         [HttpPost("login")]
         public async Task<ActionResult<LoginResponse>> Login(LoginRequest request)
@@ -84,6 +148,7 @@ namespace AmusementParkAPI.Controllers
             // Find user by username
             var userLogin = await _context.UserLogins
                 .Include(u => u.Customer)
+                .Include(u => u.Employee)
                 .FirstOrDefaultAsync(u => u.Username == request.Username);
 
             if (userLogin == null)
@@ -103,15 +168,23 @@ namespace AmusementParkAPI.Controllers
             userLogin.LastLogin = DateTime.Now;
             await _context.SaveChangesAsync();
 
+            // Determine if this is a Customer or Employee and set appropriate IDs
+            var customerId = userLogin.UserType == "Employee" ? null : userLogin.CustomerId;
+            var employeeId = userLogin.UserType == "Employee" ? userLogin.EmployeeId : null;
+            var firstName = userLogin.UserType == "Employee" ? userLogin.Employee?.FirstName : userLogin.Customer?.FirstName;
+            var lastName = userLogin.UserType == "Employee" ? userLogin.Employee?.LastName : userLogin.Customer?.LastName;
+            var email = userLogin.UserType == "Employee" ? userLogin.Employee?.Email : userLogin.Customer?.Email;
+
             return Ok(new LoginResponse
             {
                 UserId = userLogin.UserId,
                 Username = userLogin.Username,
                 UserType = userLogin.UserType ?? "Customer",
-                CustomerId = userLogin.CustomerId,
-                FirstName = userLogin.Customer?.FirstName,
-                LastName = userLogin.Customer?.LastName,
-                Email = userLogin.Customer?.Email,
+                CustomerId = customerId,
+                EmployeeId = employeeId,
+                FirstName = firstName,
+                LastName = lastName,
+                Email = email,
                 Message = "Login successful"
             });
         }
