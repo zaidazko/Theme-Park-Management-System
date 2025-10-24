@@ -30,6 +30,8 @@ namespace AmusementParkAPI.Data
         // Maintenance
         public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
 
+        // Reviews
+        public DbSet<Reviews> Reviews { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -46,7 +48,7 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<Department>().ToTable("department");
             modelBuilder.Entity<Role>().ToTable("role");
             modelBuilder.Entity<MaintenanceRequest>().ToTable("maintenance_request");
-
+            modelBuilder.Entity<Reviews>().ToTable("review");
     
             
             // Primary keys
@@ -62,7 +64,7 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<Department>().HasKey(d => d.DepartmentId);
             modelBuilder.Entity<Role>().HasKey(r => r.RoleId);
             modelBuilder.Entity<MaintenanceRequest>().HasKey(m => m.RequestId);
-            
+            modelBuilder.Entity<Reviews>().HasKey(r => r.Review_ID);
 
             base.OnModelCreating(modelBuilder);
         }

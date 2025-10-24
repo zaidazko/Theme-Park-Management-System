@@ -8,6 +8,7 @@ import CommodityPurchase from "./components/CommodityPurchase";
 import CommoditySales from "./components/CommoditySales";
 import RequestMaintenance from "./components/RequestMaintenance";
 import EmployeeDashboard from "./components/EmployeeDashboard";
+import Rides from "./components/Rides";
 import "./App.css";
 
 function App() {
@@ -69,7 +70,12 @@ function App() {
             >
               Profile
             </button>
-
+            <button
+              onClick = {() => setCurrentView("rides")}
+              style={styles.navButton}
+            >
+              Rides
+            </button>
             {/* EMPLOYEE VIEW */}
             {isEmployee && (
               <>
@@ -154,6 +160,10 @@ function App() {
 
       {currentView === "profile" && user && (
         <Profile user={user} onLogout={handleLogout} />
+      )}
+
+      {currentView === 'rides' && (
+        <Rides />
       )}
 
       {/* Customer Pages */}
