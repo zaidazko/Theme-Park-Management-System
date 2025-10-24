@@ -222,6 +222,13 @@ export const maintenanceRequestAPI = {
     );
     return response.data;
   },
+
+  cancelMaintenanceRequest: async (requestId) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/maintenancerequest/${requestId}/cancel`
+    );
+    return response.data;
+  },
 };
 
 export const UserPermissionsAPI = {

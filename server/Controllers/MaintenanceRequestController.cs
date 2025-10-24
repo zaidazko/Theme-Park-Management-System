@@ -230,5 +230,42 @@ namespace AmusementParkAPI.Controllers
                 maintenanceLog 
             });
         }
+
+        // PUT: api/maintenancerequest/{id}/cancel
+        [HttpPut("{id}/cancel")]
+        public async Task<IActionResult> CancelMaintenanceRequest(int id)
+        {
+            var maintenanceRequest = await _context.MaintenanceRequests
+                .Include(m => m.Ride)
+                .FirstOrDefaultAsync(m => m.RequestId == id);
+
+            if (maintenanceRequest == null)
+            {
+                return NotFound(new { message = "Maintenance request not found" });
+            }
+
+            // Only allow cancellation of Open requests (not yet assigned)
+            if (maintenanceRequest.Status?.ToLower() != "open")
+            {
+                return BadRequest(new { message = "Cannot cancel a request that has already been assigned, in progress, completed, or cancelled" });
+            }
+
+            // Update maintenance request status
+            maintenanceRequest.Status = "Cancelled";
+            maintenanceRequest.CompletionDate = DateTime.Now;
+
+            // Update ride status back to "Operational" if it was under maintenance
+            if (maintenanceRequest.Ride != null && maintenanceRequest.Ride.Status == "Under Maintenance")
+            {
+                maintenanceRequest.Ride.Status = "Operational";
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { 
+                message = "Maintenance request cancelled successfully", 
+                maintenanceRequest 
+            });
+        }
     }
 }

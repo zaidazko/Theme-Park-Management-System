@@ -86,6 +86,37 @@ const AssignMaintanence = () => {
     }
   };
 
+  const handleCancelRequest = async (requestId) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to cancel this unassigned maintenance request? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await maintenanceRequestAPI.cancelMaintenanceRequest(requestId);
+
+      // Update local state to reflect the cancellation
+      setMaintenanceRequests((prev) =>
+        prev.map((req) =>
+          req.requestId === requestId
+            ? {
+                ...req,
+                status: "Cancelled",
+                completionDate: new Date().toISOString(),
+              }
+            : req
+        )
+      );
+      alert("Maintenance request cancelled successfully!");
+    } catch (err) {
+      console.error("Error cancelling request:", err);
+      alert("Failed to cancel maintenance request. Please try again.");
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "open":
@@ -240,22 +271,36 @@ const AssignMaintanence = () => {
                       : "N/A"}
                   </td>
                   <td style={styles.tableCell}>
-                    <button
-                      onClick={() => {
-                        if (request.status?.toLowerCase() === "open") {
-                          setSelectedRequest(request);
-                        }
-                      }}
-                      style={{
-                        ...styles.assignButton,
-                        ...(request.status?.toLowerCase() !== "open"
-                          ? styles.disabledAssignButton
-                          : {}),
-                      }}
-                      disabled={request.status?.toLowerCase() !== "open"}
-                    >
-                      Assign
-                    </button>
+                    <div style={styles.actionButtons}>
+                      <button
+                        onClick={() => {
+                          if (request.status?.toLowerCase() === "open") {
+                            setSelectedRequest(request);
+                          }
+                        }}
+                        style={{
+                          ...styles.assignButton,
+                          ...(request.status?.toLowerCase() !== "open"
+                            ? styles.disabledAssignButton
+                            : {}),
+                        }}
+                        disabled={request.status?.toLowerCase() !== "open"}
+                      >
+                        Assign
+                      </button>
+                      <button
+                        onClick={() => handleCancelRequest(request.requestId)}
+                        style={{
+                          ...styles.cancelRequestButton,
+                          ...(request.status?.toLowerCase() !== "open"
+                            ? styles.disabledCancelButton
+                            : {}),
+                        }}
+                        disabled={request.status?.toLowerCase() !== "open"}
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -537,6 +582,26 @@ const styles = {
   disabledButton: {
     backgroundColor: "#9ca3af",
     cursor: "not-allowed",
+  },
+  actionButtons: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+  cancelRequestButton: {
+    backgroundColor: "#ef4444",
+    color: "white",
+    border: "none",
+    padding: "8px 16px",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "14px",
+  },
+  disabledCancelButton: {
+    backgroundColor: "#9ca3af",
+    color: "#6b7280",
+    cursor: "not-allowed",
+    opacity: 0.6,
   },
 };
 
