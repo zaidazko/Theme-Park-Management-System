@@ -172,6 +172,35 @@ export const employeeAPI = {
   },
 };
 
+export const maintenanceRequestAPI = {
+  createMaintenanceRequest: async (requestData) => {
+    const response = await axios.post(
+      `${API_BASE_URL}/maintenancerequest`,
+      requestData
+    );
+    return response.data;
+  },
+
+  getAllMaintenanceRequests: async () => {
+    const response = await axios.get(`${API_BASE_URL}/maintenancerequest`);
+    return response.data;
+  },
+
+  getMaintenanceRequest: async (requestId) => {
+    const response = await axios.get(
+      `${API_BASE_URL}/maintenancerequest/${requestId}`
+    );
+    return response.data;
+  },
+
+  getMaintenanceRequestsByStatus: async (status) => {
+    const response = await axios.get(
+      `${API_BASE_URL}/maintenancerequest/status/${status}`
+    );
+    return response.data;
+  },
+};
+
 export const UserPermissionsAPI = {
   getAllAccounts: async () => {
     const response = await axios.get(`${API_BASE_URL}/user_login`);

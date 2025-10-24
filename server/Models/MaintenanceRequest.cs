@@ -7,38 +7,39 @@ namespace AmusementParkAPI.Models
     public class MaintenanceRequest
     {
         [Key]
-        [Column("request_id")]
+        [Column("Request_ID")]
         public int RequestId { get; set; }
 
-        [Column("ride_id")]
-        public int RideId { get; set; }
+        [Column("Ride_ID")]
+        public int? RideId { get; set; }
 
-        [Column("description")]
-        public string Description { get; set; } = string.Empty;
+        [Column("Reported_By")]
+        public int? ReportedBy { get; set; }
 
-        [Column("status")]
-        public string Status { get; set; } = "awaiting";
-
-        [Column("assigned_to")]
+        [Column("Assigned_To")]
         public int? AssignedTo { get; set; }
 
-        [Column("completion_date")]
+        [Column("Issue_Description")]
+        public string? IssueDescription { get; set; }
+
+        [Column("Request_Date")]
+        public DateTime? RequestDate { get; set; }
+
+        [Column("Status")]
+        [MaxLength(50)]
+        public string? Status { get; set; }
+
+        [Column("Completion_Date")]
         public DateTime? CompletionDate { get; set; }
-
-        [Column("request_date")]
-        public DateTime RequestDate { get; set; } = DateTime.Now;
-
-        [Column("requester_id")]
-        public int RequesterId { get; set; }
 
         // Navigation properties
         [ForeignKey("RideId")]
-        public virtual Rides Ride { get; set; } = null!;
+        public virtual Rides? Ride { get; set; }
+
+        [ForeignKey("ReportedBy")]
+        public virtual Employee? Reporter { get; set; }
 
         [ForeignKey("AssignedTo")]
-        public virtual Employee? AssignedEmployee { get; set; }
-
-        [ForeignKey("RequesterId")]
-        public virtual UserLogin Requester { get; set; } = null!;
+        public virtual Employee? Assignee { get; set; }
     }
 }

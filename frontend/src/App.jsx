@@ -6,6 +6,7 @@ import TicketPurchase from "./components/TicketPurchase";
 import TicketSales from "./components/TicketSales";
 import CommodityPurchase from "./components/CommodityPurchase";
 import CommoditySales from "./components/CommoditySales";
+import RequestMaintenance from "./components/RequestMaintenance";
 import EmployeeDashboard from "./components/EmployeeDashboard";
 import "./App.css";
 
@@ -52,10 +53,8 @@ function App() {
     setCurrentView("login");
   };
 
-  // Check if user is employee or manager
+  // Check if user is employee
   const isEmployee = user?.userType === "Employee";
-  const isManager = user?.userType === "Manager";
-  const isAdmin = user?.userType === "Admin";
 
   return (
     <div className="App">
@@ -180,7 +179,7 @@ function App() {
       )}
 
       {currentView === "maintenance" && user && isEmployee && (
-        <RequestMaintenance />
+        <RequestMaintenance user={user} />
       )}
 
       {currentView === "employee-dashboard" && user && isEmployee && (

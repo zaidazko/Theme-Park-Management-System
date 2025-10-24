@@ -26,6 +26,9 @@ namespace AmusementParkAPI.Data
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<Role> Roles { get; set; }
+        
+        // Maintenance
+        public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -42,6 +45,7 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<Employee>().ToTable("employees");
             modelBuilder.Entity<Department>().ToTable("department");
             modelBuilder.Entity<Role>().ToTable("role");
+            modelBuilder.Entity<MaintenanceRequest>().ToTable("maintenance_request");
 
     
             
@@ -57,6 +61,7 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<Employee>().HasKey(e => e.EmployeeId);
             modelBuilder.Entity<Department>().HasKey(d => d.DepartmentId);
             modelBuilder.Entity<Role>().HasKey(r => r.RoleId);
+            modelBuilder.Entity<MaintenanceRequest>().HasKey(m => m.RequestId);
             
 
             base.OnModelCreating(modelBuilder);
