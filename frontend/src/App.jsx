@@ -7,9 +7,9 @@ import TicketSales from "./components/TicketSales";
 import CommodityPurchase from "./components/CommodityPurchase";
 import CommoditySales from "./components/CommoditySales";
 import RequestMaintenance from "./components/RequestMaintenance";
+import AssignMaintanence from "./components/AssignMaintanence";
 import EmployeeDashboard from "./components/EmployeeDashboard";
 import Rides from "./components/Rides";
-import AssignMaintanence from "./components/AssignMaintanence";
 import "./App.css";
 
 function App() {
@@ -99,7 +99,7 @@ function App() {
                   Request Maintenance
                 </button>
                 <button
-                  onClick={() => setCurrentView("maintenance-assign")}
+                  onClick={() => setCurrentView("maintenance-assignments")}
                   style={styles.navButton}
                 >
                   Assign Maintanence
@@ -197,7 +197,7 @@ function App() {
         <RequestMaintenance user={user} />
       )}
 
-      {currentView === "maintenance-assign" && user && isEmployee && (
+      {currentView === "maintenance-assignments" && user && isEmployee && (
         <AssignMaintanence user={user} />
       )}
 

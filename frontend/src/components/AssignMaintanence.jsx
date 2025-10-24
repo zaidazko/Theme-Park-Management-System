@@ -21,7 +21,29 @@ const AssignMaintanence = () => {
         employeeAPI.getAllEmployees(),
       ]);
       setMaintenanceRequests(requestsData);
-      setEmployees(employeesData);
+
+      // Filter employees to only show those in Maintenance department with Maintenance Worker role
+      const maintenanceWorkers = employeesData.filter((employee) => {
+        // Try different possible property name formats
+        const departmentName =
+          employee.department?.department_Name ||
+          employee.department?.departmentName ||
+          employee.department?.name ||
+          employee.departmentName;
+
+        const roleName =
+          employee.role?.role_Name ||
+          employee.role?.roleName ||
+          employee.role?.name ||
+          employee.roleName;
+
+        return (
+          departmentName?.toLowerCase() === "maintenance" &&
+          roleName?.toLowerCase() === "maintenance worker"
+        );
+      });
+
+      setEmployees(maintenanceWorkers);
       setError(null);
     } catch (err) {
       console.error("Error loading data:", err);
@@ -50,7 +72,7 @@ const AssignMaintanence = () => {
             ? {
                 ...req,
                 assignedTo: parseInt(selectedEmployee),
-                status: "Assigned",
+                status: "In Progress",
               }
             : req
         )
@@ -66,7 +88,7 @@ const AssignMaintanence = () => {
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case "pending":
+      case "open":
         return "#fbbf24";
       case "assigned":
         return "#3b82f6";
@@ -113,73 +135,132 @@ const AssignMaintanence = () => {
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.title}>Maintenance Request Assignment</h2>
+      <div style={styles.header}>
+        <h2 style={styles.title}>Maintenance Request Assignment</h2>
+        <button onClick={() => loadData()} style={styles.refreshButton}>
+          Refresh
+        </button>
+      </div>
 
       {maintenanceRequests.length === 0 ? (
         <div style={styles.emptyState}>No maintenance requests found.</div>
       ) : (
-        <div style={styles.requestsGrid}>
-          {maintenanceRequests.map((request) => (
-            <div key={request.requestId} style={styles.requestCard}>
-              <div style={styles.cardHeader}>
-                <h3 style={styles.requestTitle}>
-                  Request #{request.requestId}
-                </h3>
-                <span
-                  style={{
-                    ...styles.statusBadge,
-                    backgroundColor: getStatusColor(request.status),
-                  }}
+        <div style={styles.tableContainer}>
+          <table style={styles.table}>
+            <thead>
+              <tr style={styles.tableHeader}>
+                <th style={{ ...styles.tableHeaderCell, width: "100px" }}>
+                  Request ID
+                </th>
+                <th style={{ ...styles.tableHeaderCell, width: "120px" }}>
+                  Status
+                </th>
+                <th style={{ ...styles.tableHeaderCell, width: "150px" }}>
+                  Ride
+                </th>
+                <th style={{ ...styles.tableHeaderCell, width: "250px" }}>
+                  Issue Description
+                </th>
+                <th style={{ ...styles.tableHeaderCell, width: "180px" }}>
+                  Reported By
+                </th>
+                <th style={{ ...styles.tableHeaderCell, width: "180px" }}>
+                  Assigned To
+                </th>
+                <th style={{ ...styles.tableHeaderCell, width: "160px" }}>
+                  Request Date
+                </th>
+                <th style={{ ...styles.tableHeaderCell, width: "160px" }}>
+                  Completion Date
+                </th>
+                <th style={{ ...styles.tableHeaderCell, width: "120px" }}>
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {maintenanceRequests.map((request) => (
+                <tr
+                  key={request.requestId}
+                  style={styles.tableRow}
+                  onMouseEnter={(e) =>
+                    (e.target.style.backgroundColor = "#f9fafb")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.target.style.backgroundColor = "transparent")
+                  }
                 >
-                  {request.status || "Unknown"}
-                </span>
-              </div>
-
-              <div style={styles.cardContent}>
-                <div style={styles.field}>
-                  <strong>Ride:</strong> {request.ride?.ride_Name || "N/A"}
-                </div>
-                <div style={styles.field}>
-                  <strong>Issue:</strong>{" "}
-                  {request.issueDescription || "No description"}
-                </div>
-                <div style={styles.field}>
-                  <strong>Reported By:</strong> {request.reporter?.firstName}{" "}
-                  {request.reporter?.lastName} (ID: {request.reportedBy})
-                </div>
-                <div style={styles.field}>
-                  <strong>Assigned To:</strong>{" "}
-                  {request.assignee
-                    ? `${request.assignee.firstName} ${request.assignee.lastName} (ID: ${request.assignedTo})`
-                    : "Unassigned"}
-                </div>
-                <div style={styles.field}>
-                  <strong>Request Date:</strong>{" "}
-                  {formatDate(request.requestDate)}
-                </div>
-                {request.completionDate && (
-                  <div style={styles.field}>
-                    <strong>Completion Date:</strong>{" "}
-                    {formatDate(request.completionDate)}
-                  </div>
-                )}
-              </div>
-
-              <div style={styles.cardActions}>
-                {request.status?.toLowerCase() === "pending" && (
-                  <button
-                    onClick={() => setSelectedRequest(request)}
-                    style={styles.assignButton}
-                  >
-                    Assign
-                  </button>
-                )}
-                <button onClick={() => loadData()} style={styles.refreshButton}>
-                  Refresh
-                </button>
-              </div>
-            </div>
-          ))}
+                  <td style={styles.tableCell}>
+                    <strong>#{request.requestId}</strong>
+                  </td>
+                  <td style={styles.tableCell}>
+                    <span
+                      style={{
+                        ...styles.statusBadge,
+                        backgroundColor: getStatusColor(request.status),
+                      }}
+                    >
+                      {request.status || "Unknown"}
+                    </span>
+                  </td>
+                  <td style={styles.tableCell}>
+                    {request.ride?.ride_Name || "N/A"}
+                  </td>
+                  <td style={styles.tableCell}>
+                    <div style={styles.issueDescription}>
+                      {request.issueDescription || "No description"}
+                    </div>
+                  </td>
+                  <td style={styles.tableCell}>
+                    {request.reporter?.firstName} {request.reporter?.lastName}
+                    <br />
+                    <small style={styles.smallText}>
+                      (ID: {request.reportedBy})
+                    </small>
+                  </td>
+                  <td style={styles.tableCell}>
+                    {request.assignee ? (
+                      <>
+                        {request.assignee.firstName} {request.assignee.lastName}
+                        <br />
+                        <small style={styles.smallText}>
+                          (ID: {request.assignedTo})
+                        </small>
+                      </>
+                    ) : (
+                      "Unassigned"
+                    )}
+                  </td>
+                  <td style={styles.tableCell}>
+                    {formatDate(request.requestDate)}
+                  </td>
+                  <td style={styles.tableCell}>
+                    {request.completionDate
+                      ? formatDate(request.completionDate)
+                      : "N/A"}
+                  </td>
+                  <td style={styles.tableCell}>
+                    <button
+                      onClick={() => {
+                        if (request.status?.toLowerCase() === "open") {
+                          setSelectedRequest(request);
+                        }
+                      }}
+                      style={{
+                        ...styles.assignButton,
+                        ...(request.status?.toLowerCase() !== "open"
+                          ? styles.disabledAssignButton
+                          : {}),
+                      }}
+                      disabled={request.status?.toLowerCase() !== "open"}
+                    >
+                      Assign
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -191,22 +272,33 @@ const AssignMaintanence = () => {
               Assign Request #{selectedRequest.requestId}
             </h3>
             <p style={styles.modalDescription}>
-              Select an employee to assign this maintenance request to:
+              Select a maintenance worker to assign this maintenance request to:
             </p>
 
-            <select
-              value={selectedEmployee}
-              onChange={(e) => setSelectedEmployee(e.target.value)}
-              style={styles.employeeSelect}
-            >
-              <option value="">Select an employee...</option>
-              {employees.map((employee) => (
-                <option key={employee.employee_ID} value={employee.employee_ID}>
-                  {employee.firstName} {employee.lastName} -{" "}
-                  {employee.department?.department_Name || "No Department"}
-                </option>
-              ))}
-            </select>
+            {employees.length === 0 ? (
+              <div style={styles.noWorkersMessage}>
+                No maintenance workers available. Please ensure there are
+                employees in the Maintenance department with the Maintenance
+                Worker role.
+              </div>
+            ) : (
+              <select
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+                style={styles.employeeSelect}
+              >
+                <option value="">Select a maintenance worker...</option>
+                {employees.map((employee) => (
+                  <option
+                    key={employee.employeeId || employee.employee_ID}
+                    value={employee.employeeId || employee.employee_ID}
+                  >
+                    {employee.firstName} {employee.lastName} (ID:{" "}
+                    {employee.employeeId || employee.employee_ID})
+                  </option>
+                ))}
+              </select>
+            )}
 
             <div style={styles.modalActions}>
               <button
@@ -220,7 +312,11 @@ const AssignMaintanence = () => {
               </button>
               <button
                 onClick={() => handleAssignRequest(selectedRequest.requestId)}
-                style={styles.confirmButton}
+                style={{
+                  ...styles.confirmButton,
+                  ...(employees.length === 0 ? styles.disabledButton : {}),
+                }}
+                disabled={employees.length === 0}
               >
                 Assign Request
               </button>
@@ -235,13 +331,20 @@ const AssignMaintanence = () => {
 const styles = {
   container: {
     padding: "20px",
-    maxWidth: "1200px",
+    maxWidth: "1600px",
     margin: "0 auto",
+    width: "100%",
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "20px",
   },
   title: {
     fontSize: "24px",
     fontWeight: "bold",
-    marginBottom: "20px",
+    margin: 0,
     color: "#1f2937",
   },
   loading: {
@@ -277,49 +380,62 @@ const styles = {
     backgroundColor: "#f9fafb",
     borderRadius: "8px",
   },
-  requestsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))",
-    gap: "20px",
-  },
-  requestCard: {
+  tableContainer: {
     backgroundColor: "white",
-    border: "1px solid #e5e7eb",
     borderRadius: "8px",
-    padding: "20px",
     boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+    overflow: "auto",
+    width: "100%",
   },
-  cardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "15px",
+  table: {
+    width: "100%",
+    minWidth: "1500px",
+    borderCollapse: "collapse",
+    fontSize: "14px",
   },
-  requestTitle: {
-    fontSize: "18px",
-    fontWeight: "bold",
-    margin: 0,
-    color: "#1f2937",
+  tableHeader: {
+    backgroundColor: "#f8fafc",
+    borderBottom: "2px solid #e5e7eb",
+  },
+  tableHeaderCell: {
+    padding: "12px 16px",
+    textAlign: "left",
+    fontWeight: "600",
+    color: "#374151",
+    fontSize: "12px",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+  },
+  tableRow: {
+    borderBottom: "1px solid #e5e7eb",
+    transition: "background-color 0.2s",
+  },
+  tableRowHover: {
+    backgroundColor: "#f9fafb",
+  },
+  tableCell: {
+    padding: "12px 16px",
+    verticalAlign: "top",
+    color: "#374151",
+    fontSize: "14px",
   },
   statusBadge: {
-    padding: "4px 12px",
-    borderRadius: "20px",
+    padding: "4px 8px",
+    borderRadius: "12px",
     color: "white",
-    fontSize: "12px",
-    fontWeight: "bold",
+    fontSize: "11px",
+    fontWeight: "600",
     textTransform: "uppercase",
+    display: "inline-block",
   },
-  cardContent: {
-    marginBottom: "15px",
+  issueDescription: {
+    maxWidth: "240px",
+    wordWrap: "break-word",
+    lineHeight: "1.4",
   },
-  field: {
-    marginBottom: "8px",
-    fontSize: "14px",
-    color: "#374151",
-  },
-  cardActions: {
-    display: "flex",
-    gap: "10px",
+  smallText: {
+    color: "#6b7280",
+    fontSize: "12px",
   },
   assignButton: {
     backgroundColor: "#3b82f6",
@@ -330,14 +446,21 @@ const styles = {
     cursor: "pointer",
     fontSize: "14px",
   },
+  disabledAssignButton: {
+    backgroundColor: "#9ca3af",
+    color: "#6b7280",
+    cursor: "not-allowed",
+    opacity: 0.6,
+  },
   refreshButton: {
-    backgroundColor: "#6b7280",
+    backgroundColor: "#3b82f6",
     color: "white",
     border: "none",
-    padding: "8px 16px",
+    padding: "10px 20px",
     borderRadius: "6px",
     cursor: "pointer",
-    fontSize: "14px",
+    fontSize: "16px",
+    fontWeight: "500",
   },
   modalOverlay: {
     position: "fixed",
@@ -378,6 +501,16 @@ const styles = {
     fontSize: "16px",
     marginBottom: "20px",
   },
+  noWorkersMessage: {
+    padding: "15px",
+    backgroundColor: "#fef3c7",
+    border: "1px solid #f59e0b",
+    borderRadius: "6px",
+    color: "#92400e",
+    fontSize: "14px",
+    marginBottom: "20px",
+    textAlign: "center",
+  },
   modalActions: {
     display: "flex",
     gap: "10px",
@@ -400,6 +533,10 @@ const styles = {
     borderRadius: "6px",
     cursor: "pointer",
     fontSize: "16px",
+  },
+  disabledButton: {
+    backgroundColor: "#9ca3af",
+    cursor: "not-allowed",
   },
 };
 
