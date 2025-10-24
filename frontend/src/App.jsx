@@ -9,6 +9,7 @@ import CommoditySales from "./components/CommoditySales";
 import RequestMaintenance from "./components/RequestMaintenance";
 import EmployeeDashboard from "./components/EmployeeDashboard";
 import Rides from "./components/Rides";
+import AssignMaintanence from "./components/AssignMaintanence";
 import "./App.css";
 
 function App() {
@@ -71,7 +72,7 @@ function App() {
               Profile
             </button>
             <button
-              onClick = {() => setCurrentView("rides")}
+              onClick={() => setCurrentView("rides")}
               style={styles.navButton}
             >
               Rides
@@ -92,10 +93,16 @@ function App() {
                   Commodity Sales
                 </button>
                 <button
-                  onClick={() => setCurrentView("maintenance")}
+                  onClick={() => setCurrentView("maintenance-request")}
                   style={styles.navButton}
                 >
                   Request Maintenance
+                </button>
+                <button
+                  onClick={() => setCurrentView("maintenance-assign")}
+                  style={styles.navButton}
+                >
+                  Assign Maintanence
                 </button>
                 <button
                   onClick={() => setCurrentView("employee-dashboard")}
@@ -162,9 +169,7 @@ function App() {
         <Profile user={user} onLogout={handleLogout} />
       )}
 
-      {currentView === 'rides' && (
-        <Rides />
-      )}
+      {currentView === "rides" && <Rides />}
 
       {/* Customer Pages */}
       {currentView === "buy-tickets" && user && !isEmployee && (
@@ -188,8 +193,12 @@ function App() {
         <CommoditySales />
       )}
 
-      {currentView === "maintenance" && user && isEmployee && (
+      {currentView === "maintenance-request" && user && isEmployee && (
         <RequestMaintenance user={user} />
+      )}
+
+      {currentView === "maintenance-assign" && user && isEmployee && (
+        <AssignMaintanence user={user} />
       )}
 
       {currentView === "employee-dashboard" && user && isEmployee && (
