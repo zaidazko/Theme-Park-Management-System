@@ -200,9 +200,10 @@ export const maintenanceRequestAPI = {
     return response.data;
   },
 
-  completeMaintenanceRequest: async (requestId) => {
+  completeMaintenanceRequest: async (requestId, workDetails) => {
     const response = await axios.put(
-      `${API_BASE_URL}/maintenancerequest/${requestId}/complete`
+      `${API_BASE_URL}/maintenancerequest/${requestId}/complete`,
+      { workDetails: workDetails }
     );
     return response.data;
   },
@@ -211,6 +212,13 @@ export const maintenanceRequestAPI = {
     const response = await axios.put(
       `${API_BASE_URL}/maintenancerequest/${requestId}/assign`,
       { assignedTo: employeeId }
+    );
+    return response.data;
+  },
+
+  getMaintenanceRequestsAssignedToEmployee: async (employeeId) => {
+    const response = await axios.get(
+      `${API_BASE_URL}/maintenancerequest/assigned/${employeeId}`
     );
     return response.data;
   },

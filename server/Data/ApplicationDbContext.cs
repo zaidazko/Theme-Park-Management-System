@@ -29,6 +29,7 @@ namespace AmusementParkAPI.Data
         
         // Maintenance
         public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
+        public DbSet<MaintenanceLog> MaintenanceLogs { get; set; }
 
         // Reviews
         public DbSet<Reviews> Reviews { get; set; }
@@ -48,6 +49,7 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<Department>().ToTable("department");
             modelBuilder.Entity<Role>().ToTable("role");
             modelBuilder.Entity<MaintenanceRequest>().ToTable("maintenance_request");
+            modelBuilder.Entity<MaintenanceLog>().ToTable("maintenance_log");
             modelBuilder.Entity<Reviews>().ToTable("review");
     
             
@@ -64,6 +66,7 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<Department>().HasKey(d => d.DepartmentId);
             modelBuilder.Entity<Role>().HasKey(r => r.RoleId);
             modelBuilder.Entity<MaintenanceRequest>().HasKey(m => m.RequestId);
+            modelBuilder.Entity<MaintenanceLog>().HasKey(m => m.LogId);
             modelBuilder.Entity<Reviews>().HasKey(r => r.Review_ID);
 
             base.OnModelCreating(modelBuilder);

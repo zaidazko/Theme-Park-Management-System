@@ -8,6 +8,7 @@ import CommodityPurchase from "./components/CommodityPurchase";
 import CommoditySales from "./components/CommoditySales";
 import RequestMaintenance from "./components/RequestMaintenance";
 import AssignMaintanence from "./components/AssignMaintanence";
+import SubmitMaintanence from "./components/SubmitMaintanence";
 import EmployeeDashboard from "./components/EmployeeDashboard";
 import Rides from "./components/Rides";
 import "./App.css";
@@ -105,6 +106,12 @@ function App() {
                   Assign Maintanence
                 </button>
                 <button
+                  onClick={() => setCurrentView("maintenance-submission")}
+                  style={styles.navButton}
+                >
+                  Submit Maintanence
+                </button>
+                <button
                   onClick={() => setCurrentView("employee-dashboard")}
                   style={styles.navButton}
                 >
@@ -199,6 +206,10 @@ function App() {
 
       {currentView === "maintenance-assignments" && user && isEmployee && (
         <AssignMaintanence user={user} />
+      )}
+
+      {currentView === "maintenance-submission" && user && isEmployee && (
+        <SubmitMaintanence user={user} />
       )}
 
       {currentView === "employee-dashboard" && user && isEmployee && (

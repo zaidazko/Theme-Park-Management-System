@@ -171,9 +171,21 @@ namespace AmusementParkAPI.Controllers
             return Ok(new { message = "Maintenance request assigned successfully", maintenanceRequest = updatedRequest });
         }
 
+        // GET: api/maintenancerequest/assigned/{employeeId}
+        [HttpGet("assigned/{employeeId}")]
+        public async Task<ActionResult<IEnumerable<MaintenanceRequest>>> GetMaintenanceRequestsAssignedToEmployee(int employeeId)
+        {
+            return await _context.MaintenanceRequests
+                .Include(m => m.Ride)
+                .Include(m => m.Reporter)
+                .Include(m => m.Assignee)
+                .Where(m => m.AssignedTo == employeeId)
+                .ToListAsync();
+        }
+
         // PUT: api/maintenancerequest/{id}/complete
         [HttpPut("{id}/complete")]
-        public async Task<IActionResult> CompleteMaintenanceRequest(int id)
+        public async Task<IActionResult> CompleteMaintenanceRequest(int id, [FromBody] CompleteMaintenanceRequest request)
         {
             var maintenanceRequest = await _context.MaintenanceRequests
                 .Include(m => m.Ride)
@@ -181,7 +193,12 @@ namespace AmusementParkAPI.Controllers
 
             if (maintenanceRequest == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Maintenance request not found" });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.WorkDetails))
+            {
+                return BadRequest(new { message = "Work details are required" });
             }
 
             // Update maintenance request status
@@ -194,9 +211,24 @@ namespace AmusementParkAPI.Controllers
                 maintenanceRequest.Ride.Status = "Operational";
             }
 
+            // Create maintenance log entry
+            var maintenanceLog = new MaintenanceLog
+            {
+                RequestId = maintenanceRequest.RequestId,
+                RideId = maintenanceRequest.RideId,
+                PerformedBy = maintenanceRequest.AssignedTo ?? 0,
+                WorkDetails = request.WorkDetails,
+                DatePerformed = DateTime.Now
+            };
+
+            _context.MaintenanceLogs.Add(maintenanceLog);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Maintenance request completed successfully", maintenanceRequest });
+            return Ok(new { 
+                message = "Maintenance request completed successfully", 
+                maintenanceRequest,
+                maintenanceLog 
+            });
         }
     }
 }
