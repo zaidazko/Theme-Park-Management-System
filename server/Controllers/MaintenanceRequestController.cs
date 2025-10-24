@@ -75,6 +75,9 @@ namespace AmusementParkAPI.Controllers
                 CompletionDate = null // Will be null initially
             };
 
+            // Update the ride status to "Under Maintenance"
+            ride.Status = "Under Maintenance";
+
             _context.MaintenanceRequests.Add(maintenanceRequest);
             await _context.SaveChangesAsync();
 
@@ -129,6 +132,34 @@ namespace AmusementParkAPI.Controllers
                 .Include(m => m.Assignee)
                 .Where(m => m.Status == status)
                 .ToListAsync();
+        }
+
+        // PUT: api/maintenancerequest/{id}/complete
+        [HttpPut("{id}/complete")]
+        public async Task<IActionResult> CompleteMaintenanceRequest(int id)
+        {
+            var maintenanceRequest = await _context.MaintenanceRequests
+                .Include(m => m.Ride)
+                .FirstOrDefaultAsync(m => m.RequestId == id);
+
+            if (maintenanceRequest == null)
+            {
+                return NotFound();
+            }
+
+            // Update maintenance request status
+            maintenanceRequest.Status = "Completed";
+            maintenanceRequest.CompletionDate = DateTime.Now;
+
+            // Update ride status back to "Operational"
+            if (maintenanceRequest.Ride != null)
+            {
+                maintenanceRequest.Ride.Status = "Operational";
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Maintenance request completed successfully", maintenanceRequest });
         }
     }
 }

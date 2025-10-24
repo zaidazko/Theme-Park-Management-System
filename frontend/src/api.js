@@ -199,6 +199,13 @@ export const maintenanceRequestAPI = {
     );
     return response.data;
   },
+
+  completeMaintenanceRequest: async (requestId) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/maintenancerequest/${requestId}/complete`
+    );
+    return response.data;
+  },
 };
 
 export const UserPermissionsAPI = {
