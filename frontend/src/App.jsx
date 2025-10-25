@@ -6,6 +6,8 @@ import TicketPurchase from './components/TicketPurchase';
 import TicketSales from './components/TicketSales';
 import CommodityPurchase from './components/CommodityPurchase';
 import CommoditySales from './components/CommoditySales';
+import RestaurantMenu from './components/RestaurantMenu';
+import RestaurantSales from './components/RestaurantSales';
 import './App.css';
 
 function App() {
@@ -53,6 +55,9 @@ function App() {
                 <button onClick={() => setCurrentView('commodity-sales')} style={styles.navButton}>
                   Commodity Sales
                 </button>
+                <button onClick={() => setCurrentView('restaurant-sales')} style={styles.navButton}>
+                  Restaurant Sales
+                </button>
               </>
             )}
             
@@ -70,6 +75,12 @@ function App() {
                 </button>
                 <button onClick={() => setCurrentView('my-purchases')} style={styles.navButton}>
                   My Purchased Items
+                </button>
+                <button onClick={() => setCurrentView('restaurant-menu')} style={styles.navButton}>
+                  Order Food
+                </button>
+                <button onClick={() => setCurrentView('my-restaurant-orders')} style={styles.navButton}>
+                  My Restaurant Orders
                 </button>
               </>
             )}
@@ -124,6 +135,19 @@ function App() {
 
       {currentView === 'commodity-sales' && user && isEmployee && (
         <CommoditySales />
+      )}
+
+      {/* Restaurant Pages */}
+      {currentView === 'restaurant-menu' && user && !isEmployee && (
+        <RestaurantMenu />
+      )}
+
+      {currentView === 'my-restaurant-orders' && user && !isEmployee && (
+        <RestaurantSales />
+      )}
+
+      {currentView === 'restaurant-sales' && user && isEmployee && (
+        <RestaurantSales />
       )}
     </div>
   );
