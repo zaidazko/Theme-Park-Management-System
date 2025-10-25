@@ -6,9 +6,10 @@ namespace AmusementParkAPI.DTOs
         public string Username { get; set; } = string.Empty;
         public string UserType { get; set; } = string.Empty;
         public int? CustomerId { get; set; }
+        public int? EmployeeId { get; set; }
         public string Message { get; set; } = string.Empty;
         
-        // Customer info
+        // User info (Customer or Employee)
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? Email { get; set; }

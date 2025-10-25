@@ -24,6 +24,7 @@ const CommoditySales = () => {
       setSales(data);
     } catch (err) {
       setError('Failed to load commodity sales');
+      console.log(err)
     } finally {
       setLoading(false);
     }
@@ -43,6 +44,7 @@ const CommoditySales = () => {
       setSales(data);
     } catch (err) {
       setError('Failed to load your purchases');
+      console.log(err)
     } finally {
       setLoading(false);
     }

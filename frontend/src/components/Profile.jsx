@@ -20,7 +20,12 @@ function Profile({ user, onLogout, onBackToHome }) {
 
   const loadProfile = async () => {
     try {
-      const data = await authAPI.getProfile(user.customerId);
+      console.log("User object:", user);
+      const userId =
+        user.userType === "Employee" ? user.employeeId : user.customerId;
+      console.log("User ID:", userId, "User Type:", user.userType);
+      const data = await authAPI.getProfile(userId, user.userType);
+      console.log("Profile data:", data);
       setProfile(data);
       setFormData({
         firstName: data.firstName || "",
@@ -32,7 +37,7 @@ function Profile({ user, onLogout, onBackToHome }) {
       setLoading(false);
     } catch (err) {
       setLoading(false);
-      console.log(err);
+      console.error("Error loading profile:", err);
     }
   };
 
@@ -43,13 +48,22 @@ function Profile({ user, onLogout, onBackToHome }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await authAPI.updateProfile(user.customerId, formData);
+      const userId =
+        user.userType === "Employee" ? user.employeeId : user.customerId;
+      console.log(
+        "Updating profile for user ID:",
+        userId,
+        "User Type:",
+        user.userType
+      );
+      console.log("Form data:", formData);
+      await authAPI.updateProfile(userId, formData, user.userType);
       setMessage("Profile updated successfully!");
       setIsEditing(false);
       loadProfile();
     } catch (err) {
       setMessage("Error updating profile");
-      console.log(err);
+      console.error("Error updating profile:", err);
     }
   };
 

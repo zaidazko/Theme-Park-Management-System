@@ -33,8 +33,11 @@ namespace AmusementParkAPI.Models
         [Column("Last_Login")]
         public DateTime? LastLogin { get; set; }
 
-        // Navigation property
+        // Navigation properties
         [ForeignKey("CustomerId")]
         public Customer? Customer { get; set; }
+
+        [ForeignKey("EmployeeId")]
+        public Employee? Employee { get; set; }
     }
 }
