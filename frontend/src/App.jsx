@@ -13,6 +13,8 @@ import AssignMaintanence from "./components/AssignMaintanence";
 import SubmitMaintanence from "./components/SubmitMaintanence";
 import EmployeeDashboard from "./components/EmployeeDashboard";
 import Rides from "./components/Rides";
+import Reviews from "./components/Reviews";
+import MakeReview from "./components/MakeReview";
 import "./App.css";
 
 function App() {
@@ -74,12 +76,6 @@ function App() {
             >
               Profile
             </button>
-            <button
-              onClick={() => setCurrentView("rides")}
-              style={styles.navButton}
-            >
-              Rides
-            </button>
             {/* EMPLOYEE VIEW */}
             {isEmployee && (
               <>
@@ -100,6 +96,12 @@ function App() {
                   style={styles.navButton}
                 >
                   Restaurant Sales
+                </button>
+                <button
+                  onClick={() => setCurrentView("reviews")}
+                  style={styles.navButton}  
+                >
+                  Ride Reviews
                 </button>
                 <button
                   onClick={() => setCurrentView("maintenance-request")}
@@ -144,6 +146,12 @@ function App() {
                   Buy Items
                 </button>
                 <button
+                  onClick={() => setCurrentView("rides")}
+                  style={styles.navButton}
+                >
+                  Rides
+                </button>                
+                <button
                   onClick={() => setCurrentView("my-tickets")}
                   style={styles.navButton}
                 >
@@ -154,6 +162,12 @@ function App() {
                   style={styles.navButton}
                 >
                   My Purchased Items
+                </button>
+                <button
+                  onClick={() => setCurrentView("my-reviews")}
+                  style={styles.navButton}
+                >
+                  My Reviews
                 </button>
                 <button onClick={() => setCurrentView('restaurant-menu')} style={styles.navButton}>
                   Order Food
@@ -207,6 +221,16 @@ function App() {
         <CommoditySales />
       )}
 
+      {currentView === "my-reviews" && user && !isEmployee && (
+        <Reviews
+          onSwitchToMakeReview={() => setCurrentView("make-review")}
+        />
+      )}
+
+      {currentView === "make-review" && user && !isEmployee && (
+        <MakeReview />
+      )}
+
       {/* Employee Pages */}
       {currentView === "ticket-sales" && user && isEmployee && <TicketSales />}
 
@@ -229,6 +253,8 @@ function App() {
       {currentView === "employee-dashboard" && user && isEmployee && (
         <EmployeeDashboard />
       )}
+
+      {currentView === "reviews" && user && isEmployee && <Reviews />}
 
       {/* Restaurant Pages */}
       {currentView === 'restaurant-menu' && user && !isEmployee && (

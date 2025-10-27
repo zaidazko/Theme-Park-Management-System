@@ -2,24 +2,19 @@ import {useState, useEffect} from 'react';
 
 const Rides = () => {
     const [rides, setRides] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-    const isEmployee = currentUser.userType === 'Employee' || currentUser.userType === 'Manager';
 
     useEffect(() => {
         fetchRides();
     }, []);
 
     const fetchRides = async () => {
-        setLoading(true);
         try {
             const response = await fetch('http://localhost:5239/api/rides');
             if (!response.ok) throw new Error('Failed to fetch rides');
             const data = await response.json();
             setRides(data);
-            console.log(data)
         }
         catch (err) {
             setError('Failed to load rides');
@@ -69,11 +64,6 @@ const Rides = () => {
                                 paddingBottom: '30px',
                                 textAlign: 'center'
                             }}>{ride.ride_Name}</h3>
-
-                            {isEmployee && <p style={{
-                                textAlign: 'center',
-                                marginBottom: '40px'
-                            }}>{ride.status}</p>}
                         
                         </div>
                     ))}    

@@ -17,24 +17,17 @@ namespace AmusementParkAPI.Controllers
             _context = context;
         }
 
-        // GET: api/reviews
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetReviews()
-        {
-            return await _context.Reviews.ToListAsync();
-        }
-
         // POST: api/reviews
         [HttpPost]
         public async Task<ActionResult> CreateReview([FromBody] CreateReview review)
         {
             var newReview = new Reviews
             {
-                Ride_ID = review.Ride_ID,
                 Customer_ID = review.Customer_ID,
-                Rating = review.Rating,
+                Ride_ID = review.Ride_ID,
+                Score = review.Rating,
                 Feedback = review.Feedback,
-                Date = review.Date
+                Date = DateTime.Now
             };
 
             _context.Reviews.Add(newReview);
@@ -47,31 +40,53 @@ namespace AmusementParkAPI.Controllers
             });
         }
 
-        // GET: api/reviews/ride/{rideId}
-        [HttpGet("ride/{rideId}")]
+        // GET: api/reviews/ride
+        [HttpGet("ride")]
         public async Task<ActionResult<IEnumerable<object>>> GetReviewsByRide(int rideId)
         {
             var reviews = await _context.Reviews
-                .Where(r => r.Ride_ID == rideId)
                 .Join(_context.Rides,
                     review => review.Ride_ID,
                     ride => ride.Ride_ID,
-                    (review, ride) => new {review, ride})
+                    (review, ride) => new { review, ride })
                 .Join(_context.Customers,
                     rr => rr.review.Customer_ID,
                     customer => customer.CustomerId,
                     (rr, customer) => new
                     {
-                        Review_ID = rr.review.Review_ID,
-                        Date = rr.review.Date,
-                        Rating = rr.review.Rating,
-                        Feedback = rr.review.Feedback,
-                        Ride_ID = rr.ride.Ride_ID,
-                        Ride_Name = rr.ride.Ride_Name,
-                        Customer_ID = customer.CustomerId,
-                        Customer_Name = customer.FirstName + " " + customer.LastName
+                        reviewID = rr.review.Review_ID,
+                        rideID = rr.ride.Ride_ID,
+                        rideName = rr.ride.Ride_Name,
+                        customerID = customer.CustomerId,
+                        customerName = customer.FirstName + " " + customer.LastName,
+                        score = rr.review.Score,
+                        feedback = rr.review.Feedback,
+                        reviewDate = rr.review.Date
                     })
-                .OrderByDescending(r => r.Date)
+                .OrderByDescending(r => r.reviewDate)
+                .ToListAsync();
+
+            return Ok(reviews);
+        }
+
+        // GET: api/reviews/customer/{customerId}
+        [HttpGet("customer/{customerId}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetCustomerReviews(int customerId)
+        {
+            var reviews = await _context.Reviews
+                .Where(r => r.Customer_ID == customerId)
+                .Join(_context.Rides,
+                    review => review.Ride_ID,
+                    ride => ride.Ride_ID,
+                    (review, ride) => new
+                    {
+                        rideName = ride.Ride_Name,
+                        reviewDate = review.Date,
+                        score = review.Score,
+                        feedback = review.Feedback
+                    }
+
+                )
                 .ToListAsync();
 
             return Ok(reviews);

@@ -64,7 +64,7 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<Role>().ToTable("role");
             modelBuilder.Entity<MaintenanceRequest>().ToTable("maintenance_request");
             modelBuilder.Entity<MaintenanceLog>().ToTable("maintenance_log");
-            modelBuilder.Entity<Reviews>().ToTable("review");
+            modelBuilder.Entity<Reviews>().ToTable("reviews");
     
             
             // Primary keys

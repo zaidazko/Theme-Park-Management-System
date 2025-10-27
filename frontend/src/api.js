@@ -237,3 +237,13 @@ export const UserPermissionsAPI = {
     return response.data;
   },
 };
+
+export const ReviewsAPI = {
+  createReview : async (reviewData) =>{
+    const response = await axios.post(
+      `${API_BASE_URL}/reviews`,
+      reviewData
+    );
+    return response.data;
+  },
+};
