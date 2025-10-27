@@ -20,7 +20,8 @@ namespace AmusementParkAPI.Models
         [Column("Status")]
         public string Status { get; set; } = string.Empty;
 
-
+        [Column("Image")]
+        public string Image { get; set; } = string.Empty;
 
     }
 

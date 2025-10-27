@@ -51,20 +51,25 @@ const Rides = () => {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                float: 'center'
+                                float: 'center',
+                                height: '300px',
+                                overflow: 'hidden',
+                                borderRadius: '8px'
                             }}>
-                                <img src="https://media.istockphoto.com/id/186293315/photo/looping-roller-coaster.jpg?s=612x612&w=0&k=20&c=r0Uq8QvhEjoFOodlgaD_5gMOYOF4rbFxKIp6UOFrcJA=" style={{
-                                    width: '80%',
-                                    borderRadius: '8px',
-                                    marginTop: '10px'
+                                <img src={ride.image || "https://media.istockphoto.com/id/186293315/photo/looping-roller-coaster.jpg?s=612x612&w=0&k=20&c=r0Uq8QvhEjoFOodlgaD_5gMOYOF4rbFxKIp6UOFrcJA="} style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover'
                                 }}/>
+                                <p>{ride.Image}</p>
                             </div>
                             <h3 style={{
                                 paddingTop: '30px',
                                 paddingBottom: '30px',
                                 textAlign: 'center'
-                            }}>{ride.ride_Name}</h3>
-                        
+                            }}>
+                                {ride.ride_Name}
+                            </h3>
                         </div>
                     ))}    
                 </div>
