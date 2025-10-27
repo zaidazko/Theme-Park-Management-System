@@ -107,7 +107,20 @@ const EmployeeDashboard = () => {
   const handleSaveEmployee = async () => {
     try {
       if (selectedEmployee) {
-        await employeeAPI.updateEmployee(selectedEmployee.employeeId, formData);
+        // Include the employeeId in the formData to match what the backend expects
+        const updateData = {
+          ...formData,
+          employeeId: selectedEmployee.employeeId,
+          // Convert empty strings to null for optional fields
+          departmentId: formData.departmentId || null,
+          roleId: formData.roleId || null,
+          salary: formData.salary ? parseFloat(formData.salary) : null,
+          hireDate: formData.hireDate || null,
+        };
+        await employeeAPI.updateEmployee(
+          selectedEmployee.employeeId,
+          updateData
+        );
       }
       setShowEditModal(false);
       setSelectedEmployee(null);
@@ -119,12 +132,20 @@ const EmployeeDashboard = () => {
 
   const handlePromoteToEmployee = async () => {
     try {
+      // Create the employee first
       await employeeAPI.createEmployee(formData);
+
+      // Delete the customer from the customers table
+      if (selectedCustomer?.customerId) {
+        await authAPI.deleteCustomer(selectedCustomer.customerId);
+      }
+
       setShowPromoteModal(false);
       setSelectedCustomer(null);
       loadAllData();
     } catch (error) {
       console.error("Error promoting customer:", error);
+      alert("Error promoting customer to employee. Please try again.");
     }
   };
 

@@ -60,7 +60,30 @@ namespace AmusementParkAPI.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(employee).State = EntityState.Modified;
+            var existingEmployee = await _context.Employees.FindAsync(id);
+            if (existingEmployee == null)
+            {
+                return NotFound();
+            }
+
+            // Update only the fields that are provided
+            if (!string.IsNullOrEmpty(employee.FirstName))
+                existingEmployee.FirstName = employee.FirstName;
+            if (!string.IsNullOrEmpty(employee.LastName))
+                existingEmployee.LastName = employee.LastName;
+            if (!string.IsNullOrEmpty(employee.Email))
+                existingEmployee.Email = employee.Email;
+            if (!string.IsNullOrEmpty(employee.Phone))
+                existingEmployee.Phone = employee.Phone;
+            if (employee.HireDate.HasValue)
+                existingEmployee.HireDate = employee.HireDate;
+            if (employee.Salary.HasValue)
+                existingEmployee.Salary = employee.Salary;
+            if (employee.DepartmentId.HasValue)
+                existingEmployee.DepartmentId = employee.DepartmentId;
+            if (employee.RoleId.HasValue)
+                existingEmployee.RoleId = employee.RoleId;
+
             await _context.SaveChangesAsync();
             return NoContent();
         }
