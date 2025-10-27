@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using AmusementParkAPI.Data;
 using AmusementParkAPI.Models;
 using AmusementParkAPI.DTOs;
+using System.Diagnostics;
 
 namespace AmusementParkAPI.Controllers
 {
@@ -11,16 +12,36 @@ namespace AmusementParkAPI.Controllers
     public class ReviewsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<ReviewsController> _logger;
 
-        public ReviewsController(ApplicationDbContext context)
+        public ReviewsController(ApplicationDbContext context, ILogger<ReviewsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // POST: api/reviews
         [HttpPost]
         public async Task<ActionResult> CreateReview([FromBody] CreateReview review)
         {
+            var oldReview = await _context.Reviews.FirstOrDefaultAsync(r => r.Customer_ID == review.Customer_ID && r.Ride_ID == review.Ride_ID);
+
+            if (oldReview != null)
+            {
+                oldReview.Score = review.Rating;
+                oldReview.Feedback = review.Feedback;
+                oldReview.Date = DateTime.Now;
+
+                _context.Entry(oldReview).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "Review updated successfully",
+                    reviewId = oldReview.Review_ID
+                });
+            }
+            
             var newReview = new Reviews
             {
                 Customer_ID = review.Customer_ID,

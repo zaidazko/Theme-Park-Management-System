@@ -4,7 +4,6 @@ function Reviews({ onSwitchToMakeReview }) {
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [toMakeReview, setToMakeReview] = useState(null);
 
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
     const isEmployee = currentUser.userType === 'Employee' || currentUser.userType === 'Manager';
@@ -54,13 +53,19 @@ function Reviews({ onSwitchToMakeReview }) {
         }
     };
 
+    const calculateAverage = () => {
+        if (reviews.length === 0) return 0;
+        return (reviews.reduce((total, r) => total + r.score, 0) / reviews.length).toFixed(2);
+    };
+
     return (
         <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '30px', backgroundColor: '#fff', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
             <div
             style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    alignItems: "center"
+                    alignItems: "center",
+                    margin: "20px 0px 50px 0px"
             }}>
                 <h2 style={{ textAlign: 'left' }}>
                     {isEmployee ? '📊 All Reviews' : '🎫 My Reviews'}
@@ -91,19 +96,19 @@ function Reviews({ onSwitchToMakeReview }) {
                 </div>
             ) : (
                 <>
-                    <div style={{ backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center' }}>
+                    {isEmployee && <div style={{ backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center' }}>
                         <h3 style={{ margin: '0 0 10px 0', color: '#666' }}>
-                        {isEmployee ? 'All Reviews' : 'Your Reviews'}
+                        Average Score Overall
                         </h3>
-                    </div>
-
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <p style={{ margin: 0, fontSize: '32px', color: '#28a745', fontWeight: 'bold' }}>{calculateAverage()} / 5</p>
+                    </div>}
+                    {isEmployee && <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                         <tr style={{ backgroundColor: '#007bff', color: '#fff' }}>
-                            {isEmployee && <th style={{ padding: '12px', textAlign: 'left' }}>Review ID</th>}
-                            {isEmployee && <th style={{ padding: '12px', textAlign: 'left' }}>Customer ID</th>}
-                            {isEmployee && <th style={{ padding: '12px', textAlign: 'left' }}>Customer</th>}
-                            {isEmployee && <th style={{ padding: '12px', textAlign: 'left' }}>Ride ID</th>}
+                            <th style={{ padding: '12px', textAlign: 'left' }}>Review ID</th>
+                            <th style={{ padding: '12px', textAlign: 'left' }}>Customer ID</th>
+                            <th style={{ padding: '12px', textAlign: 'left' }}>Customer</th>
+                            <th style={{ padding: '12px', textAlign: 'left' }}>Ride ID</th>
                             <th style={{ padding: '12px', textAlign: 'left' }}>Ride</th>
                             <th style={{ padding: '12px', textAlign: 'left' }}>Rating</th>
                             <th style={{ padding: '12px', textAlign: 'left' }}>Feedback</th>
@@ -113,18 +118,39 @@ function Reviews({ onSwitchToMakeReview }) {
                         <tbody>
                         {reviews.map((review) => (
                             <tr key={review.reviewID} style={{ borderBottom: '1px solid #ddd' }}>
-                            {isEmployee && <td style={{ padding: '12px' }}>{review.reviewID}</td>}
-                            {isEmployee && <td style={{ padding: '12px' }}>{review.customerId}</td>}
-                            {isEmployee && <td style={{ padding: '12px' }}>{review.customerName}</td>}
-                            {isEmployee && <td style={{ padding: '12px' }}>{review.rideID}</td>}
+                            <td style={{ padding: '12px' }}>{review.reviewID}</td>
+                            <td style={{ padding: '12px' }}>{review.customerID}</td>
+                            <td style={{ padding: '12px' }}>{review.customerName}</td>
+                            <td style={{ padding: '12px' }}>{review.rideID}</td>
                             <td style={{ padding: '12px' }}>{review.rideName}</td>
-                            <td style={{ padding: '12px' }}>{review.rating}</td>
+                            <td style={{ padding: '12px' }}>{review.score}</td>
                             <td style={{ padding: '12px' }}>{review.feedback}</td>
                             <td style={{ padding: '12px' }}>{new Date(review.reviewDate).toLocaleDateString()}</td>
                             </tr>
                         ))}
                         </tbody>
-                    </table>
+                    </table>}
+
+                    {!isEmployee && <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                        <tr style={{ backgroundColor: '#007bff', color: '#fff' }}>
+                            <th style={{ padding: '12px', textAlign: 'left' }}>Ride</th>
+                            <th style={{ padding: '12px', textAlign: 'left' }}>Rating</th>
+                            <th style={{ padding: '12px', textAlign: 'left' }}>Feedback</th>
+                            <th style={{ padding: '12px', textAlign: 'left' }}>Review Date</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {reviews.map((review) => (
+                            <tr key={review.reviewID} style={{ borderBottom: '1px solid #ddd' }}>
+                            <td style={{ padding: '12px' }}>{review.rideName}</td>
+                            <td style={{ padding: '12px' }}>{review.score}</td>
+                            <td style={{ padding: '12px' }}>{review.feedback}</td>
+                            <td style={{ padding: '12px' }}>{new Date(review.reviewDate).toLocaleDateString()}</td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>}
                 </>
             )
             }

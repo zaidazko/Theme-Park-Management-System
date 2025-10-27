@@ -228,7 +228,9 @@ function App() {
       )}
 
       {currentView === "make-review" && user && !isEmployee && (
-        <MakeReview />
+        <MakeReview 
+          onSwitchToReviews={() => setCurrentView("my-reviews")}
+        />
       )}
 
       {/* Employee Pages */}

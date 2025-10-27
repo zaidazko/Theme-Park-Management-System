@@ -45,7 +45,7 @@ function makeReview({onSwitchToReviews}) {
         try {
             const data = {
                 Ride_ID: parseInt(reviewData.ride),
-                Customer_ID: currentUser.customerId,
+                Customer_ID: parseInt(currentUser.customerId),
                 Rating: parseInt(reviewData.score),
                 Feedback: reviewData.feedback,
                 Date: new Date().toISOString()
@@ -106,7 +106,31 @@ function makeReview({onSwitchToReviews}) {
 
     return (
         <div style = {containerStyle}>
-            <h2 style = {{paddingBottom: "50px", textAlign: 'Center'}}>Make a Review</h2>
+            <div style = {{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                margin: "20px 0px 50px 0px"
+            }}>
+                <h2 style = {{textAlign: 'Center'}}>Make a Review</h2>
+                <button
+                    style = {{
+                        backgroundColor: "#3b82f6",
+                        color: "white",
+                        border: "none",
+                        padding: "10px 20px",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "16px",
+                        fontWeight: "500",
+                        float: 'right'
+                    }}
+                    onClick={onSwitchToReviews}
+                >
+                    Back
+                </button>
+            </div>
+
             <div>
                 <form onSubmit={handleSubmit}>
                     <div style={inputGroupStyle}>

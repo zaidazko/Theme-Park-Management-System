@@ -25,11 +25,11 @@ const Rides = () => {
     };
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '40px auto', padding: '30px', backgroundColor: '#fff', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)'}}>
-            <div style = {{ margin: '20px', height: '50px', display: 'block'}}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '40px auto', padding: '30px'}}>
+            <div style = {{ marginBottom: '20px', display: 'block'}}>
                 <h2 style={{ textAlign: 'center'}}>Rides</h2>
             </div>
-            {error && <div style={{ padding: '12px', backgroundColor: 'd4edda', color: '#721c24', borderRadius: '6px', marginBottom: '20px', textAlgin: 'center' }}>{error}</div>}
+            {error && <div style={{ padding: '12px', backgroundColor: '#d4edda', color: '#721c24', borderRadius: '6px', marginBottom: '20px', textAlgin: 'center' }}>{error}</div>}
             
             {loading ? (
                 <div style = {{ textAlign: 'center', padding: '40px' }}>Loading...</div>
@@ -41,7 +41,7 @@ const Rides = () => {
                 <div className='RideGrid' style={{ display: 'block', margin:'auto'}}>
                     {rides.map((ride)=>(
                         <div key={ride.ride_ID} style={{
-                            backgroundColor: '#d9ebffff',
+                            backgroundColor: '#fff',
                             borderRadius: '8px',
                             width: '48%',
                             float: 'left',
