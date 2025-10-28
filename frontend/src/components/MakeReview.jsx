@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ReviewsAPI } from '../api';
+import './ThemePark.css';
 
 function makeReview({onSwitchToReviews}) {
     const [reviewData, setReviewData] = useState({

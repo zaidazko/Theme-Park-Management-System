@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import './ThemePark.css';
 
 const RestaurantSales = () => {
   const [orders, setOrders] = useState([]);

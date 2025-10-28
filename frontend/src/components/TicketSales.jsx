@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import './ThemePark.css';
 
 const TicketSales = () => {
   const [sales, setSales] = useState([]);
@@ -56,55 +57,94 @@ const TicketSales = () => {
     return sales.reduce((total, sale) => total + sale.price, 0).toFixed(2);
   };
 
-  return (
-    <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '30px', backgroundColor: '#fff', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>
-        {isEmployee ? '📊 All Ticket Sales' : '🎫 My Purchase History'}
-      </h2>
-
-      {error && <div style={{ padding: '12px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '6px', marginBottom: '20px', textAlign: 'center' }}>{error}</div>}
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>Loading...</div>
-      ) : sales.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-          {isEmployee ? 'No ticket sales yet' : "You haven't purchased any tickets yet"}
+  if (loading) {
+    return (
+      <div className="theme-park-page">
+        <div className="theme-park-loading">
+          <div className="theme-park-spinner"></div>
+          <div className="theme-park-loading-text">Loading tickets...</div>
         </div>
-      ) : (
-        <>
-          <div style={{ backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center' }}>
-            <h3 style={{ margin: '0 0 10px 0', color: '#666' }}>
-              {isEmployee ? 'Total Revenue' : 'Total Spent'}
-            </h3>
-            <p style={{ margin: 0, fontSize: '32px', color: '#28a745', fontWeight: 'bold' }}>${calculateTotal()}</p>
-          </div>
+      </div>
+    );
+  }
 
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#007bff', color: '#fff' }}>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Ticket ID</th>
-                {isEmployee && <th style={{ padding: '12px', textAlign: 'left' }}>Customer</th>}
-                <th style={{ padding: '12px', textAlign: 'left' }}>Type</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Price</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Payment</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Purchase Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sales.map((sale) => (
-                <tr key={sale.ticketId} style={{ borderBottom: '1px solid #ddd' }}>
-                  <td style={{ padding: '12px' }}>{sale.ticketId}</td>
-                  {isEmployee && <td style={{ padding: '12px' }}>{sale.customerName}</td>}
-                  <td style={{ padding: '12px' }}>{sale.ticketType}</td>
-                  <td style={{ padding: '12px' }}>${sale.price}</td>
-                  <td style={{ padding: '12px' }}>{sale.paymentMethod}</td>
-                  <td style={{ padding: '12px' }}>{new Date(sale.purchaseDate).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+  return (
+    <div className="theme-park-page">
+      <div className="theme-park-container">
+        <div className="theme-park-header">
+          <h1 className="theme-park-title">{isEmployee ? '📊 Ticket Sales' : '🎫 My Tickets'}</h1>
+          <p className="theme-park-subtitle">
+            {isEmployee ? 'Track all ticket sales revenue' : 'View your purchase history'}
+          </p>
+        </div>
+
+        {error && (
+          <div className="theme-park-alert theme-park-alert-error">
+            <span style={{ fontSize: '24px' }}>⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
+
+        {sales.length === 0 ? (
+          <div className="theme-park-empty">
+            <div className="theme-park-empty-icon">🎫</div>
+            <div className="theme-park-empty-title">No Tickets Found</div>
+            <div className="theme-park-empty-text">
+              {isEmployee ? 'No ticket sales recorded yet' : "You haven't purchased any tickets yet"}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="theme-park-stat-card">
+              <div className="theme-park-stat-icon">💰</div>
+              <div className="theme-park-stat-label">
+                {isEmployee ? 'Total Revenue' : 'Total Spent'}
+              </div>
+              <div className="theme-park-stat-value">${calculateTotal()}</div>
+            </div>
+
+            <div className="theme-park-card">
+              <div className="theme-park-card-header">
+                <h3 className="theme-park-card-title">
+                  <span>📋</span> Purchase History
+                </h3>
+                <div className="theme-park-badge theme-park-badge-primary">
+                  {sales.length} {sales.length === 1 ? 'Ticket' : 'Tickets'}
+                </div>
+              </div>
+
+              <div className="theme-park-table-container">
+                <table className="theme-park-table">
+                  <thead>
+                    <tr>
+                      <th>Ticket ID</th>
+                      {isEmployee && <th>Customer</th>}
+                      <th>Type</th>
+                      <th>Price</th>
+                      <th>Payment</th>
+                      <th>Purchase Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sales.map((sale) => (
+                      <tr key={sale.ticketId}>
+                        <td>#{sale.ticketId}</td>
+                        {isEmployee && <td>{sale.customerName}</td>}
+                        <td>🎢 {sale.ticketType}</td>
+                        <td style={{ fontWeight: '700', color: 'var(--success-color)' }}>
+                          ${sale.price}
+                        </td>
+                        <td>💳 {sale.paymentMethod}</td>
+                        <td>{new Date(sale.purchaseDate).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };

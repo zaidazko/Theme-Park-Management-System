@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import './ThemePark.css';
 
 const CommodityPurchase = () => {
   const [commodities, setCommodities] = useState([]);
@@ -66,40 +67,109 @@ const CommodityPurchase = () => {
     }
   };
 
+  const selectedItemData = commodities.find(c => c.commodityTypeId === parseInt(selectedItem));
+
   return (
-    <div style={{ maxWidth: '600px', margin: '40px auto', padding: '30px', backgroundColor: '#fff', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>🛍️ Buy Items</h2>
-
-      {message && <div style={{ padding: '12px', backgroundColor: '#d4edda', color: '#155724', borderRadius: '6px', marginBottom: '20px', textAlign: 'center' }}>{message}</div>}
-      {error && <div style={{ padding: '12px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '6px', marginBottom: '20px', textAlign: 'center' }}>{error}</div>}
-
-      <form onSubmit={handlePurchase}>
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Select Item:</label>
-          <select value={selectedItem} onChange={(e) => setSelectedItem(e.target.value)} style={{ width: '100%', padding: '12px', fontSize: '16px', border: '2px solid #ddd', borderRadius: '6px' }} required>
-            <option value="">-- Choose an item --</option>
-            {commodities.map((item) => (
-              <option key={item.commodityTypeId} value={item.commodityTypeId}>
-                {item.commodityName} - ${item.basePrice}
-              </option>
-            ))}
-          </select>
+    <div className="theme-park-page">
+      <div className="theme-park-container-wide">
+        <div className="theme-park-header">
+          <h1 className="theme-park-title">🛍️ Shop Merchandise</h1>
+          <p className="theme-park-subtitle">Take home memories from ThrillWorld</p>
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Payment Method:</label>
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} style={{ width: '100%', padding: '12px', fontSize: '16px', border: '2px solid #ddd', borderRadius: '6px' }}>
-            <option value="credit">Credit Card</option>
-            <option value="debit">Debit Card</option>
-            <option value="cash">Cash</option>
-            <option value="mobile">Mobile Payment</option>
-          </select>
+        {message && (
+          <div className="theme-park-alert theme-park-alert-success">
+            <span style={{ fontSize: '24px' }}>🎉</span>
+            <span>{message}</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="theme-park-alert theme-park-alert-error">
+            <span style={{ fontSize: '24px' }}>⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
+
+        <h3 className="theme-park-section-title">Available Products</h3>
+        <div className="theme-park-grid">
+          {commodities.map((item) => (
+            <div key={item.commodityTypeId} className="theme-park-feature-card">
+              <span className="theme-park-feature-icon">🎁</span>
+              <h4 className="theme-park-feature-title">{item.commodityName}</h4>
+              <p className="theme-park-feature-description" style={{ marginBottom: '15px' }}>
+                {item.commodityStore && `Available at: ${item.commodityStore}`}
+              </p>
+              <div style={{ fontSize: '28px', fontWeight: '800', background: 'var(--success-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '15px' }}>
+                ${item.basePrice}
+              </div>
+              <button
+                onClick={() => setSelectedItem(item.commodityTypeId.toString())}
+                className="theme-park-btn theme-park-btn-success w-full theme-park-btn-sm"
+              >
+                🛒 Add to Cart
+              </button>
+            </div>
+          ))}
         </div>
 
-        <button type="submit" disabled={loading || !selectedItem} style={{ width: '100%', padding: '14px', fontSize: '16px', fontWeight: '600', color: '#fff', backgroundColor: '#28a745', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
-          {loading ? 'Processing...' : 'Purchase Item'}
-        </button>
-      </form>
+        {selectedItem && selectedItemData && (
+          <div className="theme-park-card" style={{ marginTop: '30px' }}>
+            <div className="theme-park-card-header">
+              <h3 className="theme-park-card-title">
+                <span>💳</span> Complete Purchase
+              </h3>
+              <button
+                onClick={() => setSelectedItem('')}
+                className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+              >
+                ✖️ Cancel
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '30px', padding: '25px', background: 'linear-gradient(135deg, rgba(56, 239, 125, 0.1) 0%, rgba(17, 153, 142, 0.1) 100%)', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '14px', color: 'var(--text-medium)', marginBottom: '5px' }}>Selected Item</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-dark)' }}>
+                    🎁 {selectedItemData.commodityName}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '14px', color: 'var(--text-medium)', marginBottom: '5px' }}>Total Price</div>
+                  <div style={{ fontSize: '36px', fontWeight: '800', background: 'var(--success-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    ${selectedItemData.basePrice}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handlePurchase} className="theme-park-form">
+              <div className="theme-park-form-group">
+                <label className="theme-park-label">💰 Payment Method</label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="theme-park-select"
+                >
+                  <option value="credit">💳 Credit Card</option>
+                  <option value="debit">💳 Debit Card</option>
+                  <option value="cash">💵 Cash</option>
+                  <option value="mobile">📱 Mobile Payment</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="theme-park-btn theme-park-btn-success theme-park-btn-lg w-full"
+              >
+                {loading ? '⏳ Processing...' : `🛍️ Purchase for $${selectedItemData.basePrice}`}
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { maintenanceRequestAPI } from "../api";
 
-const SubmitMaintanence = ({ user }) => {
+const SubmitMaintenance = ({ user }) => {
   const [assignedRequests, setAssignedRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -662,4 +662,4 @@ const styles = {
   },
 };
 
-export default SubmitMaintanence;
+export default SubmitMaintenance;

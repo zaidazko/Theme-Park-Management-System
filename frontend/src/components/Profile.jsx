@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { authAPI } from "../api";
+import "./ThemePark.css";
 
-function Profile({ user, onLogout, onBackToHome }) {
+function Profile({ user, onLogout }) {
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -20,12 +21,9 @@ function Profile({ user, onLogout, onBackToHome }) {
 
   const loadProfile = async () => {
     try {
-      console.log("User object:", user);
       const userId =
         user.userType === "Employee" ? user.employeeId : user.customerId;
-      console.log("User ID:", userId, "User Type:", user.userType);
       const data = await authAPI.getProfile(userId, user.userType);
-      console.log("Profile data:", data);
       setProfile(data);
       setFormData({
         firstName: data.firstName || "",
@@ -50,17 +48,11 @@ function Profile({ user, onLogout, onBackToHome }) {
     try {
       const userId =
         user.userType === "Employee" ? user.employeeId : user.customerId;
-      console.log(
-        "Updating profile for user ID:",
-        userId,
-        "User Type:",
-        user.userType
-      );
-      console.log("Form data:", formData);
       await authAPI.updateProfile(userId, formData, user.userType);
       setMessage("Profile updated successfully!");
       setIsEditing(false);
       loadProfile();
+      setTimeout(() => setMessage(""), 3000);
     } catch (err) {
       setMessage("Error updating profile");
       console.error("Error updating profile:", err);
@@ -69,241 +61,245 @@ function Profile({ user, onLogout, onBackToHome }) {
 
   if (loading) {
     return (
-      <div style={{ padding: "50px", textAlign: "center" }}>Loading...</div>
+      <div className="theme-park-page">
+        <div className="theme-park-loading">
+          <div className="theme-park-spinner"></div>
+          <div className="theme-park-loading-text">Loading your profile...</div>
+        </div>
+      </div>
     );
   }
 
-  const containerStyle = {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: "100vh",
-    backgroundColor: "#f5f5f5",
-    padding: "20px",
-  };
-
-  const profileBoxStyle = {
-    backgroundColor: "white",
-    padding: "40px",
-    borderRadius: "8px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-    width: "100%",
-    maxWidth: "600px",
-  };
-
-  const inputGroupStyle = {
-    marginBottom: "15px",
-  };
-
-  const labelStyle = {
-    display: "block",
-    marginBottom: "5px",
-    fontWeight: "bold",
-  };
-
-  const inputStyle = {
-    width: "100%",
-    padding: "10px",
-    fontSize: "16px",
-    border: "1px solid #ddd",
-    borderRadius: "4px",
-    boxSizing: "border-box",
-  };
-
   return (
-    <div style={containerStyle}>
-      <div style={profileBoxStyle}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "20px",
-          }}
-        >
-          <h2>My Profile</h2>
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button
-              onClick={onBackToHome}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#6c757d",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              Back to Home
-            </button>
-            <button
-              onClick={onLogout}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#dc3545",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              Logout
-            </button>
-          </div>
+    <div className="theme-park-page">
+      <div className="theme-park-container">
+        <div className="theme-park-header">
+          <h1 className="theme-park-title">My Profile</h1>
+          <p className="theme-park-subtitle">Manage your personal information and settings</p>
         </div>
 
-        <div
-          style={{
-            backgroundColor: "#e7f3ff",
-            padding: "15px",
-            borderRadius: "4px",
-            marginBottom: "20px",
-          }}
-        >
-          <p>
-            Welcome, <strong>{user.username}</strong>!
-          </p>
+        {/* Welcome Card */}
+        <div className="theme-park-card theme-park-card-gradient" style={{ marginBottom: '30px' }}>
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: '64px', marginBottom: '20px' }}>
+              {user.userType === "Employee" ? "👨‍💼" : "🎉"}
+            </div>
+            <h2 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '10px', color: 'var(--text-dark)' }}>
+              Welcome back, {profile?.firstName}!
+            </h2>
+            <div className="theme-park-badge theme-park-badge-primary" style={{ fontSize: '14px' }}>
+              {user.userType === "Employee" ? "🎯 Employee Account" : "⭐ Customer Account"}
+            </div>
+          </div>
         </div>
 
         {message && (
-          <div
-            style={{
-              padding: "10px",
-              backgroundColor: "#d4edda",
-              color: "#155724",
-              borderRadius: "4px",
-              marginBottom: "15px",
-              textAlign: "center",
-            }}
-          >
-            {message}
+          <div className={message.includes("success") ? "theme-park-alert theme-park-alert-success" : "theme-park-alert theme-park-alert-error"}>
+            <span style={{ fontSize: '20px' }}>
+              {message.includes("success") ? "✅" : "❌"}
+            </span>
+            <span>{message}</span>
           </div>
         )}
 
-        {!isEditing ? (
-          <div>
-            <div style={{ padding: "12px", borderBottom: "1px solid #eee" }}>
-              <strong>Name:</strong> {profile?.firstName} {profile?.lastName}
-            </div>
-            <div style={{ padding: "12px", borderBottom: "1px solid #eee" }}>
-              <strong>Email:</strong> {profile?.email}
-            </div>
-            <div style={{ padding: "12px", borderBottom: "1px solid #eee" }}>
-              <strong>Phone:</strong> {profile?.phone || "Not provided"}
-            </div>
-            <div style={{ padding: "12px", borderBottom: "1px solid #eee" }}>
-              <strong>Date of Birth:</strong>{" "}
-              {profile?.dateOfBirth
-                ? new Date(profile.dateOfBirth).toLocaleDateString()
-                : "Not provided"}
-            </div>
-
-            <button
-              onClick={() => setIsEditing(true)}
-              style={{
-                marginTop: "20px",
-                width: "100%",
-                padding: "12px",
-                backgroundColor: "#007bff",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              Edit Profile
-            </button>
+        <div className="theme-park-card">
+          <div className="theme-park-card-header">
+            <h3 className="theme-park-card-title">
+              <span>👤</span> Personal Information
+            </h3>
+            {!isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="theme-park-btn theme-park-btn-primary theme-park-btn-sm"
+              >
+                ✏️ Edit Profile
+              </button>
+            )}
           </div>
-        ) : (
-          <form onSubmit={handleSubmit}>
-            <div style={inputGroupStyle}>
-              <label style={labelStyle}>First Name:</label>
-              <input
-                type="text"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                style={inputStyle}
-              />
-            </div>
 
-            <div style={inputGroupStyle}>
-              <label style={labelStyle}>Last Name:</label>
-              <input
-                type="text"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                style={inputStyle}
-              />
-            </div>
+          {!isEditing ? (
+            <div style={{ display: 'grid', gap: '20px' }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: '25px'
+              }}>
+                <div style={{
+                  padding: '20px',
+                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
+                  borderRadius: '12px',
+                  borderLeft: '4px solid var(--primary-color)'
+                }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-medium)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Full Name
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-dark)' }}>
+                    {profile?.firstName} {profile?.lastName}
+                  </div>
+                </div>
 
-            <div style={inputGroupStyle}>
-              <label style={labelStyle}>Email:</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                style={inputStyle}
-              />
-            </div>
+                <div style={{
+                  padding: '20px',
+                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
+                  borderRadius: '12px',
+                  borderLeft: '4px solid var(--accent-color)'
+                }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-medium)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Email Address
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-dark)' }}>
+                    {profile?.email}
+                  </div>
+                </div>
 
-            <div style={inputGroupStyle}>
-              <label style={labelStyle}>Phone:</label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                style={inputStyle}
-              />
-            </div>
+                <div style={{
+                  padding: '20px',
+                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
+                  borderRadius: '12px',
+                  borderLeft: '4px solid var(--success-color)'
+                }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-medium)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Phone Number
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-dark)' }}>
+                    {profile?.phone || "Not provided"}
+                  </div>
+                </div>
 
-            <div style={inputGroupStyle}>
-              <label style={labelStyle}>Date of Birth:</label>
-              <input
-                type="date"
-                name="dateOfBirth"
-                value={formData.dateOfBirth}
-                onChange={handleChange}
-                style={inputStyle}
-              />
-            </div>
+                <div style={{
+                  padding: '20px',
+                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
+                  borderRadius: '12px',
+                  borderLeft: '4px solid var(--warning-color)'
+                }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-medium)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Date of Birth
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-dark)' }}>
+                    {profile?.dateOfBirth
+                      ? new Date(profile.dateOfBirth).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })
+                      : "Not provided"}
+                  </div>
+                </div>
 
-            <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-              <button
-                type="submit"
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  backgroundColor: "#28a745",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
-              >
-                Save
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  backgroundColor: "#6c757d",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
-              >
-                Cancel
-              </button>
+                {user.userType === "Employee" && (
+                  <div style={{
+                    padding: '20px',
+                    background: 'linear-gradient(135deg, rgba(255, 0, 110, 0.05) 0%, rgba(255, 69, 0, 0.05) 100%)',
+                    borderRadius: '12px',
+                    borderLeft: '4px solid var(--accent-color)'
+                  }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-medium)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Employee ID
+                    </div>
+                    <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-dark)' }}>
+                      #{user.employeeId}
+                    </div>
+                  </div>
+                )}
+
+                {user.userType === "Customer" && (
+                  <div style={{
+                    padding: '20px',
+                    background: 'linear-gradient(135deg, rgba(255, 0, 110, 0.05) 0%, rgba(255, 69, 0, 0.05) 100%)',
+                    borderRadius: '12px',
+                    borderLeft: '4px solid var(--accent-color)'
+                  }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-medium)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Customer ID
+                    </div>
+                    <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-dark)' }}>
+                      #{user.customerId}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </form>
-        )}
+          ) : (
+            <form onSubmit={handleSubmit} className="theme-park-form">
+              <div className="theme-park-form-row">
+                <div className="theme-park-form-group">
+                  <label className="theme-park-label">First Name</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className="theme-park-input"
+                    required
+                  />
+                </div>
+
+                <div className="theme-park-form-group">
+                  <label className="theme-park-label">Last Name</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className="theme-park-input"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="theme-park-form-group">
+                <label className="theme-park-label">Email Address</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="theme-park-input"
+                  required
+                />
+              </div>
+
+              <div className="theme-park-form-group">
+                <label className="theme-park-label">Phone Number</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="theme-park-input"
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+
+              <div className="theme-park-form-group">
+                <label className="theme-park-label">Date of Birth</label>
+                <input
+                  type="date"
+                  name="dateOfBirth"
+                  value={formData.dateOfBirth}
+                  onChange={handleChange}
+                  className="theme-park-input"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
+                <button
+                  type="submit"
+                  className="theme-park-btn theme-park-btn-success w-full"
+                >
+                  💾 Save Changes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="theme-park-btn theme-park-btn-outline w-full"
+                >
+                  ✖️ Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

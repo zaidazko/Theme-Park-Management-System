@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import './ThemePark.css';
 
 const TicketPurchase = () => {
   const [ticketTypes, setTicketTypes] = useState([]);
-  const [selectedTicket, setSelectedTicket] = useState('');
+  const [selectedTicket, setSelectedTicket] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('credit');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -36,15 +37,13 @@ const TicketPurchase = () => {
     setError('');
 
     try {
-      const ticket = ticketTypes.find(t => t.ticketTypeId === parseInt(selectedTicket));
-      
       const response = await fetch('http://localhost:5239/api/ticket/purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerId: currentUser.customerId,
-          ticketTypeId: parseInt(selectedTicket),
-          totalPrice: ticket.price,
+          ticketTypeId: selectedTicket.ticketTypeId,
+          totalPrice: selectedTicket.price,
           paymentMethod: paymentMethod
         }),
       });
@@ -52,8 +51,9 @@ const TicketPurchase = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage(`✅ Ticket purchased! ID: ${data.ticketId}`);
-        setSelectedTicket('');
+        setMessage(`Ticket purchased successfully! Your ticket ID is #${data.ticketId}`);
+        setSelectedTicket(null);
+        setTimeout(() => setMessage(''), 5000);
       } else {
         setError(data.message || 'Purchase failed');
       }
@@ -64,39 +64,129 @@ const TicketPurchase = () => {
     }
   };
 
+  const getTicketIcon = (typeName) => {
+    const name = typeName.toLowerCase();
+    if (name.includes('season') || name.includes('pass')) return '🎫';
+    if (name.includes('vip') || name.includes('premium')) return '⭐';
+    if (name.includes('child') || name.includes('kid')) return '👶';
+    if (name.includes('senior')) return '👵';
+    if (name.includes('group')) return '👥';
+    return '🎢';
+  };
+
   return (
-    <div style={{ maxWidth: '600px', margin: '40px auto', padding: '30px', backgroundColor: '#fff', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>🎫 Purchase Tickets</h2>
-
-      {message && <div style={{ padding: '12px', backgroundColor: '#d4edda', color: '#155724', borderRadius: '6px', marginBottom: '20px', textAlign: 'center' }}>{message}</div>}
-      {error && <div style={{ padding: '12px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '6px', marginBottom: '20px', textAlign: 'center' }}>{error}</div>}
-
-      <form onSubmit={handlePurchase}>
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Select Ticket:</label>
-          <select value={selectedTicket} onChange={(e) => setSelectedTicket(e.target.value)} style={{ width: '100%', padding: '12px', fontSize: '16px', border: '2px solid #ddd', borderRadius: '6px' }} required>
-            <option value="">-- Choose a ticket --</option>
-            {ticketTypes.map((ticket) => (
-              <option key={ticket.ticketTypeId} value={ticket.ticketTypeId}>
-                {ticket.typeName} - ${ticket.price}
-              </option>
-            ))}
-          </select>
+    <div className="theme-park-page">
+      <div className="theme-park-container-wide">
+        <div className="theme-park-header">
+          <h1 className="theme-park-title">🎫 Purchase Tickets</h1>
+          <p className="theme-park-subtitle">Choose your perfect day at ThrillWorld</p>
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Payment Method:</label>
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} style={{ width: '100%', padding: '12px', fontSize: '16px', border: '2px solid #ddd', borderRadius: '6px' }}>
-            <option value="credit">Credit Card</option>
-            <option value="debit">Debit Card</option>
-            <option value="cash">Cash</option>
-          </select>
-        </div>
+        {message && (
+          <div className="theme-park-alert theme-park-alert-success">
+            <span style={{ fontSize: '24px' }}>🎉</span>
+            <span>{message}</span>
+          </div>
+        )}
 
-        <button type="submit" disabled={loading || !selectedTicket} style={{ width: '100%', padding: '14px', fontSize: '16px', fontWeight: '600', color: '#fff', backgroundColor: '#007bff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
-          {loading ? 'Processing...' : 'Buy Ticket'}
-        </button>
-      </form>
+        {error && (
+          <div className="theme-park-alert theme-park-alert-error">
+            <span style={{ fontSize: '24px' }}>⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
+
+        {!selectedTicket ? (
+          <div>
+            <h3 className="theme-park-section-title">Available Tickets</h3>
+            <div className="theme-park-grid">
+              {ticketTypes.map((ticket, index) => (
+                <div
+                  key={ticket.ticketTypeId}
+                  className={`theme-park-price-card ${index === 1 ? 'featured' : ''}`}
+                  onClick={() => setSelectedTicket(ticket)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {index === 1 && <div className="theme-park-price-badge">🔥 BEST VALUE</div>}
+
+                  <div style={{ fontSize: '64px', marginBottom: '15px' }}>
+                    {getTicketIcon(ticket.typeName)}
+                  </div>
+
+                  <h3 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '15px', color: index === 1 ? 'white' : 'var(--text-dark)' }}>
+                    {ticket.typeName}
+                  </h3>
+
+                  <div className="theme-park-price" style={{ color: index === 1 ? 'white' : 'var(--text-dark)' }}>
+                    ${ticket.price}
+                  </div>
+
+                  <button
+                    className={index === 1 ? "theme-park-btn theme-park-btn-secondary w-full" : "theme-park-btn theme-park-btn-primary w-full"}
+                    style={{ marginTop: '20px' }}
+                  >
+                    Select Ticket
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="theme-park-card">
+            <div className="theme-park-card-header">
+              <h3 className="theme-park-card-title">
+                <span>💳</span> Complete Your Purchase
+              </h3>
+              <button
+                onClick={() => setSelectedTicket(null)}
+                className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+              >
+                ← Change Ticket
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '30px', padding: '25px', background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <div>
+                  <div style={{ fontSize: '14px', color: 'var(--text-medium)', marginBottom: '5px' }}>Selected Ticket</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-dark)' }}>
+                    {getTicketIcon(selectedTicket.typeName)} {selectedTicket.typeName}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '14px', color: 'var(--text-medium)', marginBottom: '5px' }}>Total Price</div>
+                  <div style={{ fontSize: '36px', fontWeight: '800', background: 'var(--secondary-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    ${selectedTicket.price}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handlePurchase} className="theme-park-form">
+              <div className="theme-park-form-group">
+                <label className="theme-park-label">💰 Payment Method</label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="theme-park-select"
+                >
+                  <option value="credit">💳 Credit Card</option>
+                  <option value="debit">💳 Debit Card</option>
+                  <option value="cash">💵 Cash</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="theme-park-btn theme-park-btn-success theme-park-btn-lg w-full"
+              >
+                {loading ? '⏳ Processing...' : `🎉 Purchase for $${selectedTicket.price}`}
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import './ThemePark.css';
 
 function Reviews({ onSwitchToMakeReview }) {
     const [reviews, setReviews] = useState([]);

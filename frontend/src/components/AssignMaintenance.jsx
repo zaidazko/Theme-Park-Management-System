@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { maintenanceRequestAPI, employeeAPI } from "../api";
 
-const AssignMaintanence = () => {
+const AssignMaintenance = () => {
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -605,4 +605,4 @@ const styles = {
   },
 };
 
-export default AssignMaintanence;
+export default AssignMaintenance;

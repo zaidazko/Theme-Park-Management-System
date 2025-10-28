@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import LandingPage from "./components/LandingPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Profile from "./components/Profile";
@@ -9,8 +10,8 @@ import CommoditySales from "./components/CommoditySales";
 import RestaurantMenu from "./components/RestaurantMenu";
 import RestaurantSales from "./components/RestaurantSales";
 import RequestMaintenance from "./components/RequestMaintenance";
-import AssignMaintanence from "./components/AssignMaintanence";
-import SubmitMaintanence from "./components/SubmitMaintanence";
+import AssignMaintenance from "./components/AssignMaintenance";
+import SubmitMaintenance from "./components/SubmitMaintenance";
 import EmployeeDashboard from "./components/EmployeeDashboard";
 import Rides from "./components/Rides";
 import Reviews from "./components/Reviews";
@@ -18,7 +19,7 @@ import MakeReview from "./components/MakeReview";
 import "./App.css";
 
 function App() {
-  const [currentView, setCurrentView] = useState("login");
+  const [currentView, setCurrentView] = useState("landing");
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -57,7 +58,7 @@ function App() {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem("user");
-    setCurrentView("login");
+    setCurrentView("landing");
   };
 
   // Check if user is employee
@@ -99,9 +100,9 @@ function App() {
                 </button>
                 <button
                   onClick={() => setCurrentView("reviews")}
-                  style={styles.navButton}  
+                  style={styles.navButton}
                 >
-                  Ride Reviews
+                  View Reviews
                 </button>
                 <button
                   onClick={() => setCurrentView("maintenance-request")}
@@ -113,13 +114,13 @@ function App() {
                   onClick={() => setCurrentView("maintenance-assignments")}
                   style={styles.navButton}
                 >
-                  Assign Maintanence
+                  Assign Maintenance
                 </button>
                 <button
                   onClick={() => setCurrentView("maintenance-submission")}
                   style={styles.navButton}
                 >
-                  Submit Maintanence
+                  Submit Maintenance
                 </button>
                 <button
                   onClick={() => setCurrentView("employee-dashboard")}
@@ -143,7 +144,7 @@ function App() {
                   onClick={() => setCurrentView("buy-items")}
                   style={styles.navButton}
                 >
-                  Buy Items
+                  Shop Merchandise
                 </button>
                 <button
                   onClick={() => setCurrentView("rides")}
@@ -155,13 +156,13 @@ function App() {
                   onClick={() => setCurrentView("my-tickets")}
                   style={styles.navButton}
                 >
-                  My Purchased Tickets
+                  My Tickets
                 </button>
                 <button
                   onClick={() => setCurrentView("my-purchases")}
                   style={styles.navButton}
                 >
-                  My Purchased Items
+                  My Merchandise
                 </button>
                 <button
                   onClick={() => setCurrentView("my-reviews")}
@@ -170,10 +171,10 @@ function App() {
                   My Reviews
                 </button>
                 <button onClick={() => setCurrentView('restaurant-menu')} style={styles.navButton}>
-                  Order Food
+                  Dining & Food
                 </button>
                 <button onClick={() => setCurrentView('my-restaurant-orders')} style={styles.navButton}>
-                  My Restaurant Orders
+                  My Orders
                 </button>
               </>
             )}
@@ -186,10 +187,18 @@ function App() {
       )}
 
       {/* Pages */}
+      {currentView === "landing" && (
+        <LandingPage
+          onGetStarted={() => setCurrentView("register")}
+          onLogin={() => setCurrentView("login")}
+        />
+      )}
+
       {currentView === "login" && (
         <Login
           onLoginSuccess={handleLoginSuccess}
           onSwitchToRegister={() => setCurrentView("register")}
+          onBackToLanding={() => setCurrentView("landing")}
         />
       )}
 
@@ -197,6 +206,7 @@ function App() {
         <Register
           onRegisterSuccess={handleRegisterSuccess}
           onSwitchToLogin={() => setCurrentView("login")}
+          onBackToLanding={() => setCurrentView("landing")}
         />
       )}
 
@@ -245,11 +255,11 @@ function App() {
       )}
 
       {currentView === "maintenance-assignments" && user && isEmployee && (
-        <AssignMaintanence user={user} />
+        <AssignMaintenance user={user} />
       )}
 
       {currentView === "maintenance-submission" && user && isEmployee && (
-        <SubmitMaintanence user={user} />
+        <SubmitMaintenance user={user} />
       )}
 
       {currentView === "employee-dashboard" && user && isEmployee && (
