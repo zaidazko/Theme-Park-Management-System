@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
-import './ThemePark.css';
+import { useState, useEffect } from "react";
+import "./ThemePark.css";
 
 const TicketSales = () => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const isEmployee = currentUser.userType === 'Employee' || currentUser.userType === 'Manager';
+  const [error, setError] = useState("");
+
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const isEmployee =
+    currentUser.userType === "Employee" || currentUser.userType === "Manager";
 
   useEffect(() => {
     if (isEmployee) {
@@ -20,12 +21,14 @@ const TicketSales = () => {
   // For Employees/Managers - Show ALL sales
   const fetchAllSales = async () => {
     try {
-      const response = await fetch('http://localhost:5239/api/ticket/sales');
-      if (!response.ok) throw new Error('Failed to fetch sales');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/ticket/sales`
+      );
+      if (!response.ok) throw new Error("Failed to fetch sales");
       const data = await response.json();
       setSales(data);
     } catch (err) {
-      setError('Failed to load ticket sales');
+      setError("Failed to load ticket sales");
       console.error(err);
     } finally {
       setLoading(false);
@@ -35,18 +38,22 @@ const TicketSales = () => {
   // For Customers - Show only their tickets
   const fetchMyTickets = async () => {
     if (!currentUser.customerId) {
-      setError('Please login to view your tickets');
+      setError("Please login to view your tickets");
       setLoading(false);
       return;
     }
 
     try {
-      const response = await fetch(`http://localhost:5239/api/ticket/customer/${currentUser.customerId}`);
-      if (!response.ok) throw new Error('Failed to fetch tickets');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/ticket/customer/${
+          currentUser.customerId
+        }`
+      );
+      if (!response.ok) throw new Error("Failed to fetch tickets");
       const data = await response.json();
       setSales(data);
     } catch (err) {
-      setError('Failed to load your tickets');
+      setError("Failed to load your tickets");
       console.error(err);
     } finally {
       setLoading(false);
@@ -72,15 +79,19 @@ const TicketSales = () => {
     <div className="theme-park-page">
       <div className="theme-park-container">
         <div className="theme-park-header">
-          <h1 className="theme-park-title">{isEmployee ? '📊 Ticket Sales' : '🎫 My Tickets'}</h1>
+          <h1 className="theme-park-title">
+            {isEmployee ? "📊 Ticket Sales" : "🎫 My Tickets"}
+          </h1>
           <p className="theme-park-subtitle">
-            {isEmployee ? 'Track all ticket sales revenue' : 'View your purchase history'}
+            {isEmployee
+              ? "Track all ticket sales revenue"
+              : "View your purchase history"}
           </p>
         </div>
 
         {error && (
           <div className="theme-park-alert theme-park-alert-error">
-            <span style={{ fontSize: '24px' }}>⚠️</span>
+            <span style={{ fontSize: "24px" }}>⚠️</span>
             <span>{error}</span>
           </div>
         )}
@@ -90,7 +101,9 @@ const TicketSales = () => {
             <div className="theme-park-empty-icon">🎫</div>
             <div className="theme-park-empty-title">No Tickets Found</div>
             <div className="theme-park-empty-text">
-              {isEmployee ? 'No ticket sales recorded yet' : "You haven't purchased any tickets yet"}
+              {isEmployee
+                ? "No ticket sales recorded yet"
+                : "You haven't purchased any tickets yet"}
             </div>
           </div>
         ) : (
@@ -98,7 +111,7 @@ const TicketSales = () => {
             <div className="theme-park-stat-card">
               <div className="theme-park-stat-icon">💰</div>
               <div className="theme-park-stat-label">
-                {isEmployee ? 'Total Revenue' : 'Total Spent'}
+                {isEmployee ? "Total Revenue" : "Total Spent"}
               </div>
               <div className="theme-park-stat-value">${calculateTotal()}</div>
             </div>
@@ -109,7 +122,7 @@ const TicketSales = () => {
                   <span>📋</span> Purchase History
                 </h3>
                 <div className="theme-park-badge theme-park-badge-primary">
-                  {sales.length} {sales.length === 1 ? 'Ticket' : 'Tickets'}
+                  {sales.length} {sales.length === 1 ? "Ticket" : "Tickets"}
                 </div>
               </div>
 
@@ -131,11 +144,18 @@ const TicketSales = () => {
                         <td>#{sale.ticketId}</td>
                         {isEmployee && <td>{sale.customerName}</td>}
                         <td>🎢 {sale.ticketType}</td>
-                        <td style={{ fontWeight: '700', color: 'var(--success-color)' }}>
+                        <td
+                          style={{
+                            fontWeight: "700",
+                            color: "var(--success-color)",
+                          }}
+                        >
                           ${sale.price}
                         </td>
                         <td>💳 {sale.paymentMethod}</td>
-                        <td>{new Date(sale.purchaseDate).toLocaleDateString()}</td>
+                        <td>
+                          {new Date(sale.purchaseDate).toLocaleDateString()}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

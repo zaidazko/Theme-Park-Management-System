@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5239/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export const authAPI = {
   register: async (userData) => {
@@ -239,11 +239,8 @@ export const UserPermissionsAPI = {
 };
 
 export const ReviewsAPI = {
-  createReview : async (reviewData) =>{
-    const response = await axios.post(
-      `${API_BASE_URL}/reviews`,
-      reviewData
-    );
+  createReview: async (reviewData) => {
+    const response = await axios.post(`${API_BASE_URL}/reviews`, reviewData);
     return response.data;
   },
 };

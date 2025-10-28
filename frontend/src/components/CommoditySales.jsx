@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
-import './ThemePark.css';
+import { useState, useEffect } from "react";
+import "./ThemePark.css";
 
 const CommoditySales = () => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const isEmployee = currentUser.userType === 'Employee' || currentUser.userType === 'Manager';
+  const [error, setError] = useState("");
+
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const isEmployee =
+    currentUser.userType === "Employee" || currentUser.userType === "Manager";
 
   useEffect(() => {
     if (isEmployee) {
@@ -19,13 +20,15 @@ const CommoditySales = () => {
 
   const fetchAllSales = async () => {
     try {
-      const response = await fetch('http://localhost:5239/api/commodity/sales');
-      if (!response.ok) throw new Error('Failed to fetch sales');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/commodity/sales`
+      );
+      if (!response.ok) throw new Error("Failed to fetch sales");
       const data = await response.json();
       setSales(data);
     } catch (err) {
-      setError('Failed to load commodity sales');
-      console.log(err)
+      setError("Failed to load commodity sales");
+      console.log(err);
     } finally {
       setLoading(false);
     }
@@ -33,19 +36,23 @@ const CommoditySales = () => {
 
   const fetchMySales = async () => {
     if (!currentUser.customerId) {
-      setError('Please login to view your purchases');
+      setError("Please login to view your purchases");
       setLoading(false);
       return;
     }
 
     try {
-      const response = await fetch(`http://localhost:5239/api/commodity/customer/${currentUser.customerId}`);
-      if (!response.ok) throw new Error('Failed to fetch purchases');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/commodity/customer/${
+          currentUser.customerId
+        }`
+      );
+      if (!response.ok) throw new Error("Failed to fetch purchases");
       const data = await response.json();
       setSales(data);
     } catch (err) {
-      setError('Failed to load your purchases');
-      console.log(err)
+      setError("Failed to load your purchases");
+      console.log(err);
     } finally {
       setLoading(false);
     }
@@ -70,15 +77,19 @@ const CommoditySales = () => {
     <div className="theme-park-page">
       <div className="theme-park-container">
         <div className="theme-park-header">
-          <h1 className="theme-park-title">{isEmployee ? '📊 Merchandise Sales' : '🛍️ My Purchases'}</h1>
+          <h1 className="theme-park-title">
+            {isEmployee ? "📊 Merchandise Sales" : "🛍️ My Purchases"}
+          </h1>
           <p className="theme-park-subtitle">
-            {isEmployee ? 'Track all merchandise revenue' : 'View your shopping history'}
+            {isEmployee
+              ? "Track all merchandise revenue"
+              : "View your shopping history"}
           </p>
         </div>
 
         {error && (
           <div className="theme-park-alert theme-park-alert-error">
-            <span style={{ fontSize: '24px' }}>⚠️</span>
+            <span style={{ fontSize: "24px" }}>⚠️</span>
             <span>{error}</span>
           </div>
         )}
@@ -88,7 +99,9 @@ const CommoditySales = () => {
             <div className="theme-park-empty-icon">🛍️</div>
             <div className="theme-park-empty-title">No Purchases Found</div>
             <div className="theme-park-empty-text">
-              {isEmployee ? 'No merchandise sales recorded yet' : "You haven't purchased any items yet"}
+              {isEmployee
+                ? "No merchandise sales recorded yet"
+                : "You haven't purchased any items yet"}
             </div>
           </div>
         ) : (
@@ -96,7 +109,7 @@ const CommoditySales = () => {
             <div className="theme-park-stat-card">
               <div className="theme-park-stat-icon">💰</div>
               <div className="theme-park-stat-label">
-                {isEmployee ? 'Total Revenue' : 'Total Spent'}
+                {isEmployee ? "Total Revenue" : "Total Spent"}
               </div>
               <div className="theme-park-stat-value">${calculateTotal()}</div>
             </div>
@@ -107,7 +120,7 @@ const CommoditySales = () => {
                   <span>📋</span> Purchase History
                 </h3>
                 <div className="theme-park-badge theme-park-badge-success">
-                  {sales.length} {sales.length === 1 ? 'Item' : 'Items'}
+                  {sales.length} {sales.length === 1 ? "Item" : "Items"}
                 </div>
               </div>
 
@@ -129,11 +142,18 @@ const CommoditySales = () => {
                         <td>#{sale.saleId}</td>
                         {isEmployee && <td>{sale.customerName}</td>}
                         <td>🎁 {sale.commodityName}</td>
-                        <td style={{ fontWeight: '700', color: 'var(--success-color)' }}>
+                        <td
+                          style={{
+                            fontWeight: "700",
+                            color: "var(--success-color)",
+                          }}
+                        >
                           ${sale.price}
                         </td>
                         <td>💳 {sale.paymentMethod}</td>
-                        <td>{new Date(sale.purchaseDate).toLocaleDateString()}</td>
+                        <td>
+                          {new Date(sale.purchaseDate).toLocaleDateString()}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
