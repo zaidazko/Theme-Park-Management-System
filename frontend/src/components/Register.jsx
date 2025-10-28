@@ -28,7 +28,9 @@ function Register({ onRegisterSuccess, onSwitchToLogin, onBackToLanding }) {
       const response = await authAPI.register(formData);
       onRegisterSuccess(response);
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed. Please try again.");
+      setError(
+        err.response?.data?.message || "Registration failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -40,50 +42,12 @@ function Register({ onRegisterSuccess, onSwitchToLogin, onBackToLanding }) {
       <div className="auth-promo-side register-promo">
         <div className="promo-overlay">
           <div className="promo-content">
-            <h1 className="promo-title">JOIN THRILLWORLD<br />TODAY!</h1>
+            <h1 className="promo-title">
+              JOIN THRILLWORLD
+              <br />
+              TODAY!
+            </h1>
             <p className="promo-subtitle">Unlock exclusive member benefits</p>
-
-            <div className="benefits-list">
-              <div className="benefit-item">
-                <span className="benefit-check">✓</span>
-                <div>
-                  <h4>Online Ticket Booking</h4>
-                  <p>Skip the lines, book from home</p>
-                </div>
-              </div>
-              <div className="benefit-item">
-                <span className="benefit-check">✓</span>
-                <div>
-                  <h4>Exclusive Member Discounts</h4>
-                  <p>Save up to 40% on passes</p>
-                </div>
-              </div>
-              <div className="benefit-item">
-                <span className="benefit-check">✓</span>
-                <div>
-                  <h4>Early Access to Events</h4>
-                  <p>Be the first to know</p>
-                </div>
-              </div>
-              <div className="benefit-item">
-                <span className="benefit-check">✓</span>
-                <div>
-                  <h4>Special Birthday Offers</h4>
-                  <p>Free admission on your special day</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="promo-stat-cards">
-              <div className="stat-card">
-                <div className="stat-number">2M+</div>
-                <div className="stat-label">Happy Members</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-number">4.9★</div>
-                <div className="stat-label">App Rating</div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -97,9 +61,10 @@ function Register({ onRegisterSuccess, onSwitchToLogin, onBackToLanding }) {
 
         <div className="auth-form-container register-form">
           <div className="auth-form-header">
-            <div className="brand-mini-logo">🎢</div>
             <h2 className="auth-form-title">Create Account</h2>
-            <p className="auth-form-subtitle">Start your adventure with ThrillWorld</p>
+            <p className="auth-form-subtitle">
+              Start your adventure with ThrillWorld
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="modern-form">
@@ -138,7 +103,6 @@ function Register({ onRegisterSuccess, onSwitchToLogin, onBackToLanding }) {
             <div className="modern-form-group">
               <label className="modern-label">Username</label>
               <div className="input-wrapper">
-                <span className="input-icon">👤</span>
                 <input
                   type="text"
                   name="username"
@@ -154,7 +118,6 @@ function Register({ onRegisterSuccess, onSwitchToLogin, onBackToLanding }) {
             <div className="modern-form-group">
               <label className="modern-label">Email Address</label>
               <div className="input-wrapper">
-                <span className="input-icon">✉️</span>
                 <input
                   type="email"
                   name="email"
@@ -170,7 +133,6 @@ function Register({ onRegisterSuccess, onSwitchToLogin, onBackToLanding }) {
             <div className="modern-form-group">
               <label className="modern-label">Password</label>
               <div className="input-wrapper">
-                <span className="input-icon">🔒</span>
                 <input
                   type="password"
                   name="password"
@@ -188,7 +150,6 @@ function Register({ onRegisterSuccess, onSwitchToLogin, onBackToLanding }) {
               <div className="modern-form-group">
                 <label className="modern-label">Phone Number</label>
                 <div className="input-wrapper">
-                  <span className="input-icon">📱</span>
                   <input
                     type="tel"
                     name="phone"
@@ -203,7 +164,6 @@ function Register({ onRegisterSuccess, onSwitchToLogin, onBackToLanding }) {
               <div className="modern-form-group">
                 <label className="modern-label">Date of Birth</label>
                 <div className="input-wrapper">
-                  <span className="input-icon">🎂</span>
                   <input
                     type="date"
                     name="dateOfBirth"
@@ -218,7 +178,8 @@ function Register({ onRegisterSuccess, onSwitchToLogin, onBackToLanding }) {
             <label className="terms-checkbox">
               <input type="checkbox" required />
               <span>
-                I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+                I agree to the <a href="#">Terms of Service</a> and{" "}
+                <a href="#">Privacy Policy</a>
               </span>
             </label>
 
@@ -229,7 +190,11 @@ function Register({ onRegisterSuccess, onSwitchToLogin, onBackToLanding }) {
               </div>
             )}
 
-            <button type="submit" disabled={loading} className="modern-submit-btn register-btn">
+            <button
+              type="submit"
+              disabled={loading}
+              className="modern-submit-btn register-btn"
+            >
               {loading ? (
                 <>
                   <span className="spinner"></span>
@@ -244,31 +209,11 @@ function Register({ onRegisterSuccess, onSwitchToLogin, onBackToLanding }) {
             </button>
           </form>
 
-          <div className="auth-divider">
-            <span>OR</span>
-          </div>
-
-          <div className="social-auth-buttons">
-            <button className="social-btn google-btn">
-              <span className="social-icon">G</span>
-              Continue with Google
-            </button>
-            <button className="social-btn facebook-btn">
-              <span className="social-icon">f</span>
-              Continue with Facebook
-            </button>
-          </div>
-
           <div className="auth-switch">
             Already have an account?{" "}
             <button onClick={onSwitchToLogin} className="switch-link">
               Sign In
             </button>
-          </div>
-
-          <div className="auth-security-badge">
-            <span className="security-icon">🔐</span>
-            <span>Your data is protected with 256-bit encryption</span>
           </div>
         </div>
       </div>
