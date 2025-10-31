@@ -16,6 +16,7 @@ import EmployeeDashboard from "./components/EmployeeDashboard";
 import Rides from "./components/Rides";
 import Reviews from "./components/Reviews";
 import MakeReview from "./components/MakeReview";
+import UnifiedSalesReport from "./components/UnifiedSalesReport";
 import "./App.css";
 
 function App() {
@@ -127,6 +128,12 @@ function App() {
                   style={styles.navButton}
                 >
                   Employee Dashboard
+                </button>
+                <button
+                  onClick={() => setCurrentView("unified-sales")}
+                  style={styles.navButton}
+                >
+                  Unified Sales Report
                 </button>
               </>
             )}
@@ -279,6 +286,10 @@ function App() {
 
       {currentView === 'restaurant-sales' && user && isEmployee && (
         <RestaurantSales />
+      )}
+
+      {currentView === 'unified-sales' && user && isEmployee && (
+        <UnifiedSalesReport />
       )}
     </div>
   );
