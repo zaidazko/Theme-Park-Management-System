@@ -127,9 +127,125 @@
   align-items: center;
 }
 
-/* Flex layout for the commodity/total stat box */
 .theme-park-total-flex {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+/* Dropdown filter group styles moved from inline JS */
+.theme-park-filter-group {
+  position: relative;
+  min-width: 200px;
+}
+
+.theme-park-filter-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.theme-park-filter-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.theme-park-dropdown-toggle {
+  background: transparent;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.theme-park-dropdown-toggle.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.theme-park-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 1000;
+  display: none;
+}
+
+.theme-park-dropdown-menu.open {
+  display: block;
+}
+
+.theme-park-dropdown-header {
+  padding: 0.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.theme-park-select-all {
+  width: 100%;
+  padding: 0.25rem;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.theme-park-select-all:hover {
+  background-color: #e9ecef;
+}
+
+.theme-park-dropdown-items {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.theme-park-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.theme-park-filter-item:hover {
+  background-color: #f8f9fa;
+}
+
+/* ensure checkboxes are a consistent size inside filters */
+.theme-park-filter-main input[type="checkbox"],
+.theme-park-dropdown-items input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Additional moved styles */
+.theme-park-alert-icon {
+  font-size: 24px;
+  margin-right: 0.5rem;
+}
+
+.theme-park-table th.sortable {
+  cursor: pointer;
+}
+
+.theme-park-amount {
+  font-weight: 700;
+  color: var(--success-color);
 }

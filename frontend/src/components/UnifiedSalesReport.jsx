@@ -8,14 +8,24 @@ const UnifiedSalesReport = () => {
   const [restaurantSales, setRestaurantSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+    const [openDropdown, setOpenDropdown] = useState(null);
   const [filters, setFilters] = useState({
     startDate: "",
     endDate: "",
     paymentMethod: "",
-    minAmount: "",
-    maxAmount: "",
-    // allow combinations using checkboxes
     saleType: { tickets: true, commodities: true, restaurant: true }
+  });
+
+  const [availableItems, setAvailableItems] = useState({
+    tickets: new Set(),
+    commodities: new Set(),
+    restaurant: new Set()
+  });
+
+  const [selectedFilters, setSelectedFilters] = useState({
+    tickets: {},
+    commodities: {},
+    restaurant: {}
   });
 
   // Stats state
@@ -42,6 +52,21 @@ const UnifiedSalesReport = () => {
     key: null,
     direction: 'asc'
   });
+
+  // Click outside handler for dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+        if (!event.target.closest('.theme-park-dropdown-menu') && 
+            !event.target.closest('.theme-park-dropdown-toggle')) {
+          setOpenDropdown(null);
+        }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const isEmployee = currentUser.userType === "Employee" || currentUser.userType === "Manager";
@@ -84,6 +109,27 @@ const UnifiedSalesReport = () => {
       setTicketSales(ticketData || []);
       setCommoditySales(commodityData || []);
       setRestaurantSales(restaurantData || []);
+
+      // Collect unique items
+      const uniqueItems = {
+        tickets: new Set(ticketData?.map(sale => sale.ticketType) || []),
+        commodities: new Set(commodityData?.map(sale => sale.commodityName) || []),
+        restaurant: new Set(
+          restaurantData?.reduce((items, order) => {
+            order.items?.forEach(item => items.push(item.itemName));
+            return items;
+          }, []) || []
+        )
+      };
+      setAvailableItems(uniqueItems);
+
+      // Initialize all items as selected
+      const initialSelectedFilters = {
+        tickets: Object.fromEntries([...uniqueItems.tickets].map(item => [item, true])),
+        commodities: Object.fromEntries([...uniqueItems.commodities].map(item => [item, true])),
+        restaurant: Object.fromEntries([...uniqueItems.restaurant].map(item => [item, true]))
+      };
+      setSelectedFilters(initialSelectedFilters);
     } catch (err) {
       setError(`Failed to load sales data: ${err.message}`);
       console.error('Error fetching sales data:', err);
@@ -120,11 +166,13 @@ const UnifiedSalesReport = () => {
         if (pm !== filters.paymentMethod.toLowerCase()) return false;
       }
 
-      if (filters.minAmount && saleAmount != null) {
-        if (parseFloat(saleAmount) < parseFloat(filters.minAmount)) return false;
-      }
-      if (filters.maxAmount && saleAmount != null) {
-        if (parseFloat(saleAmount) > parseFloat(filters.maxAmount)) return false;
+      // Filter by selected items
+      if (type === 'ticket' && !selectedFilters.tickets[sale.ticketType]) return false;
+      if (type === 'commodity' && !selectedFilters.commodities[sale.commodityName]) return false;
+      if (type === 'restaurant' && sale.items) {
+        // For restaurant sales, check if any of the items are selected
+        const hasSelectedItem = sale.items.some(item => selectedFilters.restaurant[item.itemName]);
+        if (!hasSelectedItem) return false;
       }
 
       return true;
@@ -145,6 +193,14 @@ const UnifiedSalesReport = () => {
   const handleFilterChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (type === "checkbox") {
+      // When unchecking a sale type, reset its item filters
+      if (!checked) {
+        setSelectedFilters(prev => ({
+          ...prev,
+          [name]: Object.fromEntries(Array.from(availableItems[name]).map(item => [item, true]))
+        }));
+      }
+      
       setFilters((prev) => ({
         ...prev,
         saleType: {
@@ -291,7 +347,7 @@ const UnifiedSalesReport = () => {
 
         {error && (
           <div className="theme-park-alert theme-park-alert-error">
-            <span style={{ fontSize: "24px" }}>⚠️</span>
+            <span className="theme-park-alert-icon">⚠️</span>
             <span>{error}</span>
           </div>
         )}
@@ -303,12 +359,12 @@ const UnifiedSalesReport = () => {
     <div className="theme-park-stat-value">${stats.totalRevenue.toFixed(2)}</div>
   </div>
   <div className="theme-park-stat-card">
-    <div className="theme-park-stat-label">Total Ticket Revenue</div>
+    <div className="theme-park-stat-label">Ticket Revenue</div>
     <div className="theme-park-stat-value">${stats.ticketRevenue.toFixed(2)}</div>
   </div>
-  <div className="theme-park-stat-card theme-park-total-flex">
+   <div className="theme-park-stat-card">
     <div>
-      <div className="theme-park-stat-label">Total Commodity Revenue</div>
+      <div className="theme-park-stat-label">Commodity Revenue</div>
       <div className="theme-park-stat-value">${stats.commodityRevenue.toFixed(2)}</div>
     </div>
   </div>
@@ -321,7 +377,7 @@ const UnifiedSalesReport = () => {
 
         {/* Analytics Cards */}
         <div className="theme-park-analytics-grid">
-          {/* Ticket Analytics */}
+          {/* Ticket Profits */}
           <div className="theme-park-analytics-card">
             <div className="theme-park-analytics-title">
                Ticket Sale Profits
@@ -342,7 +398,7 @@ const UnifiedSalesReport = () => {
             </div>
           </div>
 
-          {/* Commodity Analytics */}
+          {/* Commodity Profits */}
           <div className="theme-park-analytics-card">
             <div className="theme-park-analytics-title">
               Merchandise Profits
@@ -363,7 +419,7 @@ const UnifiedSalesReport = () => {
             </div>
           </div>
 
-          {/* Restaurant Analytics */}
+          {/* Restaurant Profits */}
           <div className="theme-park-analytics-card">
             <div className="theme-park-analytics-title">
               Restaurant Profits
@@ -388,7 +444,7 @@ const UnifiedSalesReport = () => {
         <div className="theme-park-card">
           <div className="theme-park-card-header">
             <h3 className="theme-park-card-title">
-              <span>🔍</span> Filter Options
+              <span></span> Filter 
             </h3>
           </div>
           <div className="theme-park-filter-row">
@@ -427,40 +483,191 @@ const UnifiedSalesReport = () => {
               </select>
             </div>
 
-            <div className="theme-park-filter-item">
-              <label>Min</label>
-              <input
-                type="number"
-                name="minAmount"
-                value={filters.minAmount}
-                onChange={handleFilterChange}
-                placeholder="0.00"
-              />
-            </div>
+            <div className="theme-park-filter-row">
+              <div className="theme-park-filter-group">
+                <div className="theme-park-filter-main">
+                  <label className="theme-park-filter-label">
+                    <input 
+                      type="checkbox" 
+                      name="tickets" 
+                      checked={filters.saleType.tickets} 
+                      onChange={handleFilterChange}
+                    />
+                    <span>Tickets</span>
+                  </label>
+                  <button 
+                    className={`theme-park-dropdown-toggle ${filters.saleType.tickets ? '' : 'disabled'}`}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                      if (!filters.saleType.tickets) return;
+                        setOpenDropdown(openDropdown === 'tickets' ? null : 'tickets');
+                    }}
+                  >
+                    ▼
+                  </button>
+                </div>
+                  <div className={`theme-park-dropdown-menu ${openDropdown === 'tickets' ? 'open' : ''}`}>
+                  <div className="theme-park-dropdown-header">
+                    <button 
+                      className="theme-park-select-all"
+                      onClick={() => {
+                        const allSelected = Object.values(selectedFilters.tickets).every(v => v);
+                        setSelectedFilters(prev => ({
+                          ...prev,
+                          tickets: Object.fromEntries(
+                            Array.from(availableItems.tickets).map(item => [item, !allSelected])
+                          )
+                        }));
+                      }}
+                    >
+                      {Object.values(selectedFilters.tickets).every(v => v) ? 'Unselect All' : 'Select All'}
+                    </button>
+                  </div>
+                  <div className="theme-park-dropdown-items">
+                    {Array.from(availableItems.tickets).map(item => (
+                      <label key={`ticket-${item}`} className="theme-park-filter-item">
+                        <input
+                          type="checkbox"
+                          checked={selectedFilters.tickets[item] || false}
+                          onChange={() => {
+                            setSelectedFilters(prev => ({
+                              ...prev,
+                              tickets: {
+                                ...prev.tickets,
+                                [item]: !prev.tickets[item]
+                              }
+                            }));
+                          }}
+                        />
+                        <span>{item}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
-            <div className="theme-park-filter-item">
-              <label>Max</label>
-              <input
-                type="number"
-                name="maxAmount"
-                value={filters.maxAmount}
-                onChange={handleFilterChange}
-                placeholder="999.99"
-              />
-            </div>
+              <div className="theme-park-filter-group">
+                <div className="theme-park-filter-main">
+                  <label className="theme-park-filter-label">
+                    <input 
+                      type="checkbox" 
+                      name="commodities" 
+                      checked={filters.saleType.commodities} 
+                      onChange={handleFilterChange}
+                    />
+                    <span>Merchandise</span>
+                  </label>
+                  <button 
+                    className={`theme-park-dropdown-toggle ${filters.saleType.commodities ? '' : 'disabled'}`}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                      if (!filters.saleType.commodities) return;
+                        setOpenDropdown(openDropdown === 'commodities' ? null : 'commodities');
+                    }}
+                  >
+                    ▼
+                  </button>
+                </div>
+                  <div className={`theme-park-dropdown-menu ${openDropdown === 'commodities' ? 'open' : ''}`}>
+                  <div className="theme-park-dropdown-header">
+                    <button 
+                      className="theme-park-select-all"
+                      onClick={() => {
+                        const allSelected = Object.values(selectedFilters.commodities).every(v => v);
+                        setSelectedFilters(prev => ({
+                          ...prev,
+                          commodities: Object.fromEntries(
+                            Array.from(availableItems.commodities).map(item => [item, !allSelected])
+                          )
+                        }));
+                      }}
+                    >
+                      {Object.values(selectedFilters.commodities).every(v => v) ? 'Unselect All' : 'Select All'}
+                    </button>
+                  </div>
+                  <div className="theme-park-dropdown-items">
+                    {Array.from(availableItems.commodities).map(item => (
+                      <label key={`commodity-${item}`} className="theme-park-filter-item">
+                        <input
+                          type="checkbox"
+                          checked={selectedFilters.commodities[item] || false}
+                          onChange={() => {
+                            setSelectedFilters(prev => ({
+                              ...prev,
+                              commodities: {
+                                ...prev.commodities,
+                                [item]: !prev.commodities[item]
+                              }
+                            }));
+                          }}
+                        />
+                        <span>{item}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
-            <div className="theme-park-filter-item">
-              <label>Sale Types</label>
-              <div className="theme-park-filter-checkboxes">
-                <label>
-                  <input type="checkbox" name="tickets" checked={filters.saleType.tickets} onChange={handleFilterChange} /> Tickets
-                </label>
-                <label>
-                  <input type="checkbox" name="commodities" checked={filters.saleType.commodities} onChange={handleFilterChange} /> Merchandise
-                </label>
-                <label>
-                  <input type="checkbox" name="restaurant" checked={filters.saleType.restaurant} onChange={handleFilterChange} /> Restaurant
-                </label>
+              <div className="theme-park-filter-group">
+                <div className="theme-park-filter-main">
+                  <label className="theme-park-filter-label">
+                    <input 
+                      type="checkbox" 
+                      name="restaurant" 
+                      checked={filters.saleType.restaurant} 
+                      onChange={handleFilterChange}
+                    />
+                    <span>Restaurant</span>
+                  </label>
+                  <button 
+                    className={`theme-park-dropdown-toggle ${filters.saleType.restaurant ? '' : 'disabled'}`}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                      if (!filters.saleType.restaurant) return;
+                        setOpenDropdown(openDropdown === 'restaurant' ? null : 'restaurant');
+                    }}
+                  >
+                    ▼
+                  </button>
+                </div>
+                  <div className={`theme-park-dropdown-menu ${openDropdown === 'restaurant' ? 'open' : ''}`}>
+                  <div className="theme-park-dropdown-header">
+                    <button 
+                      className="theme-park-select-all"
+                      onClick={() => {
+                        const allSelected = Object.values(selectedFilters.restaurant).every(v => v);
+                        setSelectedFilters(prev => ({
+                          ...prev,
+                          restaurant: Object.fromEntries(
+                            Array.from(availableItems.restaurant).map(item => [item, !allSelected])
+                          )
+                        }));
+                      }}
+                    >
+                      {Object.values(selectedFilters.restaurant).every(v => v) ? 'Unselect All' : 'Select All'}
+                    </button>
+                  </div>
+                  <div className="theme-park-dropdown-items">
+                    {Array.from(availableItems.restaurant).map(item => (
+                      <label key={`restaurant-${item}`} className="theme-park-filter-item">
+                        <input
+                          type="checkbox"
+                          checked={selectedFilters.restaurant[item] || false}
+                          onChange={() => {
+                            setSelectedFilters(prev => ({
+                              ...prev,
+                              restaurant: {
+                                ...prev.restaurant,
+                                [item]: !prev.restaurant[item]
+                              }
+                            }));
+                          }}
+                        />
+                        <span>{item}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -480,22 +687,22 @@ const UnifiedSalesReport = () => {
             <table className="theme-park-table">
               <thead>
                 <tr>
-                  <th onClick={() => handleSort('type')} style={{ cursor: 'pointer' }}>
+                  <th onClick={() => handleSort('type')} className="sortable">
                     Type {sortConfig.key === 'type' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th onClick={() => handleSort('item')} style={{ cursor: 'pointer' }}>
+                  <th onClick={() => handleSort('item')} className="sortable">
                     Item {sortConfig.key === 'item' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th onClick={() => handleSort('customerName')} style={{ cursor: 'pointer' }}>
+                  <th onClick={() => handleSort('customerName')} className="sortable">
                     Customer {sortConfig.key === 'customerName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th onClick={() => handleSort('amount')} style={{ cursor: 'pointer' }}>
+                  <th onClick={() => handleSort('amount')} className="sortable">
                     Amount {sortConfig.key === 'amount' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th onClick={() => handleSort('paymentMethod')} style={{ cursor: 'pointer' }}>
+                  <th onClick={() => handleSort('paymentMethod')} className="sortable">
                     Payment {sortConfig.key === 'paymentMethod' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th onClick={() => handleSort('date')} style={{ cursor: 'pointer' }}>
+                  <th onClick={() => handleSort('date')} className="sortable">
                     Date {sortConfig.key === 'date' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                   </th>
                 </tr>
@@ -515,7 +722,7 @@ const UnifiedSalesReport = () => {
                       <td>{saleType}</td>
                       <td>{saleItem}</td>
                       <td>{sale.customerName}</td>
-                      <td style={{ fontWeight: "700", color: "var(--success-color)" }}>
+                      <td className="theme-park-amount">
                         ${typeof amount === 'number' ? amount.toFixed(2) : amount}
                       </td>
                       <td>💳 {sale.paymentMethod}</td>
