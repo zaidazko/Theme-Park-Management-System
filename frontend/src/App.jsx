@@ -133,7 +133,7 @@ function App() {
                   onClick={() => setCurrentView("unified-sales")}
                   style={styles.navButton}
                 >
-                  Unified Sales Report
+                  Sales Report
                 </button>
               </>
             )}

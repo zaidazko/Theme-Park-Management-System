@@ -25,17 +25,22 @@ const UnifiedSalesReport = () => {
     commodityRevenue: 0,
     restaurantRevenue: 0,
     tickets: {
-      mostPopular: { name: null, count: 0 },
-      leastPopular: { name: null, count: Infinity }
+      mostProfitable: { name: null, revenue: 0 },
+      leastProfitable: { name: null, revenue: Infinity }
     },
     commodities: {
-      mostPopular: { name: null, count: 0 },
-      leastPopular: { name: null, count: Infinity }
+      mostProfitable: { name: null, revenue: 0 },
+      leastProfitable: { name: null, revenue: Infinity }
     },
     restaurant: {
-      mostPopular: { name: null, count: 0 },
-      leastPopular: { name: null, count: Infinity }
+      mostProfitable: { name: null, revenue: 0 },
+      leastProfitable: { name: null, revenue: Infinity }
     }
+  });
+  
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: 'asc'
   });
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -48,8 +53,9 @@ const UnifiedSalesReport = () => {
   }, []);
 
   useEffect(() => {
-    calculateStats();
-  }, [ticketSales, commoditySales, restaurantSales]);
+    const filteredData = getFilteredSales();
+    calculateStats(filteredData);
+  }, [ticketSales, commoditySales, restaurantSales, filters]);
 
   const fetchAllSales = async () => {
     setLoading(true);
@@ -152,39 +158,62 @@ const UnifiedSalesReport = () => {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  const calculateStats = () => {
-    // Calculate total revenue for each category
-    const ticketTotal = ticketSales.reduce((sum, sale) => sum + sale.price, 0);
-    const commodityTotal = commoditySales.reduce((sum, sale) => sum + sale.price, 0);
-    const restaurantTotal = restaurantSales.reduce((sum, sale) => sum + sale.totalPrice, 0);
+  const calculateStats = (filteredSales) => {
+    const filtered = {
+      tickets: filteredSales.filter(sale => sale.ticketType),
+      commodities: filteredSales.filter(sale => sale.commodityName),
+      restaurant: filteredSales.filter(sale => sale.items)
+    };
 
-    // Calculate item popularity
-    const ticketCounts = ticketSales.reduce((acc, sale) => {
-      acc[sale.ticketType] = (acc[sale.ticketType] || 0) + 1;
+    // Calculate total revenue for each category from filtered data
+    const ticketTotal = filtered.tickets.reduce((sum, sale) => sum + sale.price, 0);
+    const commodityTotal = filtered.commodities.reduce((sum, sale) => sum + sale.price, 0);
+    const restaurantTotal = filtered.restaurant.reduce((sum, sale) => sum + sale.totalPrice, 0);
+
+    // Calculate item popularity and revenue
+    const ticketStats = filtered.tickets.reduce((acc, sale) => {
+      const type = sale.ticketType;
+      if (!acc[type]) acc[type] = { count: 0, revenue: 0 };
+      acc[type].count++;
+      acc[type].revenue += sale.price;
       return acc;
     }, {});
 
-    const commodityCounts = commoditySales.reduce((acc, sale) => {
-      acc[sale.commodityName] = (acc[sale.commodityName] || 0) + 1;
+    const commodityStats = filtered.commodities.reduce((acc, sale) => {
+      const name = sale.commodityName;
+      if (!acc[name]) acc[name] = { count: 0, revenue: 0 };
+      acc[name].count++;
+      acc[name].revenue += sale.price;
       return acc;
     }, {});
 
-    const dishCounts = restaurantSales.reduce((acc, sale) => {
+    const restaurantStats = filtered.restaurant.reduce((acc, sale) => {
       sale.items?.forEach(item => {
-        acc[item.itemName] = (acc[item.itemName] || 0) + 1;
+        const name = item.itemName;
+        if (!acc[name]) acc[name] = { count: 0, revenue: 0 };
+        acc[name].count++;
+        // Assuming item.price is the price per item
+        acc[name].revenue += item.price * item.quantity;
       });
       return acc;
     }, {});
 
-    // Find most and least popular for each category
-    const getPopularityStats = (counts) => {
-      const entries = Object.entries(counts);
-      if (entries.length === 0) return { mostPopular: { name: null, count: 0 }, leastPopular: { name: null, count: Infinity } };
+    // Get popularity and profitability stats
+    const getStats = (stats) => {
+      const entries = Object.entries(stats);
+      if (entries.length === 0) {
+        return {
+          mostProfitable: { name: null, revenue: 0 },
+          leastProfitable: { name: null, revenue: Infinity }
+        };
+      }
       
-      const sorted = entries.sort((a, b) => b[1] - a[1]);
+      const byCount = [...entries].sort((a, b) => b[1].count - a[1].count);
+      const byRevenue = [...entries].sort((a, b) => b[1].revenue - a[1].revenue);
+      
       return {
-        mostPopular: { name: sorted[0][0], count: sorted[0][1] },
-        leastPopular: { name: sorted[sorted.length - 1][0], count: sorted[sorted.length - 1][1] }
+        mostProfitable: { name: byRevenue[0][0], revenue: byRevenue[0][1].revenue },
+        leastProfitable: { name: byRevenue[byRevenue.length - 1][0], revenue: byRevenue[byRevenue.length - 1][1].revenue }
       };
     };
 
@@ -193,9 +222,9 @@ const UnifiedSalesReport = () => {
       ticketRevenue: ticketTotal,
       commodityRevenue: commodityTotal,
       restaurantRevenue: restaurantTotal,
-      tickets: getPopularityStats(ticketCounts),
-      commodities: getPopularityStats(commodityCounts),
-      restaurant: getPopularityStats(dishCounts)
+      tickets: getStats(ticketStats),
+      commodities: getStats(commodityStats),
+      restaurant: getStats(restaurantStats)
     });
   };
 
@@ -210,13 +239,53 @@ const UnifiedSalesReport = () => {
     );
   }
 
-  const filteredSales = getFilteredSales();
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortedData = (data) => {
+    if (!sortConfig.key) return data;
+
+    return [...data].sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+      
+      // Handle nested or computed values
+      if (sortConfig.key === 'amount') {
+        aValue = a.price || a.totalPrice || 0;
+        bValue = b.price || b.totalPrice || 0;
+      } else if (sortConfig.key === 'type') {
+        aValue = a.ticketType ? 'Ticket' : a.commodityName ? 'Commodity' : 'Restaurant';
+        bValue = b.ticketType ? 'Ticket' : b.commodityName ? 'Commodity' : 'Restaurant';
+      } else if (sortConfig.key === 'item') {
+        aValue = a.ticketType || a.commodityName || (a.items?.map(item => item.itemName).join(", ") || "Multiple Items");
+        bValue = b.ticketType || b.commodityName || (b.items?.map(item => item.itemName).join(", ") || "Multiple Items");
+      } else if (sortConfig.key === 'date') {
+        aValue = new Date(a.purchaseDate || a.orderDate).getTime();
+        bValue = new Date(b.purchaseDate || b.orderDate).getTime();
+      }
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  };
+
+  const filteredSales = getSortedData(getFilteredSales());
 
   return (
     <div className="theme-park-page">
       <div className="theme-park-container">
         <div className="theme-park-header">
-          <h1 className="theme-park-title">📊 Unified Sales Report</h1>
+          <h1 className="theme-park-title"> Sales Report</h1>
           <p className="theme-park-subtitle">Comprehensive view of all park sales</p>
         </div>
 
@@ -230,24 +299,20 @@ const UnifiedSalesReport = () => {
 {/* Statistics Cards */}
 <div className="theme-park-stats-grid">
   <div className="theme-park-stat-card">
-    <div className="theme-park-stat-icon">💰</div>
     <div className="theme-park-stat-label">Total Revenue</div>
     <div className="theme-park-stat-value">${stats.totalRevenue.toFixed(2)}</div>
   </div>
   <div className="theme-park-stat-card">
-    <div className="theme-park-stat-icon">🎫</div>
     <div className="theme-park-stat-label">Total Ticket Revenue</div>
     <div className="theme-park-stat-value">${stats.ticketRevenue.toFixed(2)}</div>
   </div>
   <div className="theme-park-stat-card theme-park-total-flex">
-    <div className="theme-park-stat-icon">🛍️</div>
     <div>
       <div className="theme-park-stat-label">Total Commodity Revenue</div>
       <div className="theme-park-stat-value">${stats.commodityRevenue.toFixed(2)}</div>
     </div>
   </div>
   <div className="theme-park-stat-card">
-    <div className="theme-park-stat-icon">🍽️</div>
     <div className="theme-park-stat-label">Restaurant Revenue</div>
     <div className="theme-park-stat-value">${stats.restaurantRevenue.toFixed(2)}</div>
   </div>
@@ -259,20 +324,20 @@ const UnifiedSalesReport = () => {
           {/* Ticket Analytics */}
           <div className="theme-park-analytics-card">
             <div className="theme-park-analytics-title">
-              🎟️ Ticket Sales Analytics
+               Ticket Sale Profits
             </div>
             <div className="theme-park-analytics-item">
-              <span className="theme-park-analytics-label">Most Popular:</span>
+              <span className="theme-park-analytics-label">Most Profitable:</span>
               <span className="theme-park-analytics-value">
-                {stats.tickets.mostPopular.name || "N/A"}
-                {stats.tickets.mostPopular.count ? ` (${stats.tickets.mostPopular.count})` : ""}
+                {stats.tickets.mostProfitable.name || "N/A"}
+                {stats.tickets.mostProfitable.revenue ? ` ($${stats.tickets.mostProfitable.revenue.toFixed(2)})` : ""}
               </span>
             </div>
             <div className="theme-park-analytics-item">
-              <span className="theme-park-analytics-label">Least Popular:</span>
+              <span className="theme-park-analytics-label">Least Profitable:</span>
               <span className="theme-park-analytics-value">
-                {stats.tickets.leastPopular.name || "N/A"}
-                {stats.tickets.leastPopular.count !== Infinity ? ` (${stats.tickets.leastPopular.count})` : ""}
+                {stats.tickets.leastProfitable.name || "N/A"}
+                {stats.tickets.leastProfitable.revenue !== Infinity ? ` ($${stats.tickets.leastProfitable.revenue.toFixed(2)})` : ""}
               </span>
             </div>
           </div>
@@ -280,20 +345,20 @@ const UnifiedSalesReport = () => {
           {/* Commodity Analytics */}
           <div className="theme-park-analytics-card">
             <div className="theme-park-analytics-title">
-              🛍️ Merchandise Analytics
+              Merchandise Profits
             </div>
             <div className="theme-park-analytics-item">
-              <span className="theme-park-analytics-label">Most Popular:</span>
+              <span className="theme-park-analytics-label">Most Profitable:</span>
               <span className="theme-park-analytics-value">
-                {stats.commodities.mostPopular.name || "N/A"}
-                {stats.commodities.mostPopular.count ? ` (${stats.commodities.mostPopular.count})` : ""}
+                {stats.commodities.mostProfitable.name || "N/A"}
+                {stats.commodities.mostProfitable.revenue ? ` ($${stats.commodities.mostProfitable.revenue.toFixed(2)})` : ""}
               </span>
             </div>
             <div className="theme-park-analytics-item">
-              <span className="theme-park-analytics-label">Least Popular:</span>
+              <span className="theme-park-analytics-label">Least Profitable:</span>
               <span className="theme-park-analytics-value">
-                {stats.commodities.leastPopular.name || "N/A"}
-                {stats.commodities.leastPopular.count !== Infinity ? ` (${stats.commodities.leastPopular.count})` : ""}
+                {stats.commodities.leastProfitable.name || "N/A"}
+                {stats.commodities.leastProfitable.revenue !== Infinity ? ` ($${stats.commodities.leastProfitable.revenue.toFixed(2)})` : ""}
               </span>
             </div>
           </div>
@@ -301,20 +366,20 @@ const UnifiedSalesReport = () => {
           {/* Restaurant Analytics */}
           <div className="theme-park-analytics-card">
             <div className="theme-park-analytics-title">
-              🍽️ Restaurant Analytics
+              Restaurant Profits
             </div>
             <div className="theme-park-analytics-item">
-              <span className="theme-park-analytics-label">Most Popular:</span>
+              <span className="theme-park-analytics-label">Most Profitable:</span>
               <span className="theme-park-analytics-value">
-                {stats.restaurant.mostPopular.name || "N/A"}
-                {stats.restaurant.mostPopular.count ? ` (${stats.restaurant.mostPopular.count})` : ""}
+                {stats.restaurant.mostProfitable.name || "N/A"}
+                {stats.restaurant.mostProfitable.revenue ? ` ($${stats.restaurant.mostProfitable.revenue.toFixed(2)})` : ""}
               </span>
             </div>
             <div className="theme-park-analytics-item">
-              <span className="theme-park-analytics-label">Least Popular:</span>
+              <span className="theme-park-analytics-label">Least Profitable:</span>
               <span className="theme-park-analytics-value">
-                {stats.restaurant.leastPopular.name || "N/A"}
-                {stats.restaurant.leastPopular.count !== Infinity ? ` (${stats.restaurant.leastPopular.count})` : ""}
+                {stats.restaurant.leastProfitable.name || "N/A"}
+                {stats.restaurant.leastProfitable.revenue !== Infinity ? ` ($${stats.restaurant.leastProfitable.revenue.toFixed(2)})` : ""}
               </span>
             </div>
           </div>
@@ -415,12 +480,24 @@ const UnifiedSalesReport = () => {
             <table className="theme-park-table">
               <thead>
                 <tr>
-                  <th>Type</th>
-                  <th>Item</th>
-                  <th>Customer</th>
-                  <th>Amount</th>
-                  <th>Payment</th>
-                  <th>Date</th>
+                  <th onClick={() => handleSort('type')} style={{ cursor: 'pointer' }}>
+                    Type {sortConfig.key === 'type' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th onClick={() => handleSort('item')} style={{ cursor: 'pointer' }}>
+                    Item {sortConfig.key === 'item' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th onClick={() => handleSort('customerName')} style={{ cursor: 'pointer' }}>
+                    Customer {sortConfig.key === 'customerName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th onClick={() => handleSort('amount')} style={{ cursor: 'pointer' }}>
+                    Amount {sortConfig.key === 'amount' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th onClick={() => handleSort('paymentMethod')} style={{ cursor: 'pointer' }}>
+                    Payment {sortConfig.key === 'paymentMethod' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th onClick={() => handleSort('date')} style={{ cursor: 'pointer' }}>
+                    Date {sortConfig.key === 'date' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </th>
                 </tr>
               </thead>
               <tbody>
