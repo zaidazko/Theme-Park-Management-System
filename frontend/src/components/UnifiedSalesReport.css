@@ -227,7 +227,6 @@
   background-color: #f8f9fa;
 }
 
-/* ensure checkboxes are a consistent size inside filters */
 .theme-park-filter-main input[type="checkbox"],
 .theme-park-dropdown-items input[type="checkbox"] {
   width: 16px;
@@ -235,7 +234,7 @@
   cursor: pointer;
 }
 
-/* Additional moved styles */
+
 .theme-park-alert-icon {
   font-size: 24px;
   margin-right: 0.5rem;

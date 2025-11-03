@@ -45,7 +45,10 @@ const UnifiedSalesReport = () => {
     restaurant: {
       mostProfitable: { name: null, revenue: 0 },
       leastProfitable: { name: null, revenue: Infinity }
-    }
+    },
+  uniqueTicketCustomers: 0,
+  uniqueAllCustomers: 0,
+  avgCustomersPerMonth: 0
   });
   
   const [sortConfig, setSortConfig] = useState({
@@ -273,6 +276,24 @@ const UnifiedSalesReport = () => {
       };
     };
 
+    // Unique customer counts
+    // For tickets: use sale.customerId or sale.customerName as unique key
+    const ticketCustomerIds = new Set(filtered.tickets.map(sale => sale.customerId || sale.customerName));
+    // For all: use customerId or customerName as unique key
+    const allCustomerIds = new Set(filteredSales.map(sale => sale.customerId || sale.customerName));
+
+    // Average customers per month (based on unique ticket customers)
+    let months = 1;
+    if (filtered.tickets.length > 0) {
+      const dates = filtered.tickets.map(sale => new Date(sale.purchaseDate || sale.orderDate));
+      const minDate = new Date(Math.min(...dates));
+      const maxDate = new Date(Math.max(...dates));
+      // Calculate months difference (inclusive)
+      months = (maxDate.getFullYear() - minDate.getFullYear()) * 12 + (maxDate.getMonth() - minDate.getMonth()) + 1;
+      if (months < 1) months = 1;
+    }
+    const avgCustomersPerMonth = months > 0 ? (ticketCustomerIds.size / months) : 0;
+
     setStats({
       totalRevenue: ticketTotal + commodityTotal + restaurantTotal,
       ticketRevenue: ticketTotal,
@@ -280,7 +301,10 @@ const UnifiedSalesReport = () => {
       restaurantRevenue: restaurantTotal,
       tickets: getStats(ticketStats),
       commodities: getStats(commodityStats),
-      restaurant: getStats(restaurantStats)
+      restaurant: getStats(restaurantStats),
+      uniqueTicketCustomers: ticketCustomerIds.size,
+      uniqueAllCustomers: allCustomerIds.size,
+      avgCustomersPerMonth: avgCustomersPerMonth
     });
   };
 
@@ -362,15 +386,21 @@ const UnifiedSalesReport = () => {
     <div className="theme-park-stat-label">Ticket Revenue</div>
     <div className="theme-park-stat-value">${stats.ticketRevenue.toFixed(2)}</div>
   </div>
-   <div className="theme-park-stat-card">
-    <div>
-      <div className="theme-park-stat-label">Commodity Revenue</div>
-      <div className="theme-park-stat-value">${stats.commodityRevenue.toFixed(2)}</div>
-    </div>
+  <div className="theme-park-stat-card">
+    <div className="theme-park-stat-label">Commodity Revenue</div>
+    <div className="theme-park-stat-value">${stats.commodityRevenue.toFixed(2)}</div>
   </div>
   <div className="theme-park-stat-card">
     <div className="theme-park-stat-label">Restaurant Revenue</div>
     <div className="theme-park-stat-value">${stats.restaurantRevenue.toFixed(2)}</div>
+  </div>
+  <div className="theme-park-stat-card">
+    <div className="theme-park-stat-label">Total Customers</div>
+    <div className="theme-park-stat-value">{stats.uniqueTicketCustomers}</div>
+  </div>
+  <div className="theme-park-stat-card">
+    <div className="theme-park-stat-label">Avg. Customers per Month</div>
+    <div className="theme-park-stat-value">{stats.avgCustomersPerMonth.toFixed(2)}</div>
   </div>
 </div>
 

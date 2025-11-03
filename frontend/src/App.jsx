@@ -39,7 +39,7 @@ function App() {
     setIsLoading(false); // Set loading to false after checking
   }, []);
 
-  // Then in your JSX, show loading spinner while checking
+  // loading spinner while checking
   if (isLoading) {
     return <div>Loading...</div>;
   }
