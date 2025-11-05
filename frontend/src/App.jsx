@@ -81,6 +81,7 @@ function App() {
             {/* EMPLOYEE VIEW */}
             {isEmployee && (
               <>
+              {/*
                 <button
                   onClick={() => setCurrentView("ticket-sales")}
                   style={styles.navButton}
@@ -99,6 +100,7 @@ function App() {
                 >
                   Restaurant Sales
                 </button>
+                */}
                 <button
                   onClick={() => setCurrentView("reviews")}
                   style={styles.navButton}

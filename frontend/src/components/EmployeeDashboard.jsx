@@ -625,7 +625,7 @@ const EmployeeDashboard = () => {
                             (e.target.style.color = "#dc2626")
                           }
                         >
-                          Delete
+                          Fire Employee
                         </button>
                       </td>
                     </tr>

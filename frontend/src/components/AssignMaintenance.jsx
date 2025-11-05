@@ -180,9 +180,6 @@ const AssignMaintenance = () => {
           <table style={styles.table}>
             <thead>
               <tr style={styles.tableHeader}>
-                <th style={{ ...styles.tableHeaderCell, width: "100px" }}>
-                  Request ID
-                </th>
                 <th style={{ ...styles.tableHeaderCell, width: "120px" }}>
                   Status
                 </th>
@@ -222,9 +219,6 @@ const AssignMaintenance = () => {
                   }
                 >
                   <td style={styles.tableCell}>
-                    <strong>#{request.requestId}</strong>
-                  </td>
-                  <td style={styles.tableCell}>
                     <span
                       style={{
                         ...styles.statusBadge,
@@ -245,9 +239,6 @@ const AssignMaintenance = () => {
                   <td style={styles.tableCell}>
                     {request.reporter?.firstName} {request.reporter?.lastName}
                     <br />
-                    <small style={styles.smallText}>
-                      (ID: {request.reportedBy})
-                    </small>
                   </td>
                   <td style={styles.tableCell}>
                     {request.assignee ? (

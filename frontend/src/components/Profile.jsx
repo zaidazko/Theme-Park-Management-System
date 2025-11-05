@@ -186,22 +186,6 @@ function Profile({ user, onLogout }) {
                   </div>
                 </div>
 
-                {user.userType === "Employee" && (
-                  <div style={{
-                    padding: '20px',
-                    background: 'linear-gradient(135deg, rgba(255, 0, 110, 0.05) 0%, rgba(255, 69, 0, 0.05) 100%)',
-                    borderRadius: '12px',
-                    borderLeft: '4px solid var(--accent-color)'
-                  }}>
-                    <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-medium)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      Employee ID
-                    </div>
-                    <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-dark)' }}>
-                      #{user.employeeId}
-                    </div>
-                  </div>
-                )}
-
                 {user.userType === "Customer" && (
                   <div style={{
                     padding: '20px',

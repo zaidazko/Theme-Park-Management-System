@@ -160,16 +160,7 @@ function Reviews({ onSwitchToMakeReview }) {
               <thead>
                 <tr style={{ backgroundColor: "#007bff", color: "#fff" }}>
                   <th style={{ padding: "12px", textAlign: "left" }}>
-                    Review ID
-                  </th>
-                  <th style={{ padding: "12px", textAlign: "left" }}>
-                    Customer ID
-                  </th>
-                  <th style={{ padding: "12px", textAlign: "left" }}>
                     Customer
-                  </th>
-                  <th style={{ padding: "12px", textAlign: "left" }}>
-                    Ride ID
                   </th>
                   <th style={{ padding: "12px", textAlign: "left" }}>Ride</th>
                   <th style={{ padding: "12px", textAlign: "left" }}>Rating</th>
@@ -187,10 +178,7 @@ function Reviews({ onSwitchToMakeReview }) {
                     key={review.reviewID}
                     style={{ borderBottom: "1px solid #ddd" }}
                   >
-                    <td style={{ padding: "12px" }}>{review.reviewID}</td>
-                    <td style={{ padding: "12px" }}>{review.customerID}</td>
                     <td style={{ padding: "12px" }}>{review.customerName}</td>
-                    <td style={{ padding: "12px" }}>{review.rideID}</td>
                     <td style={{ padding: "12px" }}>{review.rideName}</td>
                     <td style={{ padding: "12px" }}>{review.score}</td>
                     <td style={{ padding: "12px" }}>{review.feedback}</td>
