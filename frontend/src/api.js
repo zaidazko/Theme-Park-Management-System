@@ -75,6 +75,12 @@ export const ridesAPI = {
     });
     return response.data;
   },
+
+  // Add new ride
+  createRide: async (rideData) => {
+    const response = await axios.post(`${API_BASE_URL}/rides`, rideData);
+    return response.data;
+  },
 };
 
 export const employeeAPI = {

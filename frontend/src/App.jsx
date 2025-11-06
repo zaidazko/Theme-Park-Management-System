@@ -102,6 +102,12 @@ function App() {
                 </button>
                 */}
                 <button
+                  onClick={() => setCurrentView("rides")}
+                  style={styles.navButton}
+                >
+                  Ride Manager
+                </button>  
+                <button
                   onClick={() => setCurrentView("reviews")}
                   style={styles.navButton}
                 >
