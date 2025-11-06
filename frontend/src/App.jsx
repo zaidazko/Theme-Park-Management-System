@@ -17,6 +17,7 @@ import Rides from "./components/Rides";
 import Reviews from "./components/Reviews";
 import MakeReview from "./components/MakeReview";
 import UnifiedSalesReport from "./components/UnifiedSalesReport";
+import Cart from "./components/Cart";
 import "./App.css";
 
 function App() {
@@ -156,11 +157,17 @@ function App() {
                   Shop Merchandise
                 </button>
                 <button
+                  onClick={() => setCurrentView("cart")}
+                  style={styles.cartButton}
+                >
+                  🛒 Cart
+                </button>
+                <button
                   onClick={() => setCurrentView("rides")}
                   style={styles.navButton}
                 >
                   Rides
-                </button>                
+                </button>
                 <button
                   onClick={() => setCurrentView("my-tickets")}
                   style={styles.navButton}
@@ -200,7 +207,51 @@ function App() {
         <LandingPage
           onGetStarted={() => setCurrentView("register")}
           onLogin={() => setCurrentView("login")}
+          onShopClick={() => setCurrentView("guest-shop")}
         />
+      )}
+
+      {/* Guest Shop - No login required */}
+      {currentView === "guest-shop" && (
+        <>
+          <nav style={styles.guestNav}>
+            <h2 style={styles.title} onClick={() => setCurrentView("landing")}>
+              🎢 ThrillWorld
+            </h2>
+            <div style={styles.navButtons}>
+              <button onClick={() => setCurrentView("landing")} style={styles.navButton}>
+                Back to Home
+              </button>
+              <button onClick={() => setCurrentView("guest-cart")} style={styles.cartButton}>
+                🛒 Cart
+              </button>
+              <button onClick={() => setCurrentView("login")} style={styles.navButton}>
+                Sign In
+              </button>
+            </div>
+          </nav>
+          <CommodityPurchase />
+        </>
+      )}
+
+      {/* Guest Cart - No login required */}
+      {currentView === "guest-cart" && (
+        <>
+          <nav style={styles.guestNav}>
+            <h2 style={styles.title} onClick={() => setCurrentView("landing")}>
+              🎢 ThrillWorld
+            </h2>
+            <div style={styles.navButtons}>
+              <button onClick={() => setCurrentView("guest-shop")} style={styles.navButton}>
+                Continue Shopping
+              </button>
+              <button onClick={() => setCurrentView("login")} style={styles.navButton}>
+                Sign In
+              </button>
+            </div>
+          </nav>
+          <Cart />
+        </>
       )}
 
       {currentView === "login" && (
@@ -232,6 +283,10 @@ function App() {
 
       {currentView === "buy-items" && user && !isEmployee && (
         <CommodityPurchase />
+      )}
+
+      {currentView === "cart" && user && !isEmployee && (
+        <Cart />
       )}
 
       {currentView === "my-tickets" && user && !isEmployee && <TicketSales />}
@@ -307,9 +362,19 @@ const styles = {
     color: "#fff",
     boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
   },
+  guestNav: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "15px 30px",
+    backgroundColor: "#fff",
+    borderBottom: "2px solid #e5e7eb",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+  },
   title: {
     margin: 0,
     fontSize: "24px",
+    cursor: "pointer",
   },
   navButtons: {
     display: "flex",
@@ -320,6 +385,16 @@ const styles = {
     padding: "8px 16px",
     backgroundColor: "#fff",
     color: "#007bff",
+    border: "2px solid #007bff",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "600",
+  },
+  cartButton: {
+    padding: "8px 16px",
+    backgroundColor: "#28a745",
+    color: "#fff",
     border: "none",
     borderRadius: "4px",
     cursor: "pointer",

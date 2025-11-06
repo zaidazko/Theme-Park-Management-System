@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./LandingPage.css";
 
-function LandingPage({ onGetStarted, onLogin }) {
+function LandingPage({ onGetStarted, onLogin, onShopClick }) {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const featuredAttractions = [
@@ -42,10 +42,42 @@ function LandingPage({ onGetStarted, onLogin }) {
 
   return (
     <div className="landing-page-new">
-      {/* Sticky Navigation */}
+      {/* Sticky Navigation - Disney Style */}
       <header className="sticky-header">
         <div className="header-content">
           <h1 className="brand-logo">ThrillWorld</h1>
+
+          {/* Main Navigation */}
+          <nav className="main-nav">
+            <div className="nav-item" onClick={scrollToTickets}>
+              <span>Tickets & Passes</span>
+            </div>
+
+            <div className="nav-item dropdown-trigger">
+              <span>Things to Do</span>
+              <div className="dropdown-menu">
+                <a href="#attractions">Attractions</a>
+                <a href="#dining">Dining</a>
+                <a href="#entertainment">Entertainment</a>
+                <a href="#events">Special Events</a>
+              </div>
+            </div>
+
+            <div className="nav-item dropdown-trigger">
+              <span>Shop</span>
+              <div className="dropdown-menu">
+                <a href="#" onClick={(e) => { e.preventDefault(); onShopClick && onShopClick(); }}>All Merchandise</a>
+                <a href="#" onClick={(e) => { e.preventDefault(); onShopClick && onShopClick(); }}>Apparel</a>
+                <a href="#" onClick={(e) => { e.preventDefault(); onShopClick && onShopClick(); }}>Souvenirs</a>
+                <a href="#" onClick={(e) => { e.preventDefault(); onShopClick && onShopClick(); }}>Gift Cards</a>
+              </div>
+            </div>
+
+            <div className="nav-item" onClick={onLogin}>
+              <span>Plan Your Visit</span>
+            </div>
+          </nav>
+
           <div className="header-actions">
             <button className="signin-btn" onClick={onLogin}>
               Sign In

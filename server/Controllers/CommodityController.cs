@@ -21,12 +21,15 @@ namespace AmusementParkAPI.Controllers
         public async Task<ActionResult<IEnumerable<object>>> GetCommodityTypes()
         {
             var commodityTypes = await _context.CommodityTypes
+                .Where(c => c.Category == "merchandise") // Only show merchandise, not food
                 .Select(c => new
                 {
                     commodityTypeId = c.Commodity_TypeID,
                     commodityName = c.Commodity_Name,
                     basePrice = c.Base_Price,
-                    commodityStore = c.Commodity_Store
+                    commodityStore = c.Commodity_Store,
+                    stockQuantity = c.Stock_Quantity,
+                    category = c.Category
                 })
                 .ToListAsync();
 
@@ -37,22 +40,51 @@ namespace AmusementParkAPI.Controllers
         [HttpPost("purchase")]
         public async Task<ActionResult> PurchaseCommodity([FromBody] CommodityPurchaseDto purchase)
         {
-            var commoditySale = new CommoditySale
+            try
             {
-                Customer_ID = purchase.CustomerId,
-                Commodity_TypeID = purchase.CommodityTypeId,
-                Purchase_Date = DateTime.Now,
-                Price = purchase.TotalPrice,
-                Payment_Method = purchase.PaymentMethod ?? "credit"
-            };
+                // Create the sale record - trigger will validate and deduct stock
+                var commoditySale = new CommoditySale
+                {
+                    Customer_ID = purchase.CustomerId,
+                    Commodity_TypeID = purchase.CommodityTypeId,
+                    Quantity = purchase.Quantity,
+                    Purchase_Date = DateTime.Now,
+                    Price = purchase.TotalPrice,
+                    Payment_Method = purchase.PaymentMethod ?? "credit"
+                };
 
-            _context.CommoditySales.Add(commoditySale);
-            await _context.SaveChangesAsync();
+                _context.CommoditySales.Add(commoditySale);
+                await _context.SaveChangesAsync();
 
-            return Ok(new { 
-                message = "Purchase successful", 
-                saleId = commoditySale.Commodity_SaleID 
-            });
+                // Get updated stock quantity
+                var commodityType = await _context.CommodityTypes
+                    .FirstOrDefaultAsync(c => c.Commodity_TypeID == purchase.CommodityTypeId);
+
+                return Ok(new {
+                    message = "Purchase successful",
+                    saleId = commoditySale.Commodity_SaleID,
+                    remainingStock = commodityType?.Stock_Quantity ?? 0
+                });
+            }
+            catch (DbUpdateException ex)
+            {
+                // Database trigger threw an error
+                var innerMessage = ex.InnerException?.Message ?? ex.Message;
+
+                // Extract the custom error message from the trigger
+                if (innerMessage.Contains("out of stock") ||
+                    innerMessage.Contains("Insufficient stock") ||
+                    innerMessage.Contains("Quantity must be greater than 0"))
+                {
+                    return BadRequest(new { message = innerMessage });
+                }
+
+                return BadRequest(new { message = "Purchase failed: " + innerMessage });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred: " + ex.Message });
+            }
         }
 
         // GET: api/commodity/customer/{customerId}
@@ -97,13 +129,15 @@ namespace AmusementParkAPI.Controllers
         public async Task<ActionResult<IEnumerable<object>>> GetStoreProducts(int storeId)
         {
             var products = await _context.CommodityTypes
-                .Where(c => c.Commodity_Store == storeId)
+                .Where(c => c.Commodity_Store == storeId && c.Category == "merchandise") // Only merchandise
                 .Select(c => new
                 {
                     commodityTypeId = c.Commodity_TypeID,
                     commodityName = c.Commodity_Name,
                     basePrice = c.Base_Price,
-                    commodityStore = c.Commodity_Store
+                    commodityStore = c.Commodity_Store,
+                    stockQuantity = c.Stock_Quantity,
+                    category = c.Category
                 })
                 .ToListAsync();
 
@@ -142,6 +176,7 @@ namespace AmusementParkAPI.Controllers
     {
         public int CustomerId { get; set; }
         public int CommodityTypeId { get; set; }
+        public int Quantity { get; set; } = 1;
         public decimal TotalPrice { get; set; }
         public string? PaymentMethod { get; set; }
     }

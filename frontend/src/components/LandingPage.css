@@ -33,6 +33,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 40px;
 }
 
 .brand-logo {
@@ -41,6 +42,79 @@
   color: #1e40af;
   letter-spacing: -1px;
   margin: 0;
+  flex-shrink: 0;
+}
+
+/* ========== MAIN NAVIGATION - DISNEY STYLE ========== */
+.main-nav {
+  display: flex;
+  gap: 35px;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+.nav-item {
+  position: relative;
+  cursor: pointer;
+  padding: 10px 0;
+}
+
+.nav-item > span {
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0.3px;
+  transition: color 0.3s ease;
+  display: block;
+}
+
+.nav-item:hover > span {
+  color: #3b82f6;
+}
+
+/* Dropdown Menu */
+.dropdown-trigger {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  min-width: 200px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 12px 0;
+  margin-top: 10px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.dropdown-trigger:hover .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  margin-top: 0;
+}
+
+.dropdown-menu a {
+  display: block;
+  padding: 12px 20px;
+  color: #374151;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.dropdown-menu a:hover {
+  background: #f3f4f6;
+  color: #3b82f6;
+  padding-left: 25px;
 }
 
 .header-actions {

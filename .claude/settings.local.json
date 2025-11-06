@@ -6,7 +6,12 @@
       "Bash(netstat:*)",
       "Bash(curl:*)",
       "Bash(taskkill //F //PID 26768)",
-      "Bash(dotnet run:*)"
+      "Bash(dotnet run:*)",
+      "Bash(git pull:*)",
+      "Bash(sed:*)",
+      "Bash(dotnet ef dbcontext scaffold:*)",
+      "Bash(echo:*)",
+      "Bash(frontend/public/merchandise/README.md)"
     ],
     "deny": [],
     "ask": []
