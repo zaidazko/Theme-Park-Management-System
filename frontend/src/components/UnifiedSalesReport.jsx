@@ -295,6 +295,22 @@ const UnifiedSalesReport = () => {
       };
     };
 
+    // Store detailed breakdowns for charts
+    const ticketBreakdown = Object.entries(ticketStats).map(([type, data]) => ({
+      name: type,
+      revenue: data.revenue
+    })).sort((a, b) => b.revenue - a.revenue);
+
+    const commodityBreakdown = Object.entries(commodityStats).map(([name, data]) => ({
+      name: name,
+      revenue: data.revenue
+    })).sort((a, b) => b.revenue - a.revenue);
+
+    const restaurantBreakdown = Object.entries(restaurantStats).map(([name, data]) => ({
+      name: name,
+      revenue: data.revenue
+    })).sort((a, b) => b.revenue - a.revenue);
+
     setStats({
       totalRevenue: ticketTotal + commodityTotal + restaurantTotal,
       ticketRevenue: ticketTotal,
@@ -303,6 +319,9 @@ const UnifiedSalesReport = () => {
       tickets: getStats(ticketStats),
       commodities: getStats(commodityStats),
       restaurant: getStats(restaurantStats),
+      ticketBreakdown: ticketBreakdown,
+      commodityBreakdown: commodityBreakdown,
+      restaurantBreakdown: restaurantBreakdown,
     });
   };
 
@@ -475,6 +494,167 @@ const UnifiedSalesReport = () => {
           </div>
         </div>
 
+        {/* Revenue Breakdown Details */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem", marginTop: "1.5rem" }}>
+          {/* Ticket Revenue Breakdown */}
+          <div className="theme-park-card">
+            <div className="theme-park-card-header">
+              <h3 className="theme-park-card-title" style={{ fontSize: "1rem" }}>
+                <span>🎫</span> Ticket Revenue
+              </h3>
+              <div style={{ fontSize: "1.125rem", fontWeight: "600", color: "#3b82f6" }}>
+                ${stats.ticketRevenue.toFixed(2)}
+              </div>
+            </div>
+            <div style={{ padding: "1rem" }}>
+              {stats.ticketBreakdown && stats.ticketBreakdown.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {stats.ticketBreakdown.map((item, index) => {
+                    const percentage = stats.ticketRevenue > 0 
+                      ? ((item.revenue / stats.ticketRevenue) * 100).toFixed(1) 
+                      : 0;
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "0.75rem",
+                          backgroundColor: "#f0f7ff",
+                          borderRadius: "6px",
+                          borderLeft: "3px solid #3b82f6",
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: "0.875rem", fontWeight: "600", color: "#1f2937", marginBottom: "0.25rem" }}>
+                            {item.name}
+                          </div>
+                          <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                            {percentage}% of ticket revenue
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "0.875rem", fontWeight: "600", color: "#3b82f6" }}>
+                          ${item.revenue.toFixed(2)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ textAlign: "center", padding: "2rem", color: "#6b7280" }}>
+                  No ticket sales data available
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Commodity Revenue Breakdown */}
+          <div className="theme-park-card">
+            <div className="theme-park-card-header">
+              <h3 className="theme-park-card-title" style={{ fontSize: "1rem" }}>
+                <span>🛍️</span> Commodity Revenue
+              </h3>
+              <div style={{ fontSize: "1.125rem", fontWeight: "600", color: "#10b981" }}>
+                ${stats.commodityRevenue.toFixed(2)}
+              </div>
+            </div>
+            <div style={{ padding: "1rem" }}>
+              {stats.commodityBreakdown && stats.commodityBreakdown.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {stats.commodityBreakdown.map((item, index) => {
+                    const percentage = stats.commodityRevenue > 0 
+                      ? ((item.revenue / stats.commodityRevenue) * 100).toFixed(1) 
+                      : 0;
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "0.75rem",
+                          backgroundColor: "#f0fdf4",
+                          borderRadius: "6px",
+                          borderLeft: "3px solid #10b981",
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: "0.875rem", fontWeight: "600", color: "#1f2937", marginBottom: "0.25rem" }}>
+                            {item.name}
+                          </div>
+                          <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                            {percentage}% of commodity revenue
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "0.875rem", fontWeight: "600", color: "#10b981" }}>
+                          ${item.revenue.toFixed(2)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ textAlign: "center", padding: "2rem", color: "#6b7280" }}>
+                  No commodity sales data available
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Restaurant Revenue Breakdown */}
+          <div className="theme-park-card">
+            <div className="theme-park-card-header">
+              <h3 className="theme-park-card-title" style={{ fontSize: "1rem" }}>
+                <span>🍔</span> Restaurant Revenue
+              </h3>
+              <div style={{ fontSize: "1.125rem", fontWeight: "600", color: "#fbbf24" }}>
+                ${stats.restaurantRevenue.toFixed(2)}
+              </div>
+            </div>
+            <div style={{ padding: "1rem", maxHeight: "400px", overflowY: "auto" }}>
+              {stats.restaurantBreakdown && stats.restaurantBreakdown.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {stats.restaurantBreakdown.map((item, index) => {
+                    const percentage = stats.restaurantRevenue > 0 
+                      ? ((item.revenue / stats.restaurantRevenue) * 100).toFixed(1) 
+                      : 0;
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "0.75rem",
+                          backgroundColor: "#fffbeb",
+                          borderRadius: "6px",
+                          borderLeft: "3px solid #fbbf24",
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: "0.875rem", fontWeight: "600", color: "#1f2937", marginBottom: "0.25rem" }}>
+                            {item.name}
+                          </div>
+                          <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                            {percentage}% of restaurant revenue
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "0.875rem", fontWeight: "600", color: "#fbbf24" }}>
+                          ${item.revenue.toFixed(2)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ textAlign: "center", padding: "2rem", color: "#6b7280" }}>
+                  No restaurant sales data available
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Analytics Cards */}
         <div className="theme-park-analytics-grid">

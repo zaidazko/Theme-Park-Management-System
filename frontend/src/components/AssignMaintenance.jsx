@@ -57,9 +57,25 @@ const AssignMaintenance = () => {
       cancelled: {},
       incoming: {},
     },
+    workers: {
+      totalWorkers: 0,
+      workerDetails: [],
+    },
   });
 
   const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: "asc",
+  });
+
+  const [workerSortConfig, setWorkerSortConfig] = useState({
+    key: null,
+    direction: "asc",
+  });
+
+  const [selectedWorker, setSelectedWorker] = useState(null);
+  const [showWorkerModal, setShowWorkerModal] = useState(false);
+  const [workerRequestSortConfig, setWorkerRequestSortConfig] = useState({
     key: null,
     direction: "asc",
   });
@@ -251,6 +267,54 @@ const AssignMaintenance = () => {
       }, {});
     };
 
+    // Calculate worker statistics with detailed information
+    const workerStats = {};
+    filteredRequests.forEach((request) => {
+      if (request.assignee) {
+        const workerId =
+          request.assignee.employeeId || request.assignee.employee_ID;
+        const workerName = `${request.assignee.firstName || ""} ${
+          request.assignee.lastName || ""
+        }`.trim();
+
+        if (!workerStats[workerId]) {
+          workerStats[workerId] = {
+            name: workerName,
+            employeeId: workerId,
+            completed: 0,
+            inProgress: 0,
+            cancelled: 0,
+            total: 0,
+            lastCompletedDate: null,
+          };
+        }
+
+        const status = (request.status || "").toLowerCase();
+        if (status === "completed") {
+          workerStats[workerId].completed++;
+          if (request.completionDate) {
+            const completionDate = new Date(request.completionDate);
+            if (
+              !workerStats[workerId].lastCompletedDate ||
+              completionDate > new Date(workerStats[workerId].lastCompletedDate)
+            ) {
+              workerStats[workerId].lastCompletedDate = request.completionDate;
+            }
+          }
+        } else if (status === "in progress") {
+          workerStats[workerId].inProgress++;
+        } else if (status === "cancelled") {
+          workerStats[workerId].cancelled++;
+        }
+        workerStats[workerId].total++;
+      }
+    });
+
+    // Convert workerStats to array and sort by total completed
+    const workerDetails = Object.values(workerStats).sort(
+      (a, b) => b.completed - a.completed
+    );
+
     setStats({
       totalCompleted: completed.length,
       totalInProgress: inProgress.length,
@@ -262,6 +326,10 @@ const AssignMaintenance = () => {
         inProgress: breakdownByRide(inProgress),
         cancelled: breakdownByRide(cancelled),
         incoming: breakdownByRide(incoming),
+      },
+      workers: {
+        totalWorkers: employees.length,
+        workerDetails: workerDetails,
       },
     });
   };
@@ -374,6 +442,54 @@ const AssignMaintenance = () => {
 
   const filteredRequests = getSortedData(getFilteredRequests());
 
+  // Get worker's maintenance requests (in progress and completed)
+  const getWorkerRequests = (workerId) => {
+    if (!workerId) return [];
+    return maintenanceRequests.filter((request) => {
+      const assigneeId =
+        request.assignee?.employeeId || request.assignee?.employee_ID;
+      const status = (request.status || "").toLowerCase();
+      return (
+        assigneeId === workerId &&
+        (status === "in progress" || status === "completed")
+      );
+    });
+  };
+
+  // Sort worker requests
+  const getSortedWorkerRequests = (requests) => {
+    if (!workerRequestSortConfig.key) return requests;
+
+    return [...requests].sort((a, b) => {
+      let aValue, bValue;
+
+      if (workerRequestSortConfig.key === "ride") {
+        aValue = a.ride?.ride_Name || "";
+        bValue = b.ride?.ride_Name || "";
+      } else if (workerRequestSortConfig.key === "status") {
+        aValue = (a.status || "").toLowerCase();
+        bValue = (b.status || "").toLowerCase();
+      } else if (workerRequestSortConfig.key === "requestDate") {
+        aValue = new Date(a.requestDate || 0).getTime();
+        bValue = new Date(b.requestDate || 0).getTime();
+      } else if (workerRequestSortConfig.key === "completionDate") {
+        aValue = a.completionDate ? new Date(a.completionDate).getTime() : 0;
+        bValue = b.completionDate ? new Date(b.completionDate).getTime() : 0;
+      } else if (workerRequestSortConfig.key === "issueDescription") {
+        aValue = (a.issueDescription || "").toLowerCase();
+        bValue = (b.issueDescription || "").toLowerCase();
+      }
+
+      if (aValue < bValue) {
+        return workerRequestSortConfig.direction === "asc" ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return workerRequestSortConfig.direction === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+  };
+
   return (
     <div className="theme-park-page" style={{ padding: "40px 10px" }}>
       <div
@@ -454,313 +570,355 @@ const AssignMaintenance = () => {
           </div>
         </div>
 
-        {/* Breakdown by Ride Charts */}
-        {(stats.totalCompleted > 0 ||
-          stats.totalInProgress > 0 ||
-          stats.totalCancelled > 0 ||
-          stats.incomingRequests > 0) && (
-          <div className="theme-park-card" style={{ marginTop: "1.5rem" }}>
-            <div className="theme-park-card-header">
-              <h3 className="theme-park-card-title">
-                <span>🎢</span> Breakdown by Ride
-              </h3>
+        {/* Maintenance Workers Table */}
+        {stats.workers &&
+          stats.workers.workerDetails &&
+          stats.workers.workerDetails.length > 0 && (
+            <div className="theme-park-card" style={{ marginTop: "1.5rem" }}>
+              <div className="theme-park-card-header">
+                <h3 className="theme-park-card-title">
+                  <span>👷</span> Maintenance Workers
+                </h3>
+              </div>
+              <div
+                className="theme-park-table-container"
+                style={{ overflowX: "auto", width: "100%" }}
+              >
+                <table
+                  className="theme-park-table"
+                  style={{ tableLayout: "fixed", width: "100%" }}
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        style={{
+                          width: "30%",
+                          minWidth: "200px",
+                          textAlign: "left",
+                          padding: "12px 16px",
+                          backgroundColor: "#f9fafb",
+                          borderBottom: "2px solid #e5e7eb",
+                          fontWeight: "600",
+                          fontSize: "0.875rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          color: "#374151",
+                        }}
+                      >
+                        Worker Name
+                      </th>
+                      <th
+                        onClick={() => {
+                          const direction =
+                            workerSortConfig.key === "completed" &&
+                            workerSortConfig.direction === "asc"
+                              ? "desc"
+                              : "asc";
+                          setWorkerSortConfig({ key: "completed", direction });
+                        }}
+                        className="sortable"
+                        style={{
+                          width: "18%",
+                          minWidth: "120px",
+                          textAlign: "center",
+                          padding: "12px 16px",
+                          backgroundColor: "#f9fafb",
+                          borderBottom: "2px solid #e5e7eb",
+                          fontWeight: "600",
+                          fontSize: "0.875rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          color: "#374151",
+                          cursor: "pointer",
+                          userSelect: "none",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "#f3f4f6";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "#f9fafb";
+                        }}
+                      >
+                        Completed{" "}
+                        {workerSortConfig.key === "completed" &&
+                          (workerSortConfig.direction === "asc" ? "↑" : "↓")}
+                      </th>
+                      <th
+                        onClick={() => {
+                          const direction =
+                            workerSortConfig.key === "inProgress" &&
+                            workerSortConfig.direction === "asc"
+                              ? "desc"
+                              : "asc";
+                          setWorkerSortConfig({ key: "inProgress", direction });
+                        }}
+                        className="sortable"
+                        style={{
+                          width: "18%",
+                          minWidth: "120px",
+                          textAlign: "center",
+                          padding: "12px 16px",
+                          backgroundColor: "#f9fafb",
+                          borderBottom: "2px solid #e5e7eb",
+                          fontWeight: "600",
+                          fontSize: "0.875rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          color: "#374151",
+                          cursor: "pointer",
+                          userSelect: "none",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "#f3f4f6";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "#f9fafb";
+                        }}
+                      >
+                        In Progress{" "}
+                        {workerSortConfig.key === "inProgress" &&
+                          (workerSortConfig.direction === "asc" ? "↑" : "↓")}
+                      </th>
+                      <th
+                        onClick={() => {
+                          const direction =
+                            workerSortConfig.key === "total" &&
+                            workerSortConfig.direction === "asc"
+                              ? "desc"
+                              : "asc";
+                          setWorkerSortConfig({ key: "total", direction });
+                        }}
+                        className="sortable"
+                        style={{
+                          width: "12%",
+                          minWidth: "100px",
+                          textAlign: "center",
+                          padding: "12px 16px",
+                          backgroundColor: "#f9fafb",
+                          borderBottom: "2px solid #e5e7eb",
+                          fontWeight: "600",
+                          fontSize: "0.875rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          color: "#374151",
+                          cursor: "pointer",
+                          userSelect: "none",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "#f3f4f6";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "#f9fafb";
+                        }}
+                      >
+                        Total{" "}
+                        {workerSortConfig.key === "total" &&
+                          (workerSortConfig.direction === "asc" ? "↑" : "↓")}
+                      </th>
+                      <th
+                        onClick={() => {
+                          const direction =
+                            workerSortConfig.key === "lastCompleted" &&
+                            workerSortConfig.direction === "asc"
+                              ? "desc"
+                              : "asc";
+                          setWorkerSortConfig({
+                            key: "lastCompleted",
+                            direction,
+                          });
+                        }}
+                        className="sortable"
+                        style={{
+                          width: "22%",
+                          minWidth: "180px",
+                          textAlign: "left",
+                          padding: "12px 16px",
+                          backgroundColor: "#f9fafb",
+                          borderBottom: "2px solid #e5e7eb",
+                          fontWeight: "600",
+                          fontSize: "0.875rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          color: "#374151",
+                          cursor: "pointer",
+                          userSelect: "none",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "#f3f4f6";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "#f9fafb";
+                        }}
+                      >
+                        Last Completed{" "}
+                        {workerSortConfig.key === "lastCompleted" &&
+                          (workerSortConfig.direction === "asc" ? "↑" : "↓")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      // Sort workers based on sortConfig
+                      let sortedWorkers = [...stats.workers.workerDetails];
+                      if (workerSortConfig.key) {
+                        sortedWorkers.sort((a, b) => {
+                          let aValue, bValue;
+
+                          if (workerSortConfig.key === "completed") {
+                            aValue = a.completed;
+                            bValue = b.completed;
+                          } else if (workerSortConfig.key === "inProgress") {
+                            aValue = a.inProgress;
+                            bValue = b.inProgress;
+                          } else if (workerSortConfig.key === "lastCompleted") {
+                            aValue = a.lastCompletedDate
+                              ? new Date(a.lastCompletedDate).getTime()
+                              : 0;
+                            bValue = b.lastCompletedDate
+                              ? new Date(b.lastCompletedDate).getTime()
+                              : 0;
+                          } else if (workerSortConfig.key === "total") {
+                            aValue = a.total;
+                            bValue = b.total;
+                          }
+
+                          if (aValue < bValue) {
+                            return workerSortConfig.direction === "asc"
+                              ? -1
+                              : 1;
+                          }
+                          if (aValue > bValue) {
+                            return workerSortConfig.direction === "asc"
+                              ? 1
+                              : -1;
+                          }
+                          return 0;
+                        });
+                      }
+
+                      return sortedWorkers;
+                    })().map((worker, index) => {
+                      const formatDate = (dateString) => {
+                        if (!dateString) return "N/A";
+                        const date = new Date(dateString);
+                        return date.toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        });
+                      };
+
+                      return (
+                        <tr
+                          key={worker.employeeId}
+                          style={{
+                            backgroundColor:
+                              index % 2 === 0 ? "#ffffff" : "#f9fafb",
+                            transition: "background-color 0.2s",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#f3f4f6";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor =
+                              index % 2 === 0 ? "#ffffff" : "#f9fafb";
+                          }}
+                        >
+                          <td
+                            onClick={() => {
+                              setSelectedWorker(worker);
+                              setShowWorkerModal(true);
+                            }}
+                            style={{
+                              padding: "12px 16px",
+                              verticalAlign: "middle",
+                              fontWeight: "600",
+                              color: "#3b82f6",
+                              cursor: "pointer",
+                              textDecoration: "underline",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = "#2563eb";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = "#3b82f6";
+                            }}
+                          >
+                            {worker.name}
+                          </td>
+                          <td
+                            style={{
+                              padding: "12px 16px",
+                              verticalAlign: "middle",
+                              textAlign: "center",
+                            }}
+                          >
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "4px 12px",
+                                borderRadius: "12px",
+                                backgroundColor: "#f0fdf4",
+                                color: "#10b981",
+                                fontWeight: "600",
+                                fontSize: "0.875rem",
+                              }}
+                            >
+                              {worker.completed}
+                            </span>
+                          </td>
+                          <td
+                            style={{
+                              padding: "12px 16px",
+                              verticalAlign: "middle",
+                              textAlign: "center",
+                            }}
+                          >
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "4px 12px",
+                                borderRadius: "12px",
+                                backgroundColor: "#faf5ff",
+                                color: "#8b5cf6",
+                                fontWeight: "600",
+                                fontSize: "0.875rem",
+                              }}
+                            >
+                              {worker.inProgress}
+                            </span>
+                          </td>
+                          <td
+                            style={{
+                              padding: "12px 16px",
+                              verticalAlign: "middle",
+                              textAlign: "center",
+                              fontWeight: "600",
+                              color: "#374151",
+                            }}
+                          >
+                            {worker.total}
+                          </td>
+                          <td
+                            style={{
+                              padding: "12px 16px",
+                              verticalAlign: "middle",
+                              color: "#6b7280",
+                              fontSize: "0.875rem",
+                            }}
+                          >
+                            {worker.lastCompletedDate
+                              ? formatDate(worker.lastCompletedDate)
+                              : "No completions yet"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
-                gap: "1.5rem",
-                padding: "1.5rem",
-              }}
-            >
-              {/* Completed Breakdown */}
-              {stats.totalCompleted > 0 &&
-                Object.keys(stats.breakdowns.completed).length > 0 && (
-                  <div>
-                    <h4
-                      style={{
-                        fontSize: "1rem",
-                        fontWeight: "600",
-                        marginBottom: "1rem",
-                        color: "#10b981",
-                        textAlign: "center",
-                      }}
-                    >
-                      Completed ({stats.totalCompleted})
-                    </h4>
-                    <div style={{ height: "300px" }}>
-                      <Doughnut
-                        data={{
-                          labels: Object.keys(stats.breakdowns.completed).sort(
-                            (a, b) =>
-                              stats.breakdowns.completed[b] -
-                              stats.breakdowns.completed[a]
-                          ),
-                          datasets: [
-                            {
-                              data: Object.keys(stats.breakdowns.completed)
-                                .sort(
-                                  (a, b) =>
-                                    stats.breakdowns.completed[b] -
-                                    stats.breakdowns.completed[a]
-                                )
-                                .map(
-                                  (ride) => stats.breakdowns.completed[ride]
-                                ),
-                              backgroundColor: [
-                                "rgba(4, 120, 87, 0.9)",
-                                "rgba(6, 95, 70, 0.9)",
-                                "rgba(20, 83, 45, 0.9)",
-                                "rgba(22, 101, 52, 0.9)",
-                                "rgba(15, 118, 110, 0.9)",
-                              ],
-                              borderColor: [
-                                "rgba(4, 120, 87, 1)",
-                                "rgba(6, 95, 70, 1)",
-                                "rgba(20, 83, 45, 1)",
-                                "rgba(22, 101, 52, 1)",
-                                "rgba(15, 118, 110, 1)",
-                              ],
-                              borderWidth: 2,
-                            },
-                          ],
-                        }}
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            legend: {
-                              position: "bottom",
-                              labels: {
-                                padding: 15,
-                                font: {
-                                  size: 12,
-                                },
-                              },
-                            },
-                          },
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-              {/* In Progress Breakdown */}
-              {stats.totalInProgress > 0 &&
-                Object.keys(stats.breakdowns.inProgress).length > 0 && (
-                  <div>
-                    <h4
-                      style={{
-                        fontSize: "1rem",
-                        fontWeight: "600",
-                        marginBottom: "1rem",
-                        color: "#8b5cf6",
-                        textAlign: "center",
-                      }}
-                    >
-                      In Progress ({stats.totalInProgress})
-                    </h4>
-                    <div style={{ height: "300px" }}>
-                      <Doughnut
-                        data={{
-                          labels: Object.keys(stats.breakdowns.inProgress).sort(
-                            (a, b) =>
-                              stats.breakdowns.inProgress[b] -
-                              stats.breakdowns.inProgress[a]
-                          ),
-                          datasets: [
-                            {
-                              data: Object.keys(stats.breakdowns.inProgress)
-                                .sort(
-                                  (a, b) =>
-                                    stats.breakdowns.inProgress[b] -
-                                    stats.breakdowns.inProgress[a]
-                                )
-                                .map(
-                                  (ride) => stats.breakdowns.inProgress[ride]
-                                ),
-                              backgroundColor: [
-                                "rgba(109, 40, 217, 0.9)",
-                                "rgba(91, 33, 182, 0.9)",
-                                "rgba(76, 29, 149, 0.9)",
-                                "rgba(67, 56, 202, 0.9)",
-                                "rgba(55, 48, 163, 0.9)",
-                              ],
-                              borderColor: [
-                                "rgba(109, 40, 217, 1)",
-                                "rgba(91, 33, 182, 1)",
-                                "rgba(76, 29, 149, 1)",
-                                "rgba(67, 56, 202, 1)",
-                                "rgba(55, 48, 163, 1)",
-                              ],
-                              borderWidth: 2,
-                            },
-                          ],
-                        }}
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            legend: {
-                              position: "bottom",
-                              labels: {
-                                padding: 15,
-                                font: {
-                                  size: 12,
-                                },
-                              },
-                            },
-                          },
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-              {/* Cancelled Breakdown */}
-              {stats.totalCancelled > 0 &&
-                Object.keys(stats.breakdowns.cancelled).length > 0 && (
-                  <div>
-                    <h4
-                      style={{
-                        fontSize: "1rem",
-                        fontWeight: "600",
-                        marginBottom: "1rem",
-                        color: "#ef4444",
-                        textAlign: "center",
-                      }}
-                    >
-                      Cancelled ({stats.totalCancelled})
-                    </h4>
-                    <div style={{ height: "300px" }}>
-                      <Doughnut
-                        data={{
-                          labels: Object.keys(stats.breakdowns.cancelled).sort(
-                            (a, b) =>
-                              stats.breakdowns.cancelled[b] -
-                              stats.breakdowns.cancelled[a]
-                          ),
-                          datasets: [
-                            {
-                              data: Object.keys(stats.breakdowns.cancelled)
-                                .sort(
-                                  (a, b) =>
-                                    stats.breakdowns.cancelled[b] -
-                                    stats.breakdowns.cancelled[a]
-                                )
-                                .map(
-                                  (ride) => stats.breakdowns.cancelled[ride]
-                                ),
-                              backgroundColor: [
-                                "rgba(185, 28, 28, 0.9)",
-                                "rgba(153, 27, 27, 0.9)",
-                                "rgba(127, 29, 29, 0.9)",
-                                "rgba(99, 23, 23, 0.9)",
-                                "rgba(69, 10, 10, 0.9)",
-                              ],
-                              borderColor: [
-                                "rgba(185, 28, 28, 1)",
-                                "rgba(153, 27, 27, 1)",
-                                "rgba(127, 29, 29, 1)",
-                                "rgba(99, 23, 23, 1)",
-                                "rgba(69, 10, 10, 1)",
-                              ],
-                              borderWidth: 2,
-                            },
-                          ],
-                        }}
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            legend: {
-                              position: "bottom",
-                              labels: {
-                                padding: 15,
-                                font: {
-                                  size: 12,
-                                },
-                              },
-                            },
-                          },
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-              {/* Incoming Breakdown */}
-              {stats.incomingRequests > 0 &&
-                Object.keys(stats.breakdowns.incoming).length > 0 && (
-                  <div>
-                    <h4
-                      style={{
-                        fontSize: "1rem",
-                        fontWeight: "600",
-                        marginBottom: "1rem",
-                        color: "#fbbf24",
-                        textAlign: "center",
-                      }}
-                    >
-                      Incoming ({stats.incomingRequests})
-                    </h4>
-                    <div style={{ height: "300px" }}>
-                      <Doughnut
-                        data={{
-                          labels: Object.keys(stats.breakdowns.incoming).sort(
-                            (a, b) =>
-                              stats.breakdowns.incoming[b] -
-                              stats.breakdowns.incoming[a]
-                          ),
-                          datasets: [
-                            {
-                              data: Object.keys(stats.breakdowns.incoming)
-                                .sort(
-                                  (a, b) =>
-                                    stats.breakdowns.incoming[b] -
-                                    stats.breakdowns.incoming[a]
-                                )
-                                .map((ride) => stats.breakdowns.incoming[ride]),
-                              backgroundColor: [
-                                "rgba(217, 119, 6, 0.9)",
-                                "rgba(180, 83, 9, 0.9)",
-                                "rgba(146, 64, 14, 0.9)",
-                                "rgba(120, 53, 15, 0.9)",
-                                "rgba(96, 40, 16, 0.9)",
-                              ],
-                              borderColor: [
-                                "rgba(217, 119, 6, 1)",
-                                "rgba(180, 83, 9, 1)",
-                                "rgba(146, 64, 14, 1)",
-                                "rgba(120, 53, 15, 1)",
-                                "rgba(96, 40, 16, 1)",
-                              ],
-                              borderWidth: 2,
-                            },
-                          ],
-                        }}
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            legend: {
-                              position: "bottom",
-                              labels: {
-                                padding: 15,
-                                font: {
-                                  size: 12,
-                                },
-                              },
-                            },
-                          },
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-            </div>
-          </div>
-        )}
+          )}
 
         {/* Filters */}
         <div className="theme-park-card">
@@ -1602,6 +1760,447 @@ const AssignMaintenance = () => {
                 >
                   Assign Request
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Worker Maintenance Requests Modal */}
+        {showWorkerModal && selectedWorker && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1001,
+            }}
+            onClick={() => {
+              setShowWorkerModal(false);
+              setSelectedWorker(null);
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "white",
+                borderRadius: "8px",
+                padding: "1.5rem",
+                maxWidth: "1400px",
+                width: "95%",
+                maxHeight: "90vh",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "1.5rem",
+                  paddingBottom: "1rem",
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: "1.5rem",
+                    fontWeight: "600",
+                    color: "#1f2937",
+                    margin: 0,
+                  }}
+                >
+                  {selectedWorker.name} - Maintenance Requests
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowWorkerModal(false);
+                    setSelectedWorker(null);
+                  }}
+                  style={{
+                    backgroundColor: "#6b7280",
+                    color: "white",
+                    border: "none",
+                    padding: "8px 16px",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+
+              <div
+                style={{
+                  flex: 1,
+                  overflow: "auto",
+                }}
+              >
+                {(() => {
+                  const workerRequests = getWorkerRequests(
+                    selectedWorker.employeeId
+                  );
+                  const sortedRequests =
+                    getSortedWorkerRequests(workerRequests);
+
+                  return sortedRequests.length > 0 ? (
+                    <table
+                      className="theme-park-table"
+                      style={{
+                        tableLayout: "fixed",
+                        width: "100%",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      <thead>
+                        <tr>
+                          <th
+                            onClick={() => {
+                              const direction =
+                                workerRequestSortConfig.key === "ride" &&
+                                workerRequestSortConfig.direction === "asc"
+                                  ? "desc"
+                                  : "asc";
+                              setWorkerRequestSortConfig({
+                                key: "ride",
+                                direction,
+                              });
+                            }}
+                            className="sortable"
+                            style={{
+                              width: "20%",
+                              minWidth: "150px",
+                              textAlign: "left",
+                              padding: "10px 12px",
+                              backgroundColor: "#f9fafb",
+                              borderBottom: "2px solid #e5e7eb",
+                              fontWeight: "600",
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                              color: "#374151",
+                              cursor: "pointer",
+                              userSelect: "none",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f3f4f6";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f9fafb";
+                            }}
+                          >
+                            Ride{" "}
+                            {workerRequestSortConfig.key === "ride" &&
+                              (workerRequestSortConfig.direction === "asc"
+                                ? "↑"
+                                : "↓")}
+                          </th>
+                          <th
+                            onClick={() => {
+                              const direction =
+                                workerRequestSortConfig.key === "status" &&
+                                workerRequestSortConfig.direction === "asc"
+                                  ? "desc"
+                                  : "asc";
+                              setWorkerRequestSortConfig({
+                                key: "status",
+                                direction,
+                              });
+                            }}
+                            className="sortable"
+                            style={{
+                              width: "12%",
+                              minWidth: "100px",
+                              textAlign: "center",
+                              padding: "10px 12px",
+                              backgroundColor: "#f9fafb",
+                              borderBottom: "2px solid #e5e7eb",
+                              fontWeight: "600",
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                              color: "#374151",
+                              cursor: "pointer",
+                              userSelect: "none",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f3f4f6";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f9fafb";
+                            }}
+                          >
+                            Status{" "}
+                            {workerRequestSortConfig.key === "status" &&
+                              (workerRequestSortConfig.direction === "asc"
+                                ? "↑"
+                                : "↓")}
+                          </th>
+                          <th
+                            onClick={() => {
+                              const direction =
+                                workerRequestSortConfig.key === "requestDate" &&
+                                workerRequestSortConfig.direction === "asc"
+                                  ? "desc"
+                                  : "asc";
+                              setWorkerRequestSortConfig({
+                                key: "requestDate",
+                                direction,
+                              });
+                            }}
+                            className="sortable"
+                            style={{
+                              width: "12%",
+                              minWidth: "110px",
+                              textAlign: "left",
+                              padding: "10px 12px",
+                              backgroundColor: "#f9fafb",
+                              borderBottom: "2px solid #e5e7eb",
+                              fontWeight: "600",
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                              color: "#374151",
+                              cursor: "pointer",
+                              userSelect: "none",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f3f4f6";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f9fafb";
+                            }}
+                          >
+                            Request Date{" "}
+                            {workerRequestSortConfig.key === "requestDate" &&
+                              (workerRequestSortConfig.direction === "asc"
+                                ? "↑"
+                                : "↓")}
+                          </th>
+                          <th
+                            onClick={() => {
+                              const direction =
+                                workerRequestSortConfig.key ===
+                                  "completionDate" &&
+                                workerRequestSortConfig.direction === "asc"
+                                  ? "desc"
+                                  : "asc";
+                              setWorkerRequestSortConfig({
+                                key: "completionDate",
+                                direction,
+                              });
+                            }}
+                            className="sortable"
+                            style={{
+                              width: "12%",
+                              minWidth: "110px",
+                              textAlign: "left",
+                              padding: "10px 12px",
+                              backgroundColor: "#f9fafb",
+                              borderBottom: "2px solid #e5e7eb",
+                              fontWeight: "600",
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                              color: "#374151",
+                              cursor: "pointer",
+                              userSelect: "none",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f3f4f6";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f9fafb";
+                            }}
+                          >
+                            Completion Date{" "}
+                            {workerRequestSortConfig.key === "completionDate" &&
+                              (workerRequestSortConfig.direction === "asc"
+                                ? "↑"
+                                : "↓")}
+                          </th>
+                          <th
+                            onClick={() => {
+                              const direction =
+                                workerRequestSortConfig.key ===
+                                  "issueDescription" &&
+                                workerRequestSortConfig.direction === "asc"
+                                  ? "desc"
+                                  : "asc";
+                              setWorkerRequestSortConfig({
+                                key: "issueDescription",
+                                direction,
+                              });
+                            }}
+                            className="sortable"
+                            style={{
+                              width: "44%",
+                              minWidth: "200px",
+                              textAlign: "left",
+                              padding: "10px 12px",
+                              backgroundColor: "#f9fafb",
+                              borderBottom: "2px solid #e5e7eb",
+                              fontWeight: "600",
+                              fontSize: "0.75rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                              color: "#374151",
+                              cursor: "pointer",
+                              userSelect: "none",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f3f4f6";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f9fafb";
+                            }}
+                          >
+                            Issue Description{" "}
+                            {workerRequestSortConfig.key ===
+                              "issueDescription" &&
+                              (workerRequestSortConfig.direction === "asc"
+                                ? "↑"
+                                : "↓")}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedRequests.map((request, index) => (
+                          <tr
+                            key={request.requestId}
+                            style={{
+                              backgroundColor:
+                                index % 2 === 0 ? "#ffffff" : "#f9fafb",
+                              transition: "background-color 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f3f4f6";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                index % 2 === 0 ? "#ffffff" : "#f9fafb";
+                            }}
+                          >
+                            <td
+                              style={{
+                                padding: "10px 12px",
+                                verticalAlign: "middle",
+                                color: "#1f2937",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                              title={request.ride?.ride_Name || "Unknown"}
+                            >
+                              {request.ride?.ride_Name || "Unknown"}
+                            </td>
+                            <td
+                              style={{
+                                padding: "10px 12px",
+                                verticalAlign: "middle",
+                                textAlign: "center",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  padding: "4px 10px",
+                                  borderRadius: "12px",
+                                  fontSize: "0.75rem",
+                                  fontWeight: "600",
+                                  backgroundColor:
+                                    (request.status || "").toLowerCase() ===
+                                    "completed"
+                                      ? "#f0fdf4"
+                                      : "#faf5ff",
+                                  color:
+                                    (request.status || "").toLowerCase() ===
+                                    "completed"
+                                      ? "#10b981"
+                                      : "#8b5cf6",
+                                }}
+                              >
+                                {request.status || "N/A"}
+                              </span>
+                            </td>
+                            <td
+                              style={{
+                                padding: "10px 12px",
+                                verticalAlign: "middle",
+                                color: "#6b7280",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {request.requestDate
+                                ? formatDateShort(request.requestDate)
+                                : "N/A"}
+                            </td>
+                            <td
+                              style={{
+                                padding: "10px 12px",
+                                verticalAlign: "middle",
+                                color: "#6b7280",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {request.completionDate
+                                ? formatDateShort(request.completionDate)
+                                : "N/A"}
+                            </td>
+                            <td
+                              onClick={() => {
+                                if (request.issueDescription) {
+                                  setSelectedDescription(
+                                    request.issueDescription
+                                  );
+                                  setShowDescriptionModal(true);
+                                }
+                              }}
+                              style={{
+                                padding: "10px 12px",
+                                verticalAlign: "middle",
+                                color: request.issueDescription
+                                  ? "#374151"
+                                  : "#9ca3af",
+                                cursor: request.issueDescription
+                                  ? "pointer"
+                                  : "default",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                              title={
+                                request.issueDescription || "No description"
+                              }
+                            >
+                              {request.issueDescription || "No description"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div
+                      style={{
+                        textAlign: "center",
+                        padding: "3rem",
+                        color: "#6b7280",
+                      }}
+                    >
+                      No maintenance requests found for this worker.
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
