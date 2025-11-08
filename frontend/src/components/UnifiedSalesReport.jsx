@@ -1,6 +1,28 @@
 import { useState, useEffect } from "react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Bar, Doughnut } from "react-chartjs-2";
 import "./ThemePark.css";
 import "./UnifiedSalesReport.css";
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const UnifiedSalesReport = () => {
   const [ticketSales, setTicketSales] = useState([]);
@@ -46,9 +68,6 @@ const UnifiedSalesReport = () => {
       mostProfitable: { name: null, revenue: 0 },
       leastProfitable: { name: null, revenue: Infinity }
     },
-  uniqueTicketCustomers: 0,
-  uniqueAllCustomers: 0,
-  avgCustomersPerMonth: 0
   });
   
   const [sortConfig, setSortConfig] = useState({
@@ -276,24 +295,6 @@ const UnifiedSalesReport = () => {
       };
     };
 
-    // Unique customer counts
-    // For tickets: use sale.customerId or sale.customerName as unique key
-    const ticketCustomerIds = new Set(filtered.tickets.map(sale => sale.customerId || sale.customerName));
-    // For all: use customerId or customerName as unique key
-    const allCustomerIds = new Set(filteredSales.map(sale => sale.customerId || sale.customerName));
-
-    // Average customers per month (based on unique ticket customers)
-    let months = 1;
-    if (filtered.tickets.length > 0) {
-      const dates = filtered.tickets.map(sale => new Date(sale.purchaseDate || sale.orderDate));
-      const minDate = new Date(Math.min(...dates));
-      const maxDate = new Date(Math.max(...dates));
-      // Calculate months difference (inclusive)
-      months = (maxDate.getFullYear() - minDate.getFullYear()) * 12 + (maxDate.getMonth() - minDate.getMonth()) + 1;
-      if (months < 1) months = 1;
-    }
-    const avgCustomersPerMonth = months > 0 ? (ticketCustomerIds.size / months) : 0;
-
     setStats({
       totalRevenue: ticketTotal + commodityTotal + restaurantTotal,
       ticketRevenue: ticketTotal,
@@ -302,9 +303,6 @@ const UnifiedSalesReport = () => {
       tickets: getStats(ticketStats),
       commodities: getStats(commodityStats),
       restaurant: getStats(restaurantStats),
-      uniqueTicketCustomers: ticketCustomerIds.size,
-      uniqueAllCustomers: allCustomerIds.size,
-      avgCustomersPerMonth: avgCustomersPerMonth
     });
   };
 
@@ -376,33 +374,106 @@ const UnifiedSalesReport = () => {
           </div>
         )}
 
-{/* Statistics Cards */}
-<div className="theme-park-stats-grid">
-  <div className="theme-park-stat-card">
-    <div className="theme-park-stat-label">Total Revenue</div>
-    <div className="theme-park-stat-value">${stats.totalRevenue.toFixed(2)}</div>
-  </div>
-  <div className="theme-park-stat-card">
-    <div className="theme-park-stat-label">Ticket Revenue</div>
-    <div className="theme-park-stat-value">${stats.ticketRevenue.toFixed(2)}</div>
-  </div>
-  <div className="theme-park-stat-card">
-    <div className="theme-park-stat-label">Commodity Revenue</div>
-    <div className="theme-park-stat-value">${stats.commodityRevenue.toFixed(2)}</div>
-  </div>
-  <div className="theme-park-stat-card">
-    <div className="theme-park-stat-label">Restaurant Revenue</div>
-    <div className="theme-park-stat-value">${stats.restaurantRevenue.toFixed(2)}</div>
-  </div>
-  <div className="theme-park-stat-card">
-    <div className="theme-park-stat-label">Total Customers</div>
-    <div className="theme-park-stat-value">{stats.uniqueTicketCustomers}</div>
-  </div>
-  <div className="theme-park-stat-card">
-    <div className="theme-park-stat-label">Avg. Customers per Month</div>
-    <div className="theme-park-stat-value">{stats.avgCustomersPerMonth.toFixed(2)}</div>
-  </div>
-</div>
+        {/* Total Revenue Breakdown Chart */}
+        <div className="theme-park-card" style={{ marginTop: "1.5rem" }}>
+          <div className="theme-park-card-header">
+            <h3 className="theme-park-card-title">
+              <span>💰</span> Total Revenue Breakdown
+            </h3>
+            <div style={{ fontSize: "1.25rem", fontWeight: "600", color: "#1f2937" }}>
+              ${stats.totalRevenue.toFixed(2)}
+            </div>
+          </div>
+          <div style={{ padding: "1.5rem", height: "400px" }}>
+            <Doughnut
+              data={{
+                labels: ["Tickets", "Commodity", "Restaurant"],
+                datasets: [
+                  {
+                    data: [
+                      stats.ticketRevenue,
+                      stats.commodityRevenue,
+                      stats.restaurantRevenue,
+                    ],
+                    backgroundColor: [
+                      "rgba(59, 130, 246, 0.9)",
+                      "rgba(16, 185, 129, 0.9)",
+                      "rgba(251, 191, 36, 0.9)",
+                    ],
+                    borderColor: [
+                      "rgba(59, 130, 246, 1)",
+                      "rgba(16, 185, 129, 1)",
+                      "rgba(251, 191, 36, 1)",
+                    ],
+                    borderWidth: 3,
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: "bottom",
+                    labels: {
+                      padding: 20,
+                      font: {
+                        size: 14,
+                        weight: "500",
+                      },
+                    },
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        const label = context.label || '';
+                        const value = context.parsed || 0;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                      }
+                    }
+                  }
+                },
+              }}
+            />
+          </div>
+          {/* Revenue Summary */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "1rem",
+              padding: "1rem 1.5rem",
+              borderTop: "1px solid #e5e7eb",
+            }}
+          >
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.25rem" }}>
+                Ticket Revenue
+              </div>
+              <div style={{ fontSize: "1.125rem", fontWeight: "600", color: "#3b82f6" }}>
+                ${stats.ticketRevenue.toFixed(2)}
+              </div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.25rem" }}>
+                Commodity Revenue
+              </div>
+              <div style={{ fontSize: "1.125rem", fontWeight: "600", color: "#10b981" }}>
+                ${stats.commodityRevenue.toFixed(2)}
+              </div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.25rem" }}>
+                Restaurant Revenue
+              </div>
+              <div style={{ fontSize: "1.125rem", fontWeight: "600", color: "#fbbf24" }}>
+                ${stats.restaurantRevenue.toFixed(2)}
+              </div>
+            </div>
+          </div>
+        </div>
 
 
         {/* Analytics Cards */}
