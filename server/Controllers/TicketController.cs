@@ -232,7 +232,8 @@ namespace AmusementParkAPI.Controllers
                 TicketType_ID = purchase.TicketTypeId,
                 Purchase_Date = DateTime.Now,
                 Price = purchase.TotalPrice,
-                Payment_Method = purchase.PaymentMethod ?? "credit"
+                Payment_Method = purchase.PaymentMethod ?? "credit",
+                Quantity = 1
             };
 
             _context.TicketSales.Add(ticketSale);
@@ -262,6 +263,7 @@ namespace AmusementParkAPI.Controllers
                         purchaseDate = sc.sale.Purchase_Date,
                         price = sc.sale.Price,
                         paymentMethod = sc.sale.Payment_Method,
+                        quantity = sc.sale.Quantity,
                         customerName = sc.customer.FirstName + " " + sc.customer.LastName,
                         ticketType = type.Type_Name
                     })
@@ -286,6 +288,7 @@ namespace AmusementParkAPI.Controllers
                         purchaseDate = sale.Purchase_Date,
                         price = sale.Price,
                         paymentMethod = sale.Payment_Method,
+                        quantity = sale.Quantity,
                         ticketType = type.Type_Name
                     })
                 .OrderByDescending(t => t.purchaseDate)

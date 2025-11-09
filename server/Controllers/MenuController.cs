@@ -176,6 +176,64 @@ namespace AmusementParkAPI.Controllers
 
             return NoContent();
         }
+
+        // GET: api/menu/sales
+        [HttpGet("sales")]
+        public async Task<ActionResult<IEnumerable<object>>> GetMenuSales()
+        {
+            var sales = await _context.MenuSales
+                .Join(
+                    _context.Customers,
+                    sale => sale.Customer_ID,
+                    customer => customer.CustomerId,
+                    (sale, customer) => new { sale, customer }
+                )
+                .Join(
+                    _context.MenuTypes,
+                    sc => sc.sale.MenuType_ID,
+                    menu => menu.MenuType_ID,
+                    (sc, menu) => new
+                    {
+                        saleId = sc.sale.Menu_ID,
+                        purchaseDate = sc.sale.Purchase_Date,
+                        price = sc.sale.Price,
+                        paymentMethod = sc.sale.Payment_Method,
+                        quantity = sc.sale.Quantity,
+                        customerName = sc.customer.FirstName + " " + sc.customer.LastName,
+                        menuItem = menu.Food_Name
+                    }
+                )
+                .OrderByDescending(s => s.purchaseDate)
+                .ToListAsync();
+
+            return Ok(sales);
+        }
+
+        // GET: api/menu/sales/customer/{customerId}
+        [HttpGet("sales/customer/{customerId}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetMenuSalesForCustomer(int customerId)
+        {
+            var sales = await _context.MenuSales
+                .Where(sale => sale.Customer_ID == customerId)
+                .Join(
+                    _context.MenuTypes,
+                    sale => sale.MenuType_ID,
+                    menu => menu.MenuType_ID,
+                    (sale, menu) => new
+                    {
+                        saleId = sale.Menu_ID,
+                        purchaseDate = sale.Purchase_Date,
+                        price = sale.Price,
+                        paymentMethod = sale.Payment_Method,
+                        quantity = sale.Quantity,
+                        menuItem = menu.Food_Name
+                    }
+                )
+                .OrderByDescending(s => s.purchaseDate)
+                .ToListAsync();
+
+            return Ok(sales);
+        }
     }
 
     public class MenuTypeCreateDto

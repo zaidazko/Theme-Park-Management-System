@@ -189,21 +189,52 @@ namespace AmusementParkAPI.Controllers
         [HttpPost("purchase")]
         public async Task<ActionResult> PurchaseCommodity([FromBody] CommodityPurchaseDto purchase)
         {
+            if (purchase == null)
+            {
+                return BadRequest(new { message = "Purchase details are required." });
+            }
+
+            var commodityType = await _context.CommodityTypes.FindAsync(purchase.CommodityTypeId);
+            if (commodityType == null)
+            {
+                return NotFound(new { message = "Merchandise item not found." });
+            }
+
+            if (commodityType.Is_Discontinued)
+            {
+                return Conflict(new { message = $"Merchandise item '{commodityType.Commodity_Name}' is discontinued." });
+            }
+
+            var quantity = purchase.Quantity <= 0 ? 1 : purchase.Quantity;
+
+            if (commodityType.Stock_Quantity < quantity)
+            {
+                return Conflict(new { message = $"Only {commodityType.Stock_Quantity} units of '{commodityType.Commodity_Name}' remain in stock." });
+            }
+
+            var unitPrice = commodityType.Base_Price;
+            var totalPrice = unitPrice * quantity;
+
+            commodityType.Stock_Quantity -= quantity;
+
             var commoditySale = new CommoditySale
             {
                 Customer_ID = purchase.CustomerId,
                 Commodity_TypeID = purchase.CommodityTypeId,
                 Purchase_Date = DateTime.Now,
-                Price = purchase.TotalPrice,
-                Payment_Method = purchase.PaymentMethod ?? "credit"
+                Price = totalPrice,
+                Payment_Method = purchase.PaymentMethod ?? "credit",
+                Quantity = quantity
             };
 
             _context.CommoditySales.Add(commoditySale);
             await _context.SaveChangesAsync();
 
-            return Ok(new { 
-                message = "Purchase successful", 
-                saleId = commoditySale.Commodity_SaleID 
+            return Ok(new
+            {
+                message = "Purchase successful",
+                saleId = commoditySale.Commodity_SaleID,
+                remainingStock = commodityType.Stock_Quantity
             });
         }
 
@@ -248,6 +279,7 @@ namespace AmusementParkAPI.Controllers
                         purchaseDate = sc.sale.Purchase_Date,
                         price = sc.sale.Price,
                         paymentMethod = sc.sale.Payment_Method,
+                        quantity = sc.sale.Quantity,
                         customerName = sc.customer.FirstName + " " + sc.customer.LastName,
                         commodityName = type.Commodity_Name
                     })
@@ -296,6 +328,8 @@ namespace AmusementParkAPI.Controllers
         public int CustomerId { get; set; }
         public int CommodityTypeId { get; set; }
         public decimal TotalPrice { get; set; }
+        [Range(1, int.MaxValue)]
+        public int Quantity { get; set; } = 1;
         public string? PaymentMethod { get; set; }
     }
 }
