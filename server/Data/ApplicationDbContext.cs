@@ -10,7 +10,6 @@ namespace AmusementParkAPI.Data
         {
         }
 
-        // Existing
         public DbSet<Customer> Customers { get; set; }
         public DbSet<UserLogin> UserLogins { get; set; }
         
@@ -20,9 +19,10 @@ namespace AmusementParkAPI.Data
         public DbSet<CommodityType> CommodityTypes { get; set; }
         public DbSet<CommoditySale> CommoditySales { get; set; }
         
-        // Restaurant (YOUR MODULE)
+        // Restaurant 
         public DbSet<Restaurant> Restaurants { get; set; }
         public DbSet<MenuItem> MenuItems { get; set; }
+        public DbSet<MenuType> MenuTypes { get; set; }
         public DbSet<RestaurantOrder> RestaurantOrders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
         
@@ -43,7 +43,7 @@ namespace AmusementParkAPI.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Map to your actual table names
+            // Map to table names
             modelBuilder.Entity<Customer>().ToTable("customers");
             modelBuilder.Entity<UserLogin>().ToTable("user_login");
             modelBuilder.Entity<TicketType>().ToTable("ticket_type");
@@ -54,6 +54,7 @@ namespace AmusementParkAPI.Data
             // Restaurant tables (YOUR MODULE)
             modelBuilder.Entity<Restaurant>().ToTable("restaurant");
             modelBuilder.Entity<MenuItem>().ToTable("menu_item");
+            modelBuilder.Entity<MenuType>().ToTable("menu_type");
             modelBuilder.Entity<RestaurantOrder>().ToTable("restaurant_order");
             modelBuilder.Entity<OrderItem>().ToTable("order_item");
             
@@ -75,9 +76,10 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<CommodityType>().HasKey(c => c.Commodity_TypeID);
             modelBuilder.Entity<CommoditySale>().HasKey(c => c.Commodity_SaleID);
             
-            // Restaurant primary keys (YOUR MODULE)
+            // Restaurant primary keys 
             modelBuilder.Entity<Restaurant>().HasKey(r => r.Restaurant_ID);
             modelBuilder.Entity<MenuItem>().HasKey(m => m.Menu_ID);
+            modelBuilder.Entity<MenuType>().HasKey(m => m.MenuType_ID);
             modelBuilder.Entity<RestaurantOrder>().HasKey(o => o.Order_ID);
             modelBuilder.Entity<OrderItem>().HasKey(o => o.Order_Item_ID);
             
@@ -90,11 +92,10 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<MaintenanceLog>().HasKey(m => m.LogId);
             modelBuilder.Entity<Reviews>().HasKey(r => r.Review_ID);
 
-            // Configure the relationship between MaintenanceRequest and MaintenanceLog
-            modelBuilder.Entity<MaintenanceLog>()
-                .HasOne(ml => ml.MaintenanceRequest)
-                .WithMany(mr => mr.MaintenanceLogs)
-                .HasForeignKey(ml => ml.RequestId)
+            modelBuilder.Entity<TicketType>()
+                .HasOne<Rides>()
+                .WithMany()
+                .HasForeignKey(t => t.Ride_ID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             base.OnModelCreating(modelBuilder);
