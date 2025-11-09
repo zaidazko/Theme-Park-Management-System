@@ -235,6 +235,13 @@ export const maintenanceRequestAPI = {
     );
     return response.data;
   },
+
+  getMaintenanceLogsByRequestId: async (requestId) => {
+    const response = await axios.get(
+      `${API_BASE_URL}/maintenancerequest/${requestId}/logs`
+    );
+    return response.data;
+  },
 };
 
 export const UserPermissionsAPI = {

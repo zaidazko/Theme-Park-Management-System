@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace AmusementParkAPI.Models
 {
@@ -27,12 +28,15 @@ namespace AmusementParkAPI.Models
 
         // Navigation properties
         [ForeignKey("RequestId")]
+        [JsonIgnore] // Prevent circular reference in JSON serialization
         public virtual MaintenanceRequest? MaintenanceRequest { get; set; }
 
         [ForeignKey("RideId")]
+        [JsonIgnore] // Prevent circular reference - we don't need this in the response
         public virtual Rides? Ride { get; set; }
 
         [ForeignKey("PerformedBy")]
+        [JsonIgnore] // Prevent circular reference - we don't need this in the response
         public virtual Employee? PerformedByEmployee { get; set; }
     }
 }

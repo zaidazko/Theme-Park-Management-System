@@ -123,7 +123,7 @@ function App() {
                   onClick={() => setCurrentView("maintenance-assignments")}
                   style={styles.navButton}
                 >
-                  Assign Maintenance
+                  View Maintenance
                 </button>
                 <button
                   onClick={() => setCurrentView("maintenance-submission")}

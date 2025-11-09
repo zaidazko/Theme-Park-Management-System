@@ -90,6 +90,13 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<MaintenanceLog>().HasKey(m => m.LogId);
             modelBuilder.Entity<Reviews>().HasKey(r => r.Review_ID);
 
+            // Configure the relationship between MaintenanceRequest and MaintenanceLog
+            modelBuilder.Entity<MaintenanceLog>()
+                .HasOne(ml => ml.MaintenanceRequest)
+                .WithMany(mr => mr.MaintenanceLogs)
+                .HasForeignKey(ml => ml.RequestId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             base.OnModelCreating(modelBuilder);
         }
     }

@@ -34,6 +34,8 @@ const AssignMaintenance = () => {
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [selectedDescription, setSelectedDescription] = useState("");
+  const [showWorkDetailsModal, setShowWorkDetailsModal] = useState(false);
+  const [selectedWorkDetails, setSelectedWorkDetails] = useState("");
 
   const [filters, setFilters] = useState({
     startDate: "",
@@ -425,6 +427,100 @@ const AssignMaintenance = () => {
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  // Helper function to extract work details from maintenance request
+  const getWorkDetailsFromRequest = async (request) => {
+    // Handle different possible field name formats (camelCase, PascalCase, snake_case)
+    const maintenanceLogs =
+      request.maintenanceLogs ||
+      request.MaintenanceLogs ||
+      request.maintenance_logs ||
+      request.maintenanceLogsCollection ||
+      [];
+
+    // If logs are included in the request, use them
+    if (maintenanceLogs && maintenanceLogs.length > 0) {
+      // Find the log that matches this request ID
+      const requestId =
+        request.requestId ||
+        request.RequestId ||
+        request.request_ID ||
+        request.Request_ID;
+
+      const matchingLog =
+        maintenanceLogs.find((log) => {
+          const logRequestId =
+            log.requestId || log.RequestId || log.request_ID || log.Request_ID;
+          return logRequestId === requestId;
+        }) || maintenanceLogs[0]; // Fallback to first log if no match found
+
+      // Extract work details handling different field name formats
+      const workDetails =
+        matchingLog?.workDetails ||
+        matchingLog?.WorkDetails ||
+        matchingLog?.work_Details ||
+        matchingLog?.Work_Details ||
+        "";
+
+      if (workDetails && workDetails.trim() !== "") {
+        return workDetails;
+      }
+    }
+
+    // If no logs in request or no work details found, fetch from API
+    try {
+      const requestId =
+        request.requestId ||
+        request.RequestId ||
+        request.request_ID ||
+        request.Request_ID;
+
+      if (!requestId) {
+        console.log("No request ID found");
+        return "No work details available";
+      }
+
+      console.log("Fetching logs for request ID:", requestId);
+      const logs = await maintenanceRequestAPI.getMaintenanceLogsByRequestId(
+        requestId
+      );
+
+      console.log("Received logs from API:", logs);
+
+      if (logs && Array.isArray(logs) && logs.length > 0) {
+        // Get the most recent log (they're ordered by DatePerformed descending)
+        const mostRecentLog = logs[0];
+        console.log("Most recent log:", mostRecentLog);
+
+        const workDetails =
+          mostRecentLog.workDetails ||
+          mostRecentLog.WorkDetails ||
+          mostRecentLog.work_Details ||
+          mostRecentLog.Work_Details ||
+          "";
+
+        console.log("Extracted work details:", workDetails);
+
+        if (workDetails && workDetails.trim() !== "") {
+          return workDetails;
+        }
+      } else {
+        console.log("No logs found or empty array");
+      }
+    } catch (error) {
+      console.error("Error fetching maintenance logs:", error);
+      console.error("Error response:", error.response);
+      console.error("Error URL:", error.config?.url);
+
+      // If it's a 404, that's okay - just means no logs exist or route doesn't exist
+      if (error.response && error.response.status === 404) {
+        console.log("404 error - route might not exist or no logs found");
+        return "No work details available";
+      }
+    }
+
+    return "No work details available";
   };
 
   if (loading) {
@@ -1419,108 +1515,158 @@ const AssignMaintenance = () => {
                           whiteSpace: "nowrap",
                         }}
                       >
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "0.5rem",
-                            justifyContent: "flex-start",
-                          }}
-                        >
+                        {request.status?.toLowerCase() === "completed" ? (
                           <button
-                            onClick={() => {
-                              if (request.status?.toLowerCase() === "open") {
-                                setSelectedRequest(request);
+                            onClick={async () => {
+                              // Get work details from maintenance logs using helper function
+                              setShowWorkDetailsModal(true);
+                              setSelectedWorkDetails("Loading work details...");
+                              try {
+                                const workDetails =
+                                  await getWorkDetailsFromRequest(request);
+                                setSelectedWorkDetails(workDetails);
+                              } catch (error) {
+                                console.error(
+                                  "Error getting work details:",
+                                  error
+                                );
+                                setSelectedWorkDetails(
+                                  "Error loading work details. Please try again."
+                                );
                               }
                             }}
                             style={{
-                              backgroundColor:
-                                request.status?.toLowerCase() === "open"
-                                  ? "#3b82f6"
-                                  : "#9ca3af",
+                              backgroundColor: "#10b981",
                               color: "white",
                               border: "none",
                               padding: "6px 14px",
                               borderRadius: "6px",
-                              cursor:
-                                request.status?.toLowerCase() === "open"
-                                  ? "pointer"
-                                  : "not-allowed",
+                              cursor: "pointer",
                               fontSize: "12px",
                               fontWeight: "500",
                               whiteSpace: "nowrap",
                               transition: "all 0.2s",
-                              opacity:
-                                request.status?.toLowerCase() === "open"
-                                  ? 1
-                                  : 0.6,
                             }}
                             onMouseEnter={(e) => {
-                              if (request.status?.toLowerCase() === "open") {
-                                e.currentTarget.style.backgroundColor =
-                                  "#2563eb";
-                                e.currentTarget.style.transform =
-                                  "translateY(-1px)";
-                              }
+                              e.currentTarget.style.backgroundColor = "#059669";
+                              e.currentTarget.style.transform =
+                                "translateY(-1px)";
                             }}
                             onMouseLeave={(e) => {
-                              if (request.status?.toLowerCase() === "open") {
-                                e.currentTarget.style.backgroundColor =
-                                  "#3b82f6";
-                                e.currentTarget.style.transform =
-                                  "translateY(0)";
-                              }
+                              e.currentTarget.style.backgroundColor = "#10b981";
+                              e.currentTarget.style.transform = "translateY(0)";
                             }}
-                            disabled={request.status?.toLowerCase() !== "open"}
                           >
-                            Assign
+                            View Details
                           </button>
-                          <button
-                            onClick={() =>
-                              handleCancelRequest(request.requestId)
-                            }
+                        ) : (
+                          <div
                             style={{
-                              backgroundColor:
-                                request.status?.toLowerCase() === "open"
-                                  ? "#ef4444"
-                                  : "#9ca3af",
-                              color: "white",
-                              border: "none",
-                              padding: "6px 14px",
-                              borderRadius: "6px",
-                              cursor:
-                                request.status?.toLowerCase() === "open"
-                                  ? "pointer"
-                                  : "not-allowed",
-                              fontSize: "12px",
-                              fontWeight: "500",
-                              whiteSpace: "nowrap",
-                              transition: "all 0.2s",
-                              opacity:
-                                request.status?.toLowerCase() === "open"
-                                  ? 1
-                                  : 0.6,
+                              display: "flex",
+                              gap: "0.5rem",
+                              justifyContent: "flex-start",
                             }}
-                            onMouseEnter={(e) => {
-                              if (request.status?.toLowerCase() === "open") {
-                                e.currentTarget.style.backgroundColor =
-                                  "#dc2626";
-                                e.currentTarget.style.transform =
-                                  "translateY(-1px)";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (request.status?.toLowerCase() === "open") {
-                                e.currentTarget.style.backgroundColor =
-                                  "#ef4444";
-                                e.currentTarget.style.transform =
-                                  "translateY(0)";
-                              }
-                            }}
-                            disabled={request.status?.toLowerCase() !== "open"}
                           >
-                            Cancel
-                          </button>
-                        </div>
+                            <button
+                              onClick={() => {
+                                if (request.status?.toLowerCase() === "open") {
+                                  setSelectedRequest(request);
+                                }
+                              }}
+                              style={{
+                                backgroundColor:
+                                  request.status?.toLowerCase() === "open"
+                                    ? "#3b82f6"
+                                    : "#9ca3af",
+                                color: "white",
+                                border: "none",
+                                padding: "6px 14px",
+                                borderRadius: "6px",
+                                cursor:
+                                  request.status?.toLowerCase() === "open"
+                                    ? "pointer"
+                                    : "not-allowed",
+                                fontSize: "12px",
+                                fontWeight: "500",
+                                whiteSpace: "nowrap",
+                                transition: "all 0.2s",
+                                opacity:
+                                  request.status?.toLowerCase() === "open"
+                                    ? 1
+                                    : 0.6,
+                              }}
+                              onMouseEnter={(e) => {
+                                if (request.status?.toLowerCase() === "open") {
+                                  e.currentTarget.style.backgroundColor =
+                                    "#2563eb";
+                                  e.currentTarget.style.transform =
+                                    "translateY(-1px)";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (request.status?.toLowerCase() === "open") {
+                                  e.currentTarget.style.backgroundColor =
+                                    "#3b82f6";
+                                  e.currentTarget.style.transform =
+                                    "translateY(0)";
+                                }
+                              }}
+                              disabled={
+                                request.status?.toLowerCase() !== "open"
+                              }
+                            >
+                              Assign
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleCancelRequest(request.requestId)
+                              }
+                              style={{
+                                backgroundColor:
+                                  request.status?.toLowerCase() === "open"
+                                    ? "#ef4444"
+                                    : "#9ca3af",
+                                color: "white",
+                                border: "none",
+                                padding: "6px 14px",
+                                borderRadius: "6px",
+                                cursor:
+                                  request.status?.toLowerCase() === "open"
+                                    ? "pointer"
+                                    : "not-allowed",
+                                fontSize: "12px",
+                                fontWeight: "500",
+                                whiteSpace: "nowrap",
+                                transition: "all 0.2s",
+                                opacity:
+                                  request.status?.toLowerCase() === "open"
+                                    ? 1
+                                    : 0.6,
+                              }}
+                              onMouseEnter={(e) => {
+                                if (request.status?.toLowerCase() === "open") {
+                                  e.currentTarget.style.backgroundColor =
+                                    "#dc2626";
+                                  e.currentTarget.style.transform =
+                                    "translateY(-1px)";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (request.status?.toLowerCase() === "open") {
+                                  e.currentTarget.style.backgroundColor =
+                                    "#ef4444";
+                                  e.currentTarget.style.transform =
+                                    "translateY(0)";
+                                }
+                              }}
+                              disabled={
+                                request.status?.toLowerCase() !== "open"
+                              }
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -1627,6 +1773,121 @@ const AssignMaintenance = () => {
                     borderRadius: "6px",
                     cursor: "pointer",
                     fontSize: "16px",
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Work Details Modal */}
+        {showWorkDetailsModal && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+            }}
+            onClick={() => setShowWorkDetailsModal(false)}
+          >
+            <div
+              style={{
+                backgroundColor: "white",
+                padding: "30px",
+                borderRadius: "8px",
+                maxWidth: "600px",
+                width: "90%",
+                maxHeight: "80vh",
+                overflow: "auto",
+                boxShadow: "0 20px 25px rgba(0, 0, 0, 0.15)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "20px",
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "bold",
+                    margin: 0,
+                    color: "#10b981",
+                  }}
+                >
+                  Work Details
+                </h3>
+                <button
+                  onClick={() => setShowWorkDetailsModal(false)}
+                  style={{
+                    backgroundColor: "transparent",
+                    border: "none",
+                    fontSize: "24px",
+                    cursor: "pointer",
+                    color: "#6b7280",
+                    padding: "0",
+                    width: "30px",
+                    height: "30px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <div
+                style={{
+                  padding: "15px",
+                  backgroundColor: "#f0fdf4",
+                  borderRadius: "6px",
+                  border: "1px solid #bbf7d0",
+                  whiteSpace: "pre-wrap",
+                  wordWrap: "break-word",
+                  lineHeight: "1.6",
+                  color: "#374151",
+                  minHeight: "100px",
+                }}
+              >
+                {selectedWorkDetails}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginTop: "20px",
+                }}
+              >
+                <button
+                  onClick={() => setShowWorkDetailsModal(false)}
+                  style={{
+                    backgroundColor: "#10b981",
+                    color: "white",
+                    border: "none",
+                    padding: "10px 20px",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontSize: "16px",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#059669";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#10b981";
                   }}
                 >
                   Close
