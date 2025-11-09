@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using AmusementParkAPI.Data;
 using AmusementParkAPI.Models;
 
@@ -21,16 +22,167 @@ namespace AmusementParkAPI.Controllers
         public async Task<ActionResult<IEnumerable<object>>> GetCommodityTypes()
         {
             var commodityTypes = await _context.CommodityTypes
+                .Where(c => !c.Is_Discontinued)
                 .Select(c => new
                 {
                     commodityTypeId = c.Commodity_TypeID,
                     commodityName = c.Commodity_Name,
                     basePrice = c.Base_Price,
-                    commodityStore = c.Commodity_Store
+                    stockQuantity = c.Stock_Quantity,
+                    description = c.Description,
+                    isDiscontinued = c.Is_Discontinued
                 })
+                .OrderBy(c => c.commodityTypeId)
                 .ToListAsync();
 
             return Ok(commodityTypes);
+        }
+
+        // GET: api/commodity/types/discontinued
+        [HttpGet("types/discontinued")]
+        public async Task<ActionResult<IEnumerable<object>>> GetDiscontinuedCommodityTypes()
+        {
+            var commodityTypes = await _context.CommodityTypes
+                .Where(c => c.Is_Discontinued)
+                .Select(c => new
+                {
+                    commodityTypeId = c.Commodity_TypeID,
+                    commodityName = c.Commodity_Name,
+                    basePrice = c.Base_Price,
+                    stockQuantity = c.Stock_Quantity,
+                    description = c.Description,
+                    isDiscontinued = c.Is_Discontinued
+                })
+                .OrderBy(c => c.commodityTypeId)
+                .ToListAsync();
+
+            return Ok(commodityTypes);
+        }
+
+        // POST: api/commodity/types
+        [HttpPost("types")]
+        public async Task<ActionResult<object>> CreateCommodityType([FromBody] CommodityTypeCreateRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var commodityType = new CommodityType
+            {
+                Commodity_Name = request.CommodityName.Trim(),
+                Base_Price = request.BasePrice,
+                Stock_Quantity = request.StockQuantity,
+                Description = string.IsNullOrWhiteSpace(request.Description)
+                    ? null
+                    : request.Description.Trim(),
+                Is_Discontinued = false
+            };
+
+            _context.CommodityTypes.Add(commodityType);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(
+                nameof(GetCommodityTypes),
+                null,
+                new
+                {
+                    commodityTypeId = commodityType.Commodity_TypeID,
+                    commodityName = commodityType.Commodity_Name,
+                    basePrice = commodityType.Base_Price,
+                    stockQuantity = commodityType.Stock_Quantity,
+                    description = commodityType.Description,
+                    isDiscontinued = commodityType.Is_Discontinued
+                });
+        }
+
+        // PUT: api/commodity/types/{id}
+        [HttpPut("types/{id}")]
+        public async Task<ActionResult> UpdateCommodityType(int id, [FromBody] CommodityTypeUpdateRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var commodityType = await _context.CommodityTypes.FindAsync(id);
+            if (commodityType == null)
+            {
+                return NotFound();
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.CommodityName))
+            {
+                commodityType.Commodity_Name = request.CommodityName.Trim();
+            }
+
+            if (request.BasePrice.HasValue)
+            {
+                commodityType.Base_Price = request.BasePrice.Value;
+            }
+
+            if (request.StockQuantity.HasValue)
+            {
+                commodityType.Stock_Quantity = request.StockQuantity.Value;
+            }
+
+            if (request.Description != null)
+            {
+                commodityType.Description = string.IsNullOrWhiteSpace(request.Description)
+                    ? null
+                    : request.Description.Trim();
+            }
+
+            if (request.IsDiscontinued.HasValue)
+            {
+                commodityType.Is_Discontinued = request.IsDiscontinued.Value;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // DELETE: api/commodity/types/{id}
+        [HttpDelete("types/{id}")]
+        public async Task<ActionResult> DeleteCommodityType(int id)
+        {
+            var commodityType = await _context.CommodityTypes.FindAsync(id);
+            if (commodityType == null)
+            {
+                return NotFound();
+            }
+
+            if (commodityType.Is_Discontinued)
+            {
+                return NoContent();
+            }
+
+            commodityType.Is_Discontinued = true;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // PUT: api/commodity/types/{id}/restore
+        [HttpPut("types/{id}/restore")]
+        public async Task<ActionResult> RestoreCommodityType(int id)
+        {
+            var commodityType = await _context.CommodityTypes.FindAsync(id);
+            if (commodityType == null)
+            {
+                return NotFound();
+            }
+
+            if (!commodityType.Is_Discontinued)
+            {
+                return NoContent();
+            }
+
+            commodityType.Is_Discontinued = false;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
 
         // POST: api/commodity/purchase
@@ -70,44 +222,12 @@ namespace AmusementParkAPI.Controllers
                         purchaseDate = sale.Purchase_Date,
                         price = sale.Price,
                         paymentMethod = sale.Payment_Method,
-                        commodityName = type.Commodity_Name,
-                        store = type.Commodity_Store
+                        commodityName = type.Commodity_Name
                     })
                 .OrderByDescending(p => p.purchaseDate)
                 .ToListAsync();
 
             return Ok(purchases);
-        }
-
-        // GET: api/commodity/stores
-        [HttpGet("stores")]
-        public async Task<ActionResult<IEnumerable<int>>> GetStores()
-        {
-            var stores = await _context.CommodityTypes
-                .Select(c => c.Commodity_Store)
-                .Distinct()
-                .OrderBy(s => s)
-                .ToListAsync();
-
-            return Ok(stores);
-        }
-
-        // GET: api/commodity/store/{storeId}
-        [HttpGet("store/{storeId}")]
-        public async Task<ActionResult<IEnumerable<object>>> GetStoreProducts(int storeId)
-        {
-            var products = await _context.CommodityTypes
-                .Where(c => c.Commodity_Store == storeId)
-                .Select(c => new
-                {
-                    commodityTypeId = c.Commodity_TypeID,
-                    commodityName = c.Commodity_Name,
-                    basePrice = c.Base_Price,
-                    commodityStore = c.Commodity_Store
-                })
-                .ToListAsync();
-
-            return Ok(products);
         }
 
         // GET: api/commodity/sales
@@ -136,6 +256,39 @@ namespace AmusementParkAPI.Controllers
 
             return Ok(sales);
         }
+    }
+
+    public class CommodityTypeCreateRequest
+    {
+        [Required]
+        [MaxLength(50)]
+        public string CommodityName { get; set; } = string.Empty;
+
+        [Range(0.01, double.MaxValue)]
+        public decimal BasePrice { get; set; }
+
+        [Range(0, int.MaxValue)]
+        public int StockQuantity { get; set; }
+
+        [MaxLength(255)]
+        public string? Description { get; set; }
+    }
+
+    public class CommodityTypeUpdateRequest
+    {
+        [MaxLength(50)]
+        public string? CommodityName { get; set; }
+
+        [Range(0.01, double.MaxValue)]
+        public decimal? BasePrice { get; set; }
+
+        [Range(0, int.MaxValue)]
+        public int? StockQuantity { get; set; }
+
+        [MaxLength(255)]
+        public string? Description { get; set; }
+
+        public bool? IsDiscontinued { get; set; }
     }
 
     public class CommodityPurchaseDto

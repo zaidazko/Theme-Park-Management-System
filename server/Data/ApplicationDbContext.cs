@@ -93,7 +93,7 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<Reviews>().HasKey(r => r.Review_ID);
 
             modelBuilder.Entity<TicketType>()
-                .HasOne<Rides>()
+                .HasOne(t => t.Ride)
                 .WithMany()
                 .HasForeignKey(t => t.Ride_ID)
                 .OnDelete(DeleteBehavior.Restrict);

@@ -16,6 +16,9 @@ import EmployeeDashboard from "./components/EmployeeDashboard";
 import Rides from "./components/Rides";
 import Reviews from "./components/Reviews";
 import MakeReview from "./components/MakeReview";
+import ManageMerch from "./components/ManageMerch";
+import ManageFood from "./components/ManageFood";
+import ManageTickets from "./components/ManageTickets";
 import UnifiedSalesReport from "./components/UnifiedSalesReport";
 import "./App.css";
 
@@ -107,6 +110,24 @@ function App() {
                 >
                   Ride Manager
                 </button>  
+                <button
+                  onClick={() => setCurrentView("manage-tickets")}
+                  style={styles.navButton}
+                >
+                  Manage Tickets
+                </button>
+                <button
+                  onClick={() => setCurrentView("manage-food")}
+                  style={styles.navButton}
+                >
+                  Manage Food
+                </button>
+                <button
+                  onClick={() => setCurrentView("manage-merch")}
+                  style={styles.navButton}
+                >
+                  Manage Merchandise
+                </button>
                 <button
                   onClick={() => setCurrentView("reviews")}
                   style={styles.navButton}
@@ -263,6 +284,16 @@ function App() {
 
       {currentView === "commodity-sales" && user && isEmployee && (
         <CommoditySales />
+      )}
+
+      {currentView === "manage-tickets" && user && isEmployee && (
+        <ManageTickets />
+      )}
+
+      {currentView === "manage-food" && user && isEmployee && <ManageFood />}
+
+      {currentView === "manage-merch" && user && isEmployee && (
+        <ManageMerch />
       )}
 
       {currentView === "maintenance-request" && user && isEmployee && (
