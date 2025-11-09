@@ -480,7 +480,7 @@ const EmployeeDashboard = () => {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h1 style={styles.title}>Employee Management Dashboard</h1>
+        <h1 style={styles.title}>User Management Dashboard</h1>
         <p style={styles.subtitle}>
           Manage employees, departments, roles, and permissions
         </p>
@@ -553,7 +553,6 @@ const EmployeeDashboard = () => {
                   <tr>
                     <th style={styles.tableHeaderCell}>Name</th>
                     <th style={styles.tableHeaderCell}>Email</th>
-                    <th style={styles.tableHeaderCell}>Department</th>
                     <th style={styles.tableHeaderCell}>Role</th>
                     <th style={styles.tableHeaderCell}>Hire Date</th>
                     <th style={styles.tableHeaderCell}>Salary</th>
@@ -581,9 +580,6 @@ const EmployeeDashboard = () => {
                         </div>
                       </td>
                       <td style={styles.tableCell}>{employee.email}</td>
-                      <td style={styles.tableCell}>
-                        {employee.department?.departmentName || "N/A"}
-                      </td>
                       <td style={styles.tableCell}>
                         {employee.role?.roleName || "N/A"}
                       </td>
