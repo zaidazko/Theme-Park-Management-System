@@ -25,7 +25,30 @@ namespace AmusementParkAPI.Controllers
                 .Include(m => m.Ride)
                 .Include(m => m.Reporter)
                 .Include(m => m.Assignee)
+                .Include(m => m.MaintenanceLogs)
                 .ToListAsync();
+        }
+
+        // GET: api/maintenancerequest/{id}/logs - Must come before {id} route
+        [HttpGet("{id}/logs", Name = "GetMaintenanceLogs")]
+        public async Task<ActionResult<IEnumerable<MaintenanceLog>>> GetMaintenanceLogsByRequestId(int id)
+        {
+            // Verify the request exists
+            var requestExists = await _context.MaintenanceRequests
+                .AnyAsync(m => m.RequestId == id);
+            
+            if (!requestExists)
+            {
+                return NotFound(new { message = $"Maintenance request {id} not found" });
+            }
+
+            var logs = await _context.MaintenanceLogs
+                .Where(ml => ml.RequestId == id)
+                .OrderByDescending(ml => ml.DatePerformed)
+                .ToListAsync();
+
+            // Return empty array if no logs - this is valid
+            return Ok(logs);
         }
 
         // GET: api/maintenancerequest/5
@@ -36,6 +59,7 @@ namespace AmusementParkAPI.Controllers
                 .Include(m => m.Ride)
                 .Include(m => m.Reporter)
                 .Include(m => m.Assignee)
+                .Include(m => m.MaintenanceLogs)
                 .FirstOrDefaultAsync(m => m.RequestId == id);
 
             if (maintenanceRequest == null)
@@ -86,6 +110,7 @@ namespace AmusementParkAPI.Controllers
                 .Include(m => m.Ride)
                 .Include(m => m.Reporter)
                 .Include(m => m.Assignee)
+                .Include(m => m.MaintenanceLogs)
                 .FirstOrDefaultAsync(m => m.RequestId == maintenanceRequest.RequestId);
 
             return CreatedAtAction("GetMaintenanceRequest", new { id = maintenanceRequest.RequestId }, createdRequest);
@@ -130,6 +155,7 @@ namespace AmusementParkAPI.Controllers
                 .Include(m => m.Ride)
                 .Include(m => m.Reporter)
                 .Include(m => m.Assignee)
+                .Include(m => m.MaintenanceLogs)
                 .Where(m => m.Status == status)
                 .ToListAsync();
         }
@@ -166,6 +192,7 @@ namespace AmusementParkAPI.Controllers
                 .Include(m => m.Ride)
                 .Include(m => m.Reporter)
                 .Include(m => m.Assignee)
+                .Include(m => m.MaintenanceLogs)
                 .FirstOrDefaultAsync(m => m.RequestId == id);
 
             return Ok(new { message = "Maintenance request assigned successfully", maintenanceRequest = updatedRequest });
@@ -179,6 +206,7 @@ namespace AmusementParkAPI.Controllers
                 .Include(m => m.Ride)
                 .Include(m => m.Reporter)
                 .Include(m => m.Assignee)
+                .Include(m => m.MaintenanceLogs)
                 .Where(m => m.AssignedTo == employeeId)
                 .ToListAsync();
         }
@@ -224,9 +252,17 @@ namespace AmusementParkAPI.Controllers
             _context.MaintenanceLogs.Add(maintenanceLog);
             await _context.SaveChangesAsync();
 
+            // Load the updated request with maintenance logs
+            var updatedRequest = await _context.MaintenanceRequests
+                .Include(m => m.Ride)
+                .Include(m => m.Reporter)
+                .Include(m => m.Assignee)
+                .Include(m => m.MaintenanceLogs)
+                .FirstOrDefaultAsync(m => m.RequestId == id);
+
             return Ok(new { 
                 message = "Maintenance request completed successfully", 
-                maintenanceRequest,
+                maintenanceRequest = updatedRequest,
                 maintenanceLog 
             });
         }

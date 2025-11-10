@@ -4,21 +4,21 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AmusementParkAPI.Models
 {
-    [Table("ticket_sale")]
-    public class TicketSale
+    [Table("menu_sale")]
+    public class MenuSale
     {
         [Key]
-        [Column("Ticket_ID")]
-        public int Ticket_ID { get; set; }
+        [Column("Menu_ID")]
+        public int Menu_ID { get; set; }
 
         [Column("Customer_ID")]
         public int Customer_ID { get; set; }
 
+        [Column("MenuType_ID")]
+        public int MenuType_ID { get; set; }
+
         [Column("Purchase_Date")]
         public DateTime? Purchase_Date { get; set; }
-
-        [Column("TicketType_ID")]
-        public int TicketType_ID { get; set; }
 
         [Column("Price")]
         public decimal Price { get; set; }

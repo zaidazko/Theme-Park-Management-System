@@ -75,6 +75,12 @@ export const ridesAPI = {
     });
     return response.data;
   },
+
+  // Add new ride
+  createRide: async (rideData) => {
+    const response = await axios.post(`${API_BASE_URL}/rides`, rideData);
+    return response.data;
+  },
 };
 
 export const employeeAPI = {
@@ -226,6 +232,145 @@ export const maintenanceRequestAPI = {
   cancelMaintenanceRequest: async (requestId) => {
     const response = await axios.put(
       `${API_BASE_URL}/maintenancerequest/${requestId}/cancel`
+    );
+    return response.data;
+  },
+
+  getMaintenanceLogsByRequestId: async (requestId) => {
+    const response = await axios.get(
+      `${API_BASE_URL}/maintenancerequest/${requestId}/logs`
+    );
+    return response.data;
+  },
+};
+
+export const ticketAPI = {
+  getTicketTypes: async () => {
+    const response = await axios.get(`${API_BASE_URL}/ticket/types`);
+    return response.data;
+  },
+
+  getDiscontinuedTicketTypes: async () => {
+    const response = await axios.get(
+      `${API_BASE_URL}/ticket/types/discontinued`
+    );
+    return response.data;
+  },
+
+  createTicketType: async (ticketData) => {
+    const response = await axios.post(
+      `${API_BASE_URL}/ticket/types`,
+      ticketData
+    );
+    return response.data;
+  },
+
+  updateTicketType: async (ticketTypeId, ticketData) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/ticket/types/${ticketTypeId}`,
+      ticketData
+    );
+    return response.data;
+  },
+
+  deleteTicketType: async (ticketTypeId) => {
+    const response = await axios.delete(
+      `${API_BASE_URL}/ticket/types/${ticketTypeId}`
+    );
+    return response.data;
+  },
+
+  restoreTicketType: async (ticketTypeId) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/ticket/types/${ticketTypeId}/restore`
+    );
+    return response.data;
+  },
+};
+
+export const commodityAPI = {
+  getCommodityTypes: async () => {
+    const response = await axios.get(`${API_BASE_URL}/commodity/types`);
+    return response.data;
+  },
+
+  getDiscontinuedCommodityTypes: async () => {
+    const response = await axios.get(
+      `${API_BASE_URL}/commodity/types/discontinued`
+    );
+    return response.data;
+  },
+
+  createCommodityType: async (commodityData) => {
+    const response = await axios.post(
+      `${API_BASE_URL}/commodity/types`,
+      commodityData
+    );
+    return response.data;
+  },
+
+  updateCommodityType: async (commodityTypeId, commodityData) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/commodity/types/${commodityTypeId}`,
+      commodityData
+    );
+    return response.data;
+  },
+
+  deleteCommodityType: async (commodityTypeId) => {
+    const response = await axios.delete(
+      `${API_BASE_URL}/commodity/types/${commodityTypeId}`
+    );
+    return response.data;
+  },
+
+  restoreCommodityType: async (commodityTypeId) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/commodity/types/${commodityTypeId}/restore`
+    );
+    return response.data;
+  },
+};
+
+export const menuAPI = {
+  getMenuTypes: async () => {
+    const response = await axios.get(`${API_BASE_URL}/menu/types`);
+    return response.data;
+  },
+
+  getDiscontinuedMenuTypes: async () => {
+    const response = await axios.get(
+      `${API_BASE_URL}/menu/types/discontinued`
+    );
+    return response.data;
+  },
+
+  createMenuType: async (menuData) => {
+    const response = await axios.post(
+      `${API_BASE_URL}/menu/types`,
+      menuData
+    );
+    return response.data;
+  },
+
+  updateMenuType: async (menuTypeId, menuData) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/menu/types/${menuTypeId}`,
+      menuData
+    );
+    return response.data;
+  },
+
+  deleteMenuType: async (menuTypeId) => {
+    const response = await axios.delete(
+      `${API_BASE_URL}/menu/types/${menuTypeId}`
+    );
+    return response.data;
+  },
+
+  restoreMenuType: async (menuTypeId) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/menu/types/${menuTypeId}/restore`
     );
     return response.data;
   },

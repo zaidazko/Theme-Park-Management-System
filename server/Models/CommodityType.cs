@@ -9,5 +9,7 @@ namespace AmusementParkAPI.Models
         public int Stock_Quantity { get; set; } = 0;
         public string Category { get; set; } = "merchandise";
         public string Display_Category { get; set; } = "Uncategorized";
+        public string? Description { get; set; }
+        public bool Is_Discontinued { get; set; } = false;
     }
 }

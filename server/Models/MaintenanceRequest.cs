@@ -41,5 +41,8 @@ namespace AmusementParkAPI.Models
 
         [ForeignKey("AssignedTo")]
         public virtual Employee? Assignee { get; set; }
+
+        // Maintenance logs for this request
+        public virtual ICollection<MaintenanceLog>? MaintenanceLogs { get; set; }
     }
 }

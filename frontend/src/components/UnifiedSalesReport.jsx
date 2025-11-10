@@ -1,209 +1,548 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Doughnut } from "react-chartjs-2";
 import "./ThemePark.css";
 import "./UnifiedSalesReport.css";
+
+ChartJS.register(CategoryScale, LinearScale, ArcElement, Title, Tooltip, Legend);
+
+const CATEGORY_ORDER = ["tickets", "commodities", "menu"];
+
+const CATEGORY_META = {
+  tickets: {
+    label: "Tickets",
+    filterLabel: "Tickets",
+    icon: "🎫",
+    color: "#3b82f6",
+    background: "#f0f7ff",
+    border: "#3b82f6",
+    revenueKey: "ticketRevenue",
+    breakdownKey: "ticketBreakdown",
+    statsKey: "tickets",
+    chart: {
+      background: "rgba(59, 130, 246, 0.9)",
+      border: "rgba(59, 130, 246, 1)",
+    },
+  },
+  commodities: {
+    label: "Merchandise",
+    filterLabel: "Merchandise",
+    icon: "🛍️",
+    color: "#10b981",
+    background: "#f0fdf4",
+    border: "#10b981",
+    revenueKey: "commodityRevenue",
+    breakdownKey: "commodityBreakdown",
+    statsKey: "commodities",
+    chart: {
+      background: "rgba(16, 185, 129, 0.9)",
+      border: "rgba(16, 185, 129, 1)",
+    },
+  },
+  menu: {
+    label: "Menu",
+    filterLabel: "Menu Items",
+    icon: "🍔",
+    color: "#fbbf24",
+    background: "#fffbeb",
+    border: "#fbbf24",
+    revenueKey: "menuRevenue",
+    breakdownKey: "menuBreakdown",
+    statsKey: "menu",
+    chart: {
+      background: "rgba(251, 191, 36, 0.9)",
+      border: "rgba(251, 191, 36, 1)",
+    },
+  },
+};
+
+const buildSelectionMap = (items) =>
+  Object.fromEntries(items.map((item) => [item, true]));
+
+const formatCurrency = (value) => `$${value.toFixed(2)}`;
+
+const formatPaymentMethod = (value) => {
+  if (!value) {
+    return "Unknown";
+  }
+  const lower = value.toString().toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+};
+
+const formatDate = (value) => {
+  if (!value) {
+    return "Unknown";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unknown";
+  }
+  return parsed.toLocaleDateString();
+};
 
 const UnifiedSalesReport = () => {
   const [ticketSales, setTicketSales] = useState([]);
   const [commoditySales, setCommoditySales] = useState([]);
-  const [restaurantSales, setRestaurantSales] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-    const [openDropdown, setOpenDropdown] = useState(null);
+  const [menuSales, setMenuSales] = useState([]);
   const [filters, setFilters] = useState({
     startDate: "",
     endDate: "",
     paymentMethod: "",
-    saleType: { tickets: true, commodities: true, restaurant: true }
+    saleType: {
+      tickets: true,
+      commodities: true,
+      menu: true,
+    },
   });
-
   const [availableItems, setAvailableItems] = useState({
     tickets: new Set(),
     commodities: new Set(),
-    restaurant: new Set()
+    menu: new Set(),
   });
-
-  const [selectedFilters, setSelectedFilters] = useState({
+  const [selectedItems, setSelectedItems] = useState({
     tickets: {},
     commodities: {},
-    restaurant: {}
+    menu: {},
   });
-
-  // Stats state
-  const [stats, setStats] = useState({
-    totalRevenue: 0,
-    ticketRevenue: 0,
-    commodityRevenue: 0,
-    restaurantRevenue: 0,
-    tickets: {
-      mostProfitable: { name: null, revenue: 0 },
-      leastProfitable: { name: null, revenue: Infinity }
-    },
-    commodities: {
-      mostProfitable: { name: null, revenue: 0 },
-      leastProfitable: { name: null, revenue: Infinity }
-    },
-    restaurant: {
-      mostProfitable: { name: null, revenue: 0 },
-      leastProfitable: { name: null, revenue: Infinity }
-    },
-  uniqueTicketCustomers: 0,
-  uniqueAllCustomers: 0,
-  avgCustomersPerMonth: 0
-  });
-  
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: 'asc'
-  });
-
-  // Click outside handler for dropdowns
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-        if (!event.target.closest('.theme-park-dropdown-menu') && 
-            !event.target.closest('.theme-park-dropdown-toggle')) {
-          setOpenDropdown(null);
-        }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, []);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-  const isEmployee = currentUser.userType === "Employee" || currentUser.userType === "Manager";
+  const isEmployee =
+    currentUser.userType === "Employee" || currentUser.userType === "Manager";
 
   useEffect(() => {
-    if (isEmployee) {
-      fetchAllSales();
-    }
+    const handleClickOutside = (event) => {
+      if (
+        !event.target.closest(".theme-park-dropdown-menu") &&
+        !event.target.closest(".theme-park-dropdown-toggle")
+      ) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
-    const filteredData = getFilteredSales();
-    calculateStats(filteredData);
-  }, [ticketSales, commoditySales, restaurantSales, filters]);
-
-  const fetchAllSales = async () => {
-    setLoading(true);
-    try {
-      // Fetch all types of sales in parallel
-      const [ticketResponse, commodityResponse, restaurantResponse] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/Ticket/Sales`),
-        fetch(`${import.meta.env.VITE_API_URL}/Commodity/Sales`),
-        fetch(`${import.meta.env.VITE_API_URL}/Restaurant/Orders`)
-      ]);
-
-      if (!ticketResponse.ok) throw new Error("Failed to fetch ticket sales");
-      if (!commodityResponse.ok) throw new Error("Failed to fetch commodity sales");
-      if (!restaurantResponse.ok) throw new Error("Failed to fetch restaurant sales");
-
-      const [ticketData, commodityData, restaurantData] = await Promise.all([
-        ticketResponse.json(),
-        commodityResponse.json(),
-        restaurantResponse.json()
-      ]);
-
-      console.log('Ticket Sales:', ticketData);
-      console.log('Commodity Sales:', commodityData);
-      console.log('Restaurant Orders:', restaurantData);
-
-      setTicketSales(ticketData || []);
-      setCommoditySales(commodityData || []);
-      setRestaurantSales(restaurantData || []);
-
-      // Collect unique items
-      const uniqueItems = {
-        tickets: new Set(ticketData?.map(sale => sale.ticketType) || []),
-        commodities: new Set(commodityData?.map(sale => sale.commodityName) || []),
-        restaurant: new Set(
-          restaurantData?.reduce((items, order) => {
-            order.items?.forEach(item => items.push(item.itemName));
-            return items;
-          }, []) || []
-        )
-      };
-      setAvailableItems(uniqueItems);
-
-      // Initialize all items as selected
-      const initialSelectedFilters = {
-        tickets: Object.fromEntries([...uniqueItems.tickets].map(item => [item, true])),
-        commodities: Object.fromEntries([...uniqueItems.commodities].map(item => [item, true])),
-        restaurant: Object.fromEntries([...uniqueItems.restaurant].map(item => [item, true]))
-      };
-      setSelectedFilters(initialSelectedFilters);
-    } catch (err) {
-      setError(`Failed to load sales data: ${err.message}`);
-      console.error('Error fetching sales data:', err);
-      // Initialize with empty arrays if fetch fails
-      setTicketSales([]);
-      setCommoditySales([]);
-      setRestaurantSales([]);
-    } finally {
+    if (!isEmployee) {
       setLoading(false);
+      setError("Sales report is restricted to staff accounts.");
+      return;
     }
-  };
 
-  // Filter helper - filters a single sales array by the current filters
-  const filterSales = (sales, type) => {
-    return (sales || []).filter((sale) => {
-      const rawDate = sale.purchaseDate || sale.orderDate;
-      if (!rawDate) return false;
-      const saleDate = new Date(rawDate);
-      const saleAmount = type === "restaurant" ? sale.totalPrice : sale.price;
+    const fetchAllSales = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const baseUrl = import.meta.env.VITE_API_URL;
+        const [ticketResponse, commodityResponse, menuResponse] =
+          await Promise.all([
+            fetch(`${baseUrl}/Ticket/Sales`),
+            fetch(`${baseUrl}/Commodity/Sales`),
+            fetch(`${baseUrl}/Menu/Sales`),
+          ]);
+
+        if (!ticketResponse.ok) {
+          throw new Error("Failed to fetch ticket sales");
+        }
+        if (!commodityResponse.ok) {
+          throw new Error("Failed to fetch merchandise sales");
+        }
+        if (!menuResponse.ok) {
+          throw new Error("Failed to fetch menu sales");
+        }
+
+        const [ticketData, commodityData, menuData] = await Promise.all([
+          ticketResponse.json(),
+          commodityResponse.json(),
+          menuResponse.json(),
+        ]);
+
+        const normalizedTickets = (ticketData ?? []).map((sale) => ({
+          id: sale.ticketId,
+          category: "tickets",
+          itemName: sale.ticketType ?? "Ticket",
+          amount: Number(sale.price ?? 0),
+          paymentMethod: (sale.paymentMethod ?? "Unknown").toString(),
+          date: sale.purchaseDate,
+          customerName: sale.customerName ?? "Unknown Customer",
+          quantity: sale.quantity ?? 1,
+        }));
+
+        const normalizedCommodities = (commodityData ?? []).map((sale) => ({
+          id: sale.commoditySaleId,
+          category: "commodities",
+          itemName: sale.commodityName ?? "Merchandise Item",
+          amount: Number(sale.price ?? 0),
+          paymentMethod: (sale.paymentMethod ?? "Unknown").toString(),
+          date: sale.purchaseDate,
+          customerName: sale.customerName ?? "Unknown Customer",
+          quantity: sale.quantity ?? 1,
+        }));
+
+        const normalizedMenu = (menuData ?? []).map((sale) => ({
+          id: sale.saleId,
+          category: "menu",
+          itemName: sale.menuItem ?? "Menu Item",
+          amount: Number(sale.price ?? 0),
+          paymentMethod: (sale.paymentMethod ?? "Unknown").toString(),
+          date: sale.purchaseDate,
+          customerName: sale.customerName ?? "Unknown Customer",
+          quantity: sale.quantity ?? 1,
+        }));
+
+        setTicketSales(normalizedTickets);
+        setCommoditySales(normalizedCommodities);
+        setMenuSales(normalizedMenu);
+
+        const ticketNames = new Set(
+          normalizedTickets.map((sale) => sale.itemName)
+        );
+        const commodityNames = new Set(
+          normalizedCommodities.map((sale) => sale.itemName)
+        );
+        const menuNames = new Set(normalizedMenu.map((sale) => sale.itemName));
+
+        setAvailableItems({
+          tickets: ticketNames,
+          commodities: commodityNames,
+          menu: menuNames,
+        });
+
+        setSelectedItems({
+          tickets: buildSelectionMap(Array.from(ticketNames)),
+          commodities: buildSelectionMap(Array.from(commodityNames)),
+          menu: buildSelectionMap(Array.from(menuNames)),
+        });
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load sales information."
+        );
+        setTicketSales([]);
+        setCommoditySales([]);
+        setMenuSales([]);
+        setAvailableItems({
+          tickets: new Set(),
+          commodities: new Set(),
+          menu: new Set(),
+        });
+        setSelectedItems({
+          tickets: {},
+          commodities: {},
+          menu: {},
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllSales();
+  }, [isEmployee]);
+
+  const getFilteredCategorySales = (sales, categoryKey) => {
+    if (!filters.saleType[categoryKey]) {
+      return [];
+    }
+
+    return (sales ?? []).filter((sale) => {
+      if (!sale.date) {
+        return false;
+      }
+
+      const saleDate = new Date(sale.date);
+      if (Number.isNaN(saleDate.getTime())) {
+        return false;
+      }
 
       if (filters.startDate) {
         const start = new Date(filters.startDate);
-        if (saleDate < start) return false;
+        if (saleDate < start) {
+          return false;
+        }
       }
+
       if (filters.endDate) {
         const end = new Date(filters.endDate);
-        // include the whole end day
         end.setHours(23, 59, 59, 999);
-        if (saleDate > end) return false;
+        if (saleDate > end) {
+          return false;
+        }
       }
 
       if (filters.paymentMethod) {
-        const pm = (sale.paymentMethod || "").toString().toLowerCase();
-        if (pm !== filters.paymentMethod.toLowerCase()) return false;
+        if (
+          sale.paymentMethod.toLowerCase() !==
+          filters.paymentMethod.toLowerCase()
+        ) {
+          return false;
+        }
       }
 
-      // Filter by selected items
-      if (type === 'ticket' && !selectedFilters.tickets[sale.ticketType]) return false;
-      if (type === 'commodity' && !selectedFilters.commodities[sale.commodityName]) return false;
-      if (type === 'restaurant' && sale.items) {
-        // For restaurant sales, check if any of the items are selected
-        const hasSelectedItem = sale.items.some(item => selectedFilters.restaurant[item.itemName]);
-        if (!hasSelectedItem) return false;
+      const selections = selectedItems[categoryKey];
+      if (selections && Object.keys(selections).length > 0) {
+        if (!selections[sale.itemName]) {
+          return false;
+        }
       }
 
       return true;
     });
   };
 
-  // Return combined filtered sales depending on checkbox selections
-  const getFilteredSales = () => {
-    const results = [];
-    const st = filters.saleType || {};
-    if (st.tickets) results.push(...filterSales(ticketSales, "ticket"));
-    if (st.commodities) results.push(...filterSales(commoditySales, "commodity"));
-    if (st.restaurant) results.push(...filterSales(restaurantSales, "restaurant"));
-    return results;
+  const filteredTicketSales = useMemo(
+    () => getFilteredCategorySales(ticketSales, "tickets"),
+    [ticketSales, filters, selectedItems]
+  );
+
+  const filteredCommoditySales = useMemo(
+    () => getFilteredCategorySales(commoditySales, "commodities"),
+    [commoditySales, filters, selectedItems]
+  );
+
+  const filteredMenuSales = useMemo(
+    () => getFilteredCategorySales(menuSales, "menu"),
+    [menuSales, filters, selectedItems]
+  );
+
+  const aggregateStats = useMemo(() => {
+    const sumRevenue = (sales) =>
+      sales.reduce(
+        (total, sale) => total + (Number.isFinite(sale.amount) ? sale.amount : 0),
+        0
+      );
+
+    const buildBreakdown = (sales) => {
+      const map = new Map();
+      sales.forEach((sale) => {
+        const key = sale.itemName;
+        const previous = map.get(key) ?? { revenue: 0, quantity: 0 };
+        previous.revenue += sale.amount;
+        previous.quantity += sale.quantity ?? 1;
+        map.set(key, previous);
+      });
+      return Array.from(map.entries())
+        .map(([name, data]) => ({
+          name,
+          revenue: data.revenue,
+          quantity: data.quantity,
+        }))
+        .sort((a, b) => b.revenue - a.revenue);
+    };
+
+    const profitStats = (breakdown) => {
+      if (breakdown.length === 0) {
+        return {
+          mostProfitable: { name: null, revenue: 0 },
+          leastProfitable: { name: null, revenue: Infinity },
+        };
+      }
+
+      const sorted = [...breakdown].sort((a, b) => b.revenue - a.revenue);
+
+      return {
+        mostProfitable: {
+          name: sorted[0].name,
+          revenue: sorted[0].revenue,
+        },
+        leastProfitable: {
+          name: sorted[sorted.length - 1].name,
+          revenue: sorted[sorted.length - 1].revenue,
+        },
+      };
+    };
+
+    const ticketRevenue = sumRevenue(filteredTicketSales);
+    const commodityRevenue = sumRevenue(filteredCommoditySales);
+    const menuRevenue = sumRevenue(filteredMenuSales);
+
+    const ticketBreakdown = buildBreakdown(filteredTicketSales);
+    const commodityBreakdown = buildBreakdown(filteredCommoditySales);
+    const menuBreakdown = buildBreakdown(filteredMenuSales);
+
+    return {
+      totalRevenue: ticketRevenue + commodityRevenue + menuRevenue,
+      ticketRevenue,
+      commodityRevenue,
+      menuRevenue,
+      tickets: profitStats(ticketBreakdown),
+      commodities: profitStats(commodityBreakdown),
+      menu: profitStats(menuBreakdown),
+      ticketBreakdown,
+      commodityBreakdown,
+      menuBreakdown,
+    };
+  }, [filteredTicketSales, filteredCommoditySales, filteredMenuSales]);
+
+  const allFilteredSales = useMemo(
+    () => [
+      ...filteredTicketSales,
+      ...filteredCommoditySales,
+      ...filteredMenuSales,
+    ],
+    [filteredTicketSales, filteredCommoditySales, filteredMenuSales]
+  );
+
+  const getSortedSales = (sales, sort) => {
+    if (!sort.key) {
+      return sales;
+    }
+
+    const sorted = [...sales].sort((a, b) => {
+      let aValue;
+      let bValue;
+
+      switch (sort.key) {
+        case "type":
+          aValue = CATEGORY_META[a.category]?.label ?? a.category;
+          bValue = CATEGORY_META[b.category]?.label ?? b.category;
+          aValue = aValue.toLowerCase();
+          bValue = bValue.toLowerCase();
+          break;
+        case "item":
+          aValue = (a.itemName ?? "").toLowerCase();
+          bValue = (b.itemName ?? "").toLowerCase();
+          break;
+        case "customerName":
+          aValue = (a.customerName ?? "").toLowerCase();
+          bValue = (b.customerName ?? "").toLowerCase();
+          break;
+        case "amount":
+          aValue = a.amount ?? 0;
+          bValue = b.amount ?? 0;
+          break;
+        case "paymentMethod":
+          aValue = (a.paymentMethod ?? "").toLowerCase();
+          bValue = (b.paymentMethod ?? "").toLowerCase();
+          break;
+        case "date":
+          aValue = a.date ? new Date(a.date).getTime() : 0;
+          bValue = b.date ? new Date(b.date).getTime() : 0;
+          break;
+        default:
+          aValue = 0;
+          bValue = 0;
+      }
+
+      if (aValue < bValue) {
+        return sort.direction === "asc" ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sort.direction === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+
+    return sorted;
   };
 
-  // Generic handler for inputs and the sale-type checkboxes
-  const handleFilterChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    if (type === "checkbox") {
-      // When unchecking a sale type, reset its item filters
-      if (!checked) {
-        setSelectedFilters(prev => ({
-          ...prev,
-          [name]: Object.fromEntries(Array.from(availableItems[name]).map(item => [item, true]))
-        }));
+  const sortedSales = useMemo(
+    () => getSortedSales(allFilteredSales, sortConfig),
+    [allFilteredSales, sortConfig]
+  );
+
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return {
+          key,
+          direction: prev.direction === "asc" ? "desc" : "asc",
+        };
       }
-      
+      return { key, direction: "asc" };
+    });
+  };
+
+  const revenueChartData = useMemo(() => {
+    const labels = CATEGORY_ORDER.map((key) => CATEGORY_META[key].label);
+    const data = CATEGORY_ORDER.map(
+      (key) => aggregateStats[CATEGORY_META[key].revenueKey] ?? 0
+    );
+    const backgroundColor = CATEGORY_ORDER.map(
+      (key) => CATEGORY_META[key].chart.background
+    );
+    const borderColor = CATEGORY_ORDER.map(
+      (key) => CATEGORY_META[key].chart.border
+    );
+
+    return {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor,
+          borderColor,
+          borderWidth: 3,
+        },
+      ],
+    };
+  }, [aggregateStats]);
+
+  const revenueChartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            padding: 20,
+            font: {
+              size: 14,
+              weight: "500",
+            },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const label = context.label || "";
+              const value = context.parsed || 0;
+              const total = context.dataset.data.reduce(
+                (acc, val) => acc + val,
+                0
+              );
+              const percentage = total
+                ? ((value / total) * 100).toFixed(1)
+                : "0.0";
+              return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+            },
+          },
+        },
+      },
+    }),
+    []
+  );
+
+  const handleFilterChange = (event) => {
+    const { name, value, type, checked } = event.target;
+
+    if (type === "checkbox") {
+      if (!checked) {
+        const items = Array.from(availableItems[name] ?? []);
+        setSelectedItems((prev) => ({
+          ...prev,
+          [name]: buildSelectionMap(items),
+        }));
+        setOpenDropdown((current) => (current === name ? null : current));
+      }
+
       setFilters((prev) => ({
         ...prev,
         saleType: {
@@ -214,97 +553,38 @@ const UnifiedSalesReport = () => {
       return;
     }
 
-    setFilters((prev) => ({ ...prev, [name]: value }));
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const calculateStats = (filteredSales) => {
-    const filtered = {
-      tickets: filteredSales.filter(sale => sale.ticketType),
-      commodities: filteredSales.filter(sale => sale.commodityName),
-      restaurant: filteredSales.filter(sale => sale.items)
-    };
+  const toggleSelectAll = (categoryKey) => {
+    const items = Array.from(availableItems[categoryKey] ?? []);
+    const selections = selectedItems[categoryKey] ?? {};
+    const allSelected =
+      items.length > 0 && items.every((item) => selections[item]);
 
-    // Calculate total revenue for each category from filtered data
-    const ticketTotal = filtered.tickets.reduce((sum, sale) => sum + sale.price, 0);
-    const commodityTotal = filtered.commodities.reduce((sum, sale) => sum + sale.price, 0);
-    const restaurantTotal = filtered.restaurant.reduce((sum, sale) => sum + sale.totalPrice, 0);
+    const nextSelection = Object.fromEntries(
+      items.map((item) => [item, !allSelected])
+    );
 
-    // Calculate item popularity and revenue
-    const ticketStats = filtered.tickets.reduce((acc, sale) => {
-      const type = sale.ticketType;
-      if (!acc[type]) acc[type] = { count: 0, revenue: 0 };
-      acc[type].count++;
-      acc[type].revenue += sale.price;
-      return acc;
-    }, {});
+    setSelectedItems((prev) => ({
+      ...prev,
+      [categoryKey]: nextSelection,
+    }));
+  };
 
-    const commodityStats = filtered.commodities.reduce((acc, sale) => {
-      const name = sale.commodityName;
-      if (!acc[name]) acc[name] = { count: 0, revenue: 0 };
-      acc[name].count++;
-      acc[name].revenue += sale.price;
-      return acc;
-    }, {});
-
-    const restaurantStats = filtered.restaurant.reduce((acc, sale) => {
-      sale.items?.forEach(item => {
-        const name = item.itemName;
-        if (!acc[name]) acc[name] = { count: 0, revenue: 0 };
-        acc[name].count++;
-        // Assuming item.price is the price per item
-        acc[name].revenue += item.price * item.quantity;
-      });
-      return acc;
-    }, {});
-
-    // Get popularity and profitability stats
-    const getStats = (stats) => {
-      const entries = Object.entries(stats);
-      if (entries.length === 0) {
-        return {
-          mostProfitable: { name: null, revenue: 0 },
-          leastProfitable: { name: null, revenue: Infinity }
-        };
-      }
-      
-      const byCount = [...entries].sort((a, b) => b[1].count - a[1].count);
-      const byRevenue = [...entries].sort((a, b) => b[1].revenue - a[1].revenue);
-      
+  const toggleItemSelection = (categoryKey, itemName) => {
+    setSelectedItems((prev) => {
+      const previous = prev[categoryKey] ?? {};
       return {
-        mostProfitable: { name: byRevenue[0][0], revenue: byRevenue[0][1].revenue },
-        leastProfitable: { name: byRevenue[byRevenue.length - 1][0], revenue: byRevenue[byRevenue.length - 1][1].revenue }
+        ...prev,
+        [categoryKey]: {
+          ...previous,
+          [itemName]: !previous[itemName],
+        },
       };
-    };
-
-    // Unique customer counts
-    // For tickets: use sale.customerId or sale.customerName as unique key
-    const ticketCustomerIds = new Set(filtered.tickets.map(sale => sale.customerId || sale.customerName));
-    // For all: use customerId or customerName as unique key
-    const allCustomerIds = new Set(filteredSales.map(sale => sale.customerId || sale.customerName));
-
-    // Average customers per month (based on unique ticket customers)
-    let months = 1;
-    if (filtered.tickets.length > 0) {
-      const dates = filtered.tickets.map(sale => new Date(sale.purchaseDate || sale.orderDate));
-      const minDate = new Date(Math.min(...dates));
-      const maxDate = new Date(Math.max(...dates));
-      // Calculate months difference (inclusive)
-      months = (maxDate.getFullYear() - minDate.getFullYear()) * 12 + (maxDate.getMonth() - minDate.getMonth()) + 1;
-      if (months < 1) months = 1;
-    }
-    const avgCustomersPerMonth = months > 0 ? (ticketCustomerIds.size / months) : 0;
-
-    setStats({
-      totalRevenue: ticketTotal + commodityTotal + restaurantTotal,
-      ticketRevenue: ticketTotal,
-      commodityRevenue: commodityTotal,
-      restaurantRevenue: restaurantTotal,
-      tickets: getStats(ticketStats),
-      commodities: getStats(commodityStats),
-      restaurant: getStats(restaurantStats),
-      uniqueTicketCustomers: ticketCustomerIds.size,
-      uniqueAllCustomers: allCustomerIds.size,
-      avgCustomersPerMonth: avgCustomersPerMonth
     });
   };
 
@@ -319,54 +599,16 @@ const UnifiedSalesReport = () => {
     );
   }
 
-  const handleSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const getSortedData = (data) => {
-    if (!sortConfig.key) return data;
-
-    return [...data].sort((a, b) => {
-      let aValue = a[sortConfig.key];
-      let bValue = b[sortConfig.key];
-      
-      // Handle nested or computed values
-      if (sortConfig.key === 'amount') {
-        aValue = a.price || a.totalPrice || 0;
-        bValue = b.price || b.totalPrice || 0;
-      } else if (sortConfig.key === 'type') {
-        aValue = a.ticketType ? 'Ticket' : a.commodityName ? 'Commodity' : 'Restaurant';
-        bValue = b.ticketType ? 'Ticket' : b.commodityName ? 'Commodity' : 'Restaurant';
-      } else if (sortConfig.key === 'item') {
-        aValue = a.ticketType || a.commodityName || (a.items?.map(item => item.itemName).join(", ") || "Multiple Items");
-        bValue = b.ticketType || b.commodityName || (b.items?.map(item => item.itemName).join(", ") || "Multiple Items");
-      } else if (sortConfig.key === 'date') {
-        aValue = new Date(a.purchaseDate || a.orderDate).getTime();
-        bValue = new Date(b.purchaseDate || b.orderDate).getTime();
-      }
-
-      if (aValue < bValue) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-  };
-
-  const filteredSales = getSortedData(getFilteredSales());
+  const totalSalesCount = sortedSales.length;
 
   return (
     <div className="theme-park-page">
       <div className="theme-park-container">
         <div className="theme-park-header">
-          <h1 className="theme-park-title"> Sales Report</h1>
-          <p className="theme-park-subtitle">Comprehensive view of all park sales</p>
+          <h1 className="theme-park-title">Sales Report</h1>
+          <p className="theme-park-subtitle">
+            Comprehensive view of ticket, merchandise, and menu sales
+          </p>
         </div>
 
         {error && (
@@ -376,105 +618,196 @@ const UnifiedSalesReport = () => {
           </div>
         )}
 
-{/* Statistics Cards */}
-<div className="theme-park-stats-grid">
-  <div className="theme-park-stat-card">
-    <div className="theme-park-stat-label">Total Revenue</div>
-    <div className="theme-park-stat-value">${stats.totalRevenue.toFixed(2)}</div>
-  </div>
-  <div className="theme-park-stat-card">
-    <div className="theme-park-stat-label">Ticket Revenue</div>
-    <div className="theme-park-stat-value">${stats.ticketRevenue.toFixed(2)}</div>
-  </div>
-  <div className="theme-park-stat-card">
-    <div className="theme-park-stat-label">Commodity Revenue</div>
-    <div className="theme-park-stat-value">${stats.commodityRevenue.toFixed(2)}</div>
-  </div>
-  <div className="theme-park-stat-card">
-    <div className="theme-park-stat-label">Restaurant Revenue</div>
-    <div className="theme-park-stat-value">${stats.restaurantRevenue.toFixed(2)}</div>
-  </div>
-  <div className="theme-park-stat-card">
-    <div className="theme-park-stat-label">Total Customers</div>
-    <div className="theme-park-stat-value">{stats.uniqueTicketCustomers}</div>
-  </div>
-  <div className="theme-park-stat-card">
-    <div className="theme-park-stat-label">Avg. Customers per Month</div>
-    <div className="theme-park-stat-value">{stats.avgCustomersPerMonth.toFixed(2)}</div>
-  </div>
-</div>
-
-
-        {/* Analytics Cards */}
-        <div className="theme-park-analytics-grid">
-          {/* Ticket Profits */}
-          <div className="theme-park-analytics-card">
-            <div className="theme-park-analytics-title">
-               Ticket Sale Profits
-            </div>
-            <div className="theme-park-analytics-item">
-              <span className="theme-park-analytics-label">Most Profitable:</span>
-              <span className="theme-park-analytics-value">
-                {stats.tickets.mostProfitable.name || "N/A"}
-                {stats.tickets.mostProfitable.revenue ? ` ($${stats.tickets.mostProfitable.revenue.toFixed(2)})` : ""}
-              </span>
-            </div>
-            <div className="theme-park-analytics-item">
-              <span className="theme-park-analytics-label">Least Profitable:</span>
-              <span className="theme-park-analytics-value">
-                {stats.tickets.leastProfitable.name || "N/A"}
-                {stats.tickets.leastProfitable.revenue !== Infinity ? ` ($${stats.tickets.leastProfitable.revenue.toFixed(2)})` : ""}
-              </span>
+        <div className="theme-park-card" style={{ marginTop: "1.5rem" }}>
+          <div className="theme-park-card-header">
+            <h3 className="theme-park-card-title">
+              <span>💰</span> Total Revenue Breakdown
+            </h3>
+            <div
+              style={{ fontSize: "1.25rem", fontWeight: "600", color: "#1f2937" }}
+            >
+              {formatCurrency(aggregateStats.totalRevenue)}
             </div>
           </div>
-
-          {/* Commodity Profits */}
-          <div className="theme-park-analytics-card">
-            <div className="theme-park-analytics-title">
-              Merchandise Profits
-            </div>
-            <div className="theme-park-analytics-item">
-              <span className="theme-park-analytics-label">Most Profitable:</span>
-              <span className="theme-park-analytics-value">
-                {stats.commodities.mostProfitable.name || "N/A"}
-                {stats.commodities.mostProfitable.revenue ? ` ($${stats.commodities.mostProfitable.revenue.toFixed(2)})` : ""}
-              </span>
-            </div>
-            <div className="theme-park-analytics-item">
-              <span className="theme-park-analytics-label">Least Profitable:</span>
-              <span className="theme-park-analytics-value">
-                {stats.commodities.leastProfitable.name || "N/A"}
-                {stats.commodities.leastProfitable.revenue !== Infinity ? ` ($${stats.commodities.leastProfitable.revenue.toFixed(2)})` : ""}
-              </span>
-            </div>
+          <div style={{ padding: "1.5rem", height: "400px" }}>
+            <Doughnut data={revenueChartData} options={revenueChartOptions} />
           </div>
-
-          {/* Restaurant Profits */}
-          <div className="theme-park-analytics-card">
-            <div className="theme-park-analytics-title">
-              Restaurant Profits
-            </div>
-            <div className="theme-park-analytics-item">
-              <span className="theme-park-analytics-label">Most Profitable:</span>
-              <span className="theme-park-analytics-value">
-                {stats.restaurant.mostProfitable.name || "N/A"}
-                {stats.restaurant.mostProfitable.revenue ? ` ($${stats.restaurant.mostProfitable.revenue.toFixed(2)})` : ""}
-              </span>
-            </div>
-            <div className="theme-park-analytics-item">
-              <span className="theme-park-analytics-label">Least Profitable:</span>
-              <span className="theme-park-analytics-value">
-                {stats.restaurant.leastProfitable.name || "N/A"}
-                {stats.restaurant.leastProfitable.revenue !== Infinity ? ` ($${stats.restaurant.leastProfitable.revenue.toFixed(2)})` : ""}
-              </span>
-            </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "1rem",
+              padding: "1rem 1.5rem",
+              borderTop: "1px solid #e5e7eb",
+            }}
+          >
+            {CATEGORY_ORDER.map((key) => {
+              const meta = CATEGORY_META[key];
+              const revenue = aggregateStats[meta.revenueKey] ?? 0;
+              return (
+                <div key={`summary-${key}`} style={{ textAlign: "center" }}>
+                  <div
+                    style={{
+                      fontSize: "0.875rem",
+                      color: "#6b7280",
+                      marginBottom: "0.25rem",
+                    }}
+                  >
+                    {meta.label} Revenue
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "1.125rem",
+                      fontWeight: "600",
+                      color: meta.color,
+                    }}
+                  >
+                    {formatCurrency(revenue)}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-        {/* Filters */}
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "1.5rem",
+            marginTop: "1.5rem",
+          }}
+        >
+          {CATEGORY_ORDER.map((key) => {
+            const meta = CATEGORY_META[key];
+            const revenue = aggregateStats[meta.revenueKey] ?? 0;
+            const breakdown = aggregateStats[meta.breakdownKey] ?? [];
+
+            return (
+              <div className="theme-park-card" key={`breakdown-${key}`}>
+                <div className="theme-park-card-header">
+                  <h3 className="theme-park-card-title" style={{ fontSize: "1rem" }}>
+                    <span>{meta.icon}</span> {meta.label} Revenue
+                  </h3>
+                  <div
+                    style={{
+                      fontSize: "1.125rem",
+                      fontWeight: "600",
+                      color: meta.color,
+                    }}
+                  >
+                    {formatCurrency(revenue)}
+                  </div>
+                </div>
+                <div style={{ padding: "1rem" }}>
+                  {breakdown.length > 0 ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "0.75rem",
+                      }}
+                    >
+                      {breakdown.map((item) => {
+                        const percentage = revenue
+                          ? ((item.revenue / revenue) * 100).toFixed(1)
+                          : 0;
+                        return (
+                          <div
+                            key={`${key}-${item.name}`}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              padding: "0.75rem",
+                              backgroundColor: meta.background,
+                              borderRadius: "6px",
+                              borderLeft: `3px solid ${meta.border}`,
+                            }}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <div
+                                style={{
+                                  fontSize: "0.875rem",
+                                  fontWeight: "600",
+                                  color: "#1f2937",
+                                  marginBottom: "0.25rem",
+                                }}
+                              >
+                                {item.name}
+                              </div>
+                              <div
+                                style={{ fontSize: "0.75rem", color: "#6b7280" }}
+                              >
+                                {percentage}% of {meta.label.toLowerCase()} revenue
+                              </div>
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "0.875rem",
+                                fontWeight: "600",
+                                color: meta.color,
+                              }}
+                            >
+                              {formatCurrency(item.revenue)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        textAlign: "center",
+                        padding: "2rem",
+                        color: "#6b7280",
+                      }}
+                    >
+                      No {meta.label.toLowerCase()} sales data available
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="theme-park-analytics-grid">
+          {CATEGORY_ORDER.map((key) => {
+            const meta = CATEGORY_META[key];
+            const categoryStats = aggregateStats[meta.statsKey];
+            return (
+              <div className="theme-park-analytics-card" key={`analytics-${key}`}>
+                <div className="theme-park-analytics-title">
+                  {meta.label} Profits
+                </div>
+                <div className="theme-park-analytics-item">
+                  <span className="theme-park-analytics-label">Most Profitable:</span>
+                  <span className="theme-park-analytics-value">
+                    {categoryStats.mostProfitable.name || "N/A"}
+                    {categoryStats.mostProfitable.revenue
+                      ? ` (${formatCurrency(categoryStats.mostProfitable.revenue)})`
+                      : ""}
+                  </span>
+                </div>
+                <div className="theme-park-analytics-item">
+                  <span className="theme-park-analytics-label">Least Profitable:</span>
+                  <span className="theme-park-analytics-value">
+                    {categoryStats.leastProfitable.name || "N/A"}
+                    {categoryStats.leastProfitable.revenue !== Infinity
+                      ? ` (${formatCurrency(categoryStats.leastProfitable.revenue)})`
+                      : ""}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
         <div className="theme-park-card">
           <div className="theme-park-card-header">
             <h3 className="theme-park-card-title">
-              <span></span> Filter 
+              <span>🧭</span> Filter
             </h3>
           </div>
           <div className="theme-park-filter-row">
@@ -487,7 +820,6 @@ const UnifiedSalesReport = () => {
                 onChange={handleFilterChange}
               />
             </div>
-
             <div className="theme-park-filter-item">
               <label>End Date</label>
               <input
@@ -497,7 +829,6 @@ const UnifiedSalesReport = () => {
                 onChange={handleFilterChange}
               />
             </div>
-
             <div className="theme-park-filter-item">
               <label>Payment</label>
               <select
@@ -512,204 +843,90 @@ const UnifiedSalesReport = () => {
                 <option value="mobile">Mobile</option>
               </select>
             </div>
+          </div>
 
-            <div className="theme-park-filter-row">
-              <div className="theme-park-filter-group">
-                <div className="theme-park-filter-main">
-                  <label className="theme-park-filter-label">
-                    <input 
-                      type="checkbox" 
-                      name="tickets" 
-                      checked={filters.saleType.tickets} 
-                      onChange={handleFilterChange}
-                    />
-                    <span>Tickets</span>
-                  </label>
-                  <button 
-                    className={`theme-park-dropdown-toggle ${filters.saleType.tickets ? '' : 'disabled'}`}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                      if (!filters.saleType.tickets) return;
-                        setOpenDropdown(openDropdown === 'tickets' ? null : 'tickets');
-                    }}
-                  >
-                    ▼
-                  </button>
-                </div>
-                  <div className={`theme-park-dropdown-menu ${openDropdown === 'tickets' ? 'open' : ''}`}>
-                  <div className="theme-park-dropdown-header">
-                    <button 
-                      className="theme-park-select-all"
-                      onClick={() => {
-                        const allSelected = Object.values(selectedFilters.tickets).every(v => v);
-                        setSelectedFilters(prev => ({
-                          ...prev,
-                          tickets: Object.fromEntries(
-                            Array.from(availableItems.tickets).map(item => [item, !allSelected])
-                          )
-                        }));
+          <div className="theme-park-filter-row">
+            {CATEGORY_ORDER.map((key) => {
+              const meta = CATEGORY_META[key];
+              const items = Array.from(availableItems[key] ?? []);
+              const selections = selectedItems[key] ?? {};
+              const dropdownDisabled = !filters.saleType[key];
+
+              return (
+                <div className="theme-park-filter-group" key={`filter-${key}`}>
+                  <div className="theme-park-filter-main">
+                    <label className="theme-park-filter-label">
+                      <input
+                        type="checkbox"
+                        name={key}
+                        checked={filters.saleType[key]}
+                        onChange={handleFilterChange}
+                      />
+                      <span>{meta.filterLabel}</span>
+                    </label>
+                    <button
+                      className={`theme-park-dropdown-toggle ${dropdownDisabled ? "disabled" : ""}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (dropdownDisabled) {
+                          return;
+                        }
+                        setOpenDropdown((current) =>
+                          current === key ? null : key
+                        );
                       }}
                     >
-                      {Object.values(selectedFilters.tickets).every(v => v) ? 'Unselect All' : 'Select All'}
+                      ▼
                     </button>
                   </div>
-                  <div className="theme-park-dropdown-items">
-                    {Array.from(availableItems.tickets).map(item => (
-                      <label key={`ticket-${item}`} className="theme-park-filter-item">
-                        <input
-                          type="checkbox"
-                          checked={selectedFilters.tickets[item] || false}
-                          onChange={() => {
-                            setSelectedFilters(prev => ({
-                              ...prev,
-                              tickets: {
-                                ...prev.tickets,
-                                [item]: !prev.tickets[item]
-                              }
-                            }));
-                          }}
-                        />
-                        <span>{item}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="theme-park-filter-group">
-                <div className="theme-park-filter-main">
-                  <label className="theme-park-filter-label">
-                    <input 
-                      type="checkbox" 
-                      name="commodities" 
-                      checked={filters.saleType.commodities} 
-                      onChange={handleFilterChange}
-                    />
-                    <span>Merchandise</span>
-                  </label>
-                  <button 
-                    className={`theme-park-dropdown-toggle ${filters.saleType.commodities ? '' : 'disabled'}`}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                      if (!filters.saleType.commodities) return;
-                        setOpenDropdown(openDropdown === 'commodities' ? null : 'commodities');
-                    }}
+                  <div
+                    className={`theme-park-dropdown-menu ${openDropdown === key ? "open" : ""}`}
                   >
-                    ▼
-                  </button>
-                </div>
-                  <div className={`theme-park-dropdown-menu ${openDropdown === 'commodities' ? 'open' : ''}`}>
-                  <div className="theme-park-dropdown-header">
-                    <button 
-                      className="theme-park-select-all"
-                      onClick={() => {
-                        const allSelected = Object.values(selectedFilters.commodities).every(v => v);
-                        setSelectedFilters(prev => ({
-                          ...prev,
-                          commodities: Object.fromEntries(
-                            Array.from(availableItems.commodities).map(item => [item, !allSelected])
-                          )
-                        }));
-                      }}
-                    >
-                      {Object.values(selectedFilters.commodities).every(v => v) ? 'Unselect All' : 'Select All'}
-                    </button>
-                  </div>
-                  <div className="theme-park-dropdown-items">
-                    {Array.from(availableItems.commodities).map(item => (
-                      <label key={`commodity-${item}`} className="theme-park-filter-item">
-                        <input
-                          type="checkbox"
-                          checked={selectedFilters.commodities[item] || false}
-                          onChange={() => {
-                            setSelectedFilters(prev => ({
-                              ...prev,
-                              commodities: {
-                                ...prev.commodities,
-                                [item]: !prev.commodities[item]
-                              }
-                            }));
-                          }}
-                        />
-                        <span>{item}</span>
-                      </label>
-                    ))}
+                    <div className="theme-park-dropdown-header">
+                      <button
+                        className="theme-park-select-all"
+                        onClick={() => toggleSelectAll(key)}
+                      >
+                        {items.length > 0 && items.every((item) => selections[item])
+                          ? "Unselect All"
+                          : "Select All"}
+                      </button>
+                    </div>
+                    <div className="theme-park-dropdown-items">
+                      {items.length > 0 ? (
+                        items.map((item) => (
+                          <label
+                            key={`${key}-${item}`}
+                            className="theme-park-filter-item"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={Boolean(selections[item])}
+                              onChange={() => toggleItemSelection(key, item)}
+                            />
+                            <span>{item}</span>
+                          </label>
+                        ))
+                      ) : (
+                        <div className="theme-park-dropdown-empty">
+                          No items found
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="theme-park-filter-group">
-                <div className="theme-park-filter-main">
-                  <label className="theme-park-filter-label">
-                    <input 
-                      type="checkbox" 
-                      name="restaurant" 
-                      checked={filters.saleType.restaurant} 
-                      onChange={handleFilterChange}
-                    />
-                    <span>Restaurant</span>
-                  </label>
-                  <button 
-                    className={`theme-park-dropdown-toggle ${filters.saleType.restaurant ? '' : 'disabled'}`}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                      if (!filters.saleType.restaurant) return;
-                        setOpenDropdown(openDropdown === 'restaurant' ? null : 'restaurant');
-                    }}
-                  >
-                    ▼
-                  </button>
-                </div>
-                  <div className={`theme-park-dropdown-menu ${openDropdown === 'restaurant' ? 'open' : ''}`}>
-                  <div className="theme-park-dropdown-header">
-                    <button 
-                      className="theme-park-select-all"
-                      onClick={() => {
-                        const allSelected = Object.values(selectedFilters.restaurant).every(v => v);
-                        setSelectedFilters(prev => ({
-                          ...prev,
-                          restaurant: Object.fromEntries(
-                            Array.from(availableItems.restaurant).map(item => [item, !allSelected])
-                          )
-                        }));
-                      }}
-                    >
-                      {Object.values(selectedFilters.restaurant).every(v => v) ? 'Unselect All' : 'Select All'}
-                    </button>
-                  </div>
-                  <div className="theme-park-dropdown-items">
-                    {Array.from(availableItems.restaurant).map(item => (
-                      <label key={`restaurant-${item}`} className="theme-park-filter-item">
-                        <input
-                          type="checkbox"
-                          checked={selectedFilters.restaurant[item] || false}
-                          onChange={() => {
-                            setSelectedFilters(prev => ({
-                              ...prev,
-                              restaurant: {
-                                ...prev.restaurant,
-                                [item]: !prev.restaurant[item]
-                              }
-                            }));
-                          }}
-                        />
-                        <span>{item}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </div>
-        {/* Sales Table */}
+
         <div className="theme-park-card">
           <div className="theme-park-card-header">
             <h3 className="theme-park-card-title">
               <span>📋</span> Sales History
             </h3>
             <div className="theme-park-badge theme-park-badge-primary">
-              {filteredSales.length} {filteredSales.length === 1 ? "Sale" : "Sales"}
+              {totalSalesCount} {totalSalesCount === 1 ? "Sale" : "Sales"}
             </div>
           </div>
 
@@ -717,46 +934,92 @@ const UnifiedSalesReport = () => {
             <table className="theme-park-table">
               <thead>
                 <tr>
-                  <th onClick={() => handleSort('type')} className="sortable">
-                    Type {sortConfig.key === 'type' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  <th
+                    onClick={() => handleSort("type")}
+                    className="sortable"
+                  >
+                    Type
+                    {sortConfig.key === "type"
+                      ? sortConfig.direction === "asc"
+                        ? " ↑"
+                        : " ↓"
+                      : ""}
                   </th>
-                  <th onClick={() => handleSort('item')} className="sortable">
-                    Item {sortConfig.key === 'item' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  <th
+                    onClick={() => handleSort("item")}
+                    className="sortable"
+                  >
+                    Item
+                    {sortConfig.key === "item"
+                      ? sortConfig.direction === "asc"
+                        ? " ↑"
+                        : " ↓"
+                      : ""}
                   </th>
-                  <th onClick={() => handleSort('customerName')} className="sortable">
-                    Customer {sortConfig.key === 'customerName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  <th
+                    onClick={() => handleSort("customerName")}
+                    className="sortable"
+                  >
+                    Customer
+                    {sortConfig.key === "customerName"
+                      ? sortConfig.direction === "asc"
+                        ? " ↑"
+                        : " ↓"
+                      : ""}
                   </th>
-                  <th onClick={() => handleSort('amount')} className="sortable">
-                    Amount {sortConfig.key === 'amount' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  <th
+                    onClick={() => handleSort("amount")}
+                    className="sortable"
+                  >
+                    Amount
+                    {sortConfig.key === "amount"
+                      ? sortConfig.direction === "asc"
+                        ? " ↑"
+                        : " ↓"
+                      : ""}
                   </th>
-                  <th onClick={() => handleSort('paymentMethod')} className="sortable">
-                    Payment {sortConfig.key === 'paymentMethod' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  <th
+                    onClick={() => handleSort("paymentMethod")}
+                    className="sortable"
+                  >
+                    Payment
+                    {sortConfig.key === "paymentMethod"
+                      ? sortConfig.direction === "asc"
+                        ? " ↑"
+                        : " ↓"
+                      : ""}
                   </th>
-                  <th onClick={() => handleSort('date')} className="sortable">
-                    Date {sortConfig.key === 'date' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  <th
+                    onClick={() => handleSort("date")}
+                    className="sortable"
+                  >
+                    Date
+                    {sortConfig.key === "date"
+                      ? sortConfig.direction === "asc"
+                        ? " ↑"
+                        : " ↓"
+                      : ""}
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredSales.map((sale) => {
-                  const saleType = sale.ticketType ? "Ticket" :
-                                 sale.commodityName ? "Commodity" : "Restaurant";
-                  const saleId = sale.ticketId || sale.commoditySaleId || sale.orderId;
-                  const saleItem = sale.ticketType || sale.commodityName || 
-                                 (sale.items?.map(item => item.itemName).join(", ") || "Multiple Items");
-                  const amount = sale.price || sale.totalPrice;
-                  const date = new Date(sale.purchaseDate || sale.orderDate).toLocaleDateString();
+                {sortedSales.map((sale) => {
+                  const meta = CATEGORY_META[sale.category];
+                  const key = sale.id ?? `${sale.category}-${sale.itemName}`;
+                  const amount = Number.isFinite(sale.amount) ? sale.amount : 0;
+                  const itemLabel =
+                    sale.quantity && sale.quantity > 1
+                      ? `${sale.itemName} ×${sale.quantity}`
+                      : sale.itemName;
 
                   return (
-                    <tr key={`${saleType}-${saleId}`}>
-                      <td>{saleType}</td>
-                      <td>{saleItem}</td>
+                    <tr key={`sale-${key}`}>
+                      <td>{meta?.label ?? sale.category}</td>
+                      <td>{itemLabel}</td>
                       <td>{sale.customerName}</td>
-                      <td className="theme-park-amount">
-                        ${typeof amount === 'number' ? amount.toFixed(2) : amount}
-                      </td>
-                      <td>💳 {sale.paymentMethod}</td>
-                      <td>{date}</td>
+                      <td className="theme-park-amount">{formatCurrency(amount)}</td>
+                      <td>💳 {formatPaymentMethod(sale.paymentMethod)}</td>
+                      <td>{formatDate(sale.date)}</td>
                     </tr>
                   );
                 })}
