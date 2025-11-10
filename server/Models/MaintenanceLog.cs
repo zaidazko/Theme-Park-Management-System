@@ -26,6 +26,9 @@ namespace AmusementParkAPI.Models
         [Column("Date_Performed")]
         public DateTime DatePerformed { get; set; }
 
+        [Column("Time_Taken_Hours")]
+        public int? TimeTakenHours { get; set; }
+
         // Navigation properties
         [ForeignKey("RequestId")]
         [JsonIgnore] // Prevent circular reference in JSON serialization
