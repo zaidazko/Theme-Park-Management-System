@@ -82,35 +82,15 @@ function App() {
             >
               Profile
             </button>
-            {/* EMPLOYEE VIEW */}
+            {/* EMPLOYEE / ADMIN VIEW */}
             {isEmployee && (
               <>
-              {/*
-                <button
-                  onClick={() => setCurrentView("ticket-sales")}
-                  style={styles.navButton}
-                >
-                  Ticket Sales
-                </button>
-                <button
-                  onClick={() => setCurrentView("commodity-sales")}
-                  style={styles.navButton}
-                >
-                  Commodity Sales
-                </button>
-                <button
-                  onClick={() => setCurrentView("restaurant-sales")}
-                  style={styles.navButton}
-                >
-                  Restaurant Sales
-                </button>
-                */}
                 <button
                   onClick={() => setCurrentView("rides")}
                   style={styles.navButton}
                 >
                   Ride Manager
-                </button>  
+                </button>
                 <button
                   onClick={() => setCurrentView("manage-tickets")}
                   style={styles.navButton}
@@ -141,30 +121,45 @@ function App() {
                 >
                   Request Maintenance
                 </button>
-                <button
-                  onClick={() => setCurrentView("maintenance-assignments")}
-                  style={styles.navButton}
-                >
-                  View Maintenance
-                </button>
-                <button
-                  onClick={() => setCurrentView("maintenance-submission")}
-                  style={styles.navButton}
-                >
-                  Submit Maintenance
-                </button>
-                <button
-                  onClick={() => setCurrentView("employee-dashboard")}
-                  style={styles.navButton}
-                >
-                  Employee Dashboard
-                </button>
-                <button
-                  onClick={() => setCurrentView("unified-sales")}
-                  style={styles.navButton}
-                >
-                  Sales Report
-                </button>
+
+                {/* Admin-only: Employee Dashboard & View Maintenance */}
+                { (user?.roleId === 2 || user?.RoleId === 2 || user?.role?.roleId === 2 || user?.roleName === 'Admin' || user?.RoleName === 'Admin') ? (
+                  <>
+                    <button
+                      onClick={() => setCurrentView("maintenance-assignments")}
+                      style={styles.navButton}
+                    >
+                      View Maintenance
+                    </button>
+                    <button
+                      onClick={() => setCurrentView("employee-dashboard")}
+                      style={styles.navButton}
+                    >
+                      Employee Dashboard
+                    </button>
+                    <button
+                      onClick={() => setCurrentView("unified-sales")}
+                      style={styles.navButton}
+                    >
+                      Sales Report
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setCurrentView("maintenance-submission")}
+                      style={styles.navButton}
+                    >
+                      Submit Maintenance
+                    </button>
+                    <button
+                      onClick={() => setCurrentView("unified-sales")}
+                      style={styles.navButton}
+                    >
+                      Sales Report
+                    </button>
+                  </>
+                )}
               </>
             )}
 
@@ -355,7 +350,7 @@ function App() {
         <RequestMaintenance user={user} />
       )}
 
-      {currentView === "maintenance-assignments" && user && isEmployee && (
+      {currentView === "maintenance-assignments" && user && (user?.roleId === 2 || user?.RoleId === 2 || user?.role?.roleId === 2 || user?.roleName === 'Admin' || user?.RoleName === 'Admin') && (
         <AssignMaintenance user={user} />
       )}
 
@@ -363,7 +358,7 @@ function App() {
         <SubmitMaintenance user={user} />
       )}
 
-      {currentView === "employee-dashboard" && user && isEmployee && (
+      {currentView === "employee-dashboard" && user && (user?.roleId === 2 || user?.RoleId === 2 || user?.role?.roleId === 2 || user?.roleName === 'Admin' || user?.RoleName === 'Admin') && (
         <EmployeeDashboard />
       )}
 

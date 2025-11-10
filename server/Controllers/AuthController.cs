@@ -127,6 +127,15 @@ namespace AmusementParkAPI.Controllers
             _context.UserLogins.Add(userLogin);
             await _context.SaveChangesAsync();
 
+            // Fetch role info (if any)
+            int? roleId = employee.RoleId;
+            string? roleName = null;
+            if (roleId.HasValue)
+            {
+                var role = await _context.Roles.FindAsync(roleId.Value);
+                roleName = role?.RoleName;
+            }
+
             return Ok(new LoginResponse
             {
                 UserId = userLogin.UserId,
@@ -137,6 +146,8 @@ namespace AmusementParkAPI.Controllers
                 FirstName = employee.FirstName,
                 LastName = employee.LastName,
                 Email = employee.Email,
+                RoleId = roleId,
+                RoleName = roleName,
                 Message = "Employee registration successful"
             });
         }
@@ -175,6 +186,19 @@ namespace AmusementParkAPI.Controllers
             var lastName = userLogin.UserType == "Employee" ? userLogin.Employee?.LastName : userLogin.Customer?.LastName;
             var email = userLogin.UserType == "Employee" ? userLogin.Employee?.Email : userLogin.Customer?.Email;
 
+            // Attempt to include role info for employees
+            int? roleId = null;
+            string? roleName = null;
+            if (userLogin.UserType == "Employee" && userLogin.Employee != null)
+            {
+                roleId = userLogin.Employee.RoleId;
+                if (roleId.HasValue)
+                {
+                    var role = await _context.Roles.FindAsync(roleId.Value);
+                    roleName = role?.RoleName;
+                }
+            }
+
             return Ok(new LoginResponse
             {
                 UserId = userLogin.UserId,
@@ -185,8 +209,44 @@ namespace AmusementParkAPI.Controllers
                 FirstName = firstName,
                 LastName = lastName,
                 Email = email,
+                RoleId = roleId,
+                RoleName = roleName,
                 Message = "Login successful"
             });
+        }
+
+        // GET: api/auth/employee-login/{employeeId}
+        [HttpGet("employee-login/{employeeId}")]
+        public async Task<ActionResult> GetEmployeeLogin(int employeeId)
+        {
+            var userLogin = await _context.UserLogins
+                .Where(u => u.EmployeeId == employeeId)
+                .Select(u => new { u.Username })
+                .FirstOrDefaultAsync();
+
+            if (userLogin == null)
+            {
+                return NotFound(new { message = "User login not found" });
+            }
+
+            return Ok(userLogin);
+        }
+
+        // GET: api/auth/customer-login/{customerId}
+        [HttpGet("customer-login/{customerId}")]
+        public async Task<ActionResult> GetCustomerLogin(int customerId)
+        {
+            var userLogin = await _context.UserLogins
+                .Where(u => u.CustomerId == customerId)
+                .Select(u => new { u.Username })
+                .FirstOrDefaultAsync();
+
+            if (userLogin == null)
+            {
+                return NotFound(new { message = "User login not found" });
+            }
+
+            return Ok(userLogin);
         }
 
         // GET: api/auth/profile/{userId}
@@ -217,71 +277,116 @@ namespace AmusementParkAPI.Controllers
         [HttpPut("profile/{userId}")]
         public async Task<IActionResult> UpdateProfile(int userId, UpdateProfileRequest request, string userType = "Customer")
         {
+            // First, ensure the target user exists (employee or customer)
+            Employee? employee = null;
+            Customer? customer = null;
+
             if (userType == "Employee")
             {
-                var employee = await _context.Employees.FindAsync(userId);
+                employee = await _context.Employees.FindAsync(userId);
                 if (employee == null)
                 {
                     return NotFound(new { message = "Employee not found" });
                 }
+            }
+            else
+            {
+                customer = await _context.Customers.FindAsync(userId);
+                if (customer == null)
+                {
+                    return NotFound(new { message = "Customer not found" });
+                }
+            }
 
-                // Update fields if provided
+            // If username or password update requested, find the user login row
+            UserLogin? userLogin = null;
+            if (!string.IsNullOrEmpty(request.Username) || !string.IsNullOrEmpty(request.Password))
+            {
+                userLogin = await _context.UserLogins.FirstOrDefaultAsync(u => 
+                    (userType == "Employee" && u.EmployeeId == userId) || 
+                    (userType == "Customer" && u.CustomerId == userId));
+
+                if (userLogin == null)
+                {
+                    return NotFound(new { message = "User login not found" });
+                }
+
+                // Check if new username already exists
+                if (!string.IsNullOrEmpty(request.Username) &&
+                    await _context.UserLogins.AnyAsync(u => u.Username == request.Username && u.UserId != userLogin.UserId))
+                {
+                    return BadRequest(new { message = "Username already exists", field = "username" });
+                }
+
+                if (!string.IsNullOrEmpty(request.Username))
+                {
+                    userLogin.Username = request.Username;
+                }
+
+                if (!string.IsNullOrEmpty(request.Password))
+                {
+                    // Hash and update password
+                    userLogin.Password = BCrypt.Net.BCrypt.HashPassword(request.Password);
+                }
+            }
+
+            // Update profile fields for employee or customer
+            if (employee != null)
+            {
                 if (!string.IsNullOrEmpty(request.FirstName))
                     employee.FirstName = request.FirstName;
-                
+
                 if (!string.IsNullOrEmpty(request.LastName))
                     employee.LastName = request.LastName;
-                
+
                 if (!string.IsNullOrEmpty(request.Email))
                 {
                     // Check if new email already exists
                     if (await _context.Employees.AnyAsync(e => e.Email == request.Email && e.EmployeeId != userId))
                     {
-                        return BadRequest(new { message = "Email already exists" });
+                        return BadRequest(new { message = "Email already exists", field = "email" });
                     }
                     employee.Email = request.Email;
                 }
-                
+
                 if (!string.IsNullOrEmpty(request.Phone))
                     employee.Phone = request.Phone;
 
                 await _context.SaveChangesAsync();
                 return Ok(new { message = "Employee profile updated successfully", employee });
             }
-            else
-            {
-                var customer = await _context.Customers.FindAsync(userId);
-                if (customer == null)
-                {
-                    return NotFound(new { message = "Customer not found" });
-                }
 
-                // Update fields if provided
+            // customer branch
+            if (customer != null)
+            {
                 if (!string.IsNullOrEmpty(request.FirstName))
                     customer.FirstName = request.FirstName;
-                
+
                 if (!string.IsNullOrEmpty(request.LastName))
                     customer.LastName = request.LastName;
-                
+
                 if (!string.IsNullOrEmpty(request.Email))
                 {
                     // Check if new email already exists
                     if (await _context.Customers.AnyAsync(c => c.Email == request.Email && c.CustomerId != userId))
                     {
-                        return BadRequest(new { message = "Email already exists" });
+                        return BadRequest(new { message = "Email already exists", field = "email" });
                     }
                     customer.Email = request.Email;
                 }
-                
+
                 if (!string.IsNullOrEmpty(request.Phone))
                     customer.Phone = request.Phone;
-                
+
                 if (request.DateOfBirth.HasValue)
                     customer.DateOfBirth = request.DateOfBirth;
 
                 await _context.SaveChangesAsync();
                 return Ok(new { message = "Customer profile updated successfully", customer });
             }
+
+            // Fallback - should not reach here
+            return BadRequest(new { message = "No updates applied" });
         }
     }
 }

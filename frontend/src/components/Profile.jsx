@@ -11,8 +11,11 @@ function Profile({ user, onLogout }) {
     email: "",
     phone: "",
     dateOfBirth: "",
+    password: "",
+    username: "",
   });
   const [message, setMessage] = useState("");
+  const [formErrors, setFormErrors] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,13 +28,28 @@ function Profile({ user, onLogout }) {
         user.userType === "Employee" ? user.employeeId : user.customerId;
       const data = await authAPI.getProfile(userId, user.userType);
       setProfile(data);
-      setFormData({
+      const newForm = {
         firstName: data.firstName || "",
         lastName: data.lastName || "",
         email: data.email || "",
         phone: data.phone || "",
         dateOfBirth: data.dateOfBirth ? data.dateOfBirth.split("T")[0] : "",
-      });
+        password: "",
+        username: "",
+      };
+
+      // If customer, fetch username from user_login
+      if (user.userType === "Customer") {
+        try {
+          const login = await authAPI.getCustomerLogin(userId);
+          if (login && login.username) newForm.username = login.username;
+        } catch (loginErr) {
+          // ignore if username cannot be fetched; leave blank
+          console.warn("Could not fetch customer username:", loginErr);
+        }
+      }
+
+      setFormData(newForm);
       setLoading(false);
     } catch (err) {
       setLoading(false);
@@ -40,7 +58,12 @@ function Profile({ user, onLogout }) {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    // Clear inline error for the field being edited
+    if (formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: undefined });
+    }
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e) => {
@@ -48,13 +71,40 @@ function Profile({ user, onLogout }) {
     try {
       const userId =
         user.userType === "Employee" ? user.employeeId : user.customerId;
-      await authAPI.updateProfile(userId, formData, user.userType);
-      setMessage("Profile updated successfully!");
-      setIsEditing(false);
-      loadProfile();
-      setTimeout(() => setMessage(""), 3000);
+      // Build payload and include password only when provided
+      const payload = {
+        FirstName: formData.firstName,
+        LastName: formData.lastName,
+        Email: formData.email,
+        Phone: formData.phone,
+        DateOfBirth: formData.dateOfBirth || null,
+      };
+
+      if (user.userType === "Customer" && formData.password && formData.password.trim() !== "") {
+        payload.Password = formData.password;
+      }
+
+      if (user.userType === "Customer" && formData.username && formData.username.trim() !== "") {
+        payload.Username = formData.username;
+      }
+        // Clear previous form errors
+        setFormErrors({});
+
+        await authAPI.updateProfile(userId, payload, user.userType);
+        setMessage("Profile updated successfully!");
+        setIsEditing(false);
+        loadProfile();
+        setTimeout(() => setMessage(""), 3000);
     } catch (err) {
-      setMessage("Error updating profile");
+      // If backend returned a field-specific error, show it inline
+      const serverMsg = err?.response?.data?.message;
+      const serverField = err?.response?.data?.field;
+      if (serverField) {
+        setFormErrors({ ...formErrors, [serverField]: serverMsg || 'Invalid value' });
+        setMessage(serverMsg || 'Error updating profile');
+      } else {
+        setMessage("Error updating profile");
+      }
       console.error("Error updating profile:", err);
     }
   };
@@ -107,7 +157,8 @@ function Profile({ user, onLogout }) {
             <h3 className="theme-park-card-title">
               <span>👤</span> Personal Information
             </h3>
-            {!isEditing && (
+            {/* Employees are not allowed to edit their own profile via this UI */}
+            {!isEditing && user.userType !== "Employee" && (
               <button
                 onClick={() => setIsEditing(true)}
                 className="theme-park-btn theme-park-btn-primary theme-park-btn-sm"
@@ -193,12 +244,6 @@ function Profile({ user, onLogout }) {
                     borderRadius: '12px',
                     borderLeft: '4px solid var(--accent-color)'
                   }}>
-                    <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-medium)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      Customer ID
-                    </div>
-                    <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-dark)' }}>
-                      #{user.customerId}
-                    </div>
                   </div>
                 )}
               </div>
@@ -243,6 +288,27 @@ function Profile({ user, onLogout }) {
                 />
               </div>
 
+              {/* Allow customers to change their username */}
+              {user.userType === "Customer" && (
+                <div className="theme-park-form-group">
+                  <label className="theme-park-label">Username</label>
+                  <input
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    className="theme-park-input"
+                    placeholder="Choose a unique username"
+                    required
+                  />
+                    {formErrors.username && (
+                      <div style={{ color: '#dc2626', marginTop: '6px', fontSize: '13px' }}>
+                        {formErrors.username}
+                      </div>
+                    )}
+                </div>
+              )}
+
               <div className="theme-park-form-group">
                 <label className="theme-park-label">Phone Number</label>
                 <input
@@ -265,6 +331,21 @@ function Profile({ user, onLogout }) {
                   className="theme-park-input"
                 />
               </div>
+
+              {/* Allow customers to change their password here (blank by default) */}
+              {user.userType === "Customer" && (
+                <div className="theme-park-form-group">
+                  <label className="theme-park-label">Password</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    placeholder="Leave blank to keep current password"
+                    onChange={handleChange}
+                    className="theme-park-input"
+                  />
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
                 <button

@@ -3,6 +3,18 @@ import axios from "axios";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export const authAPI = {
+  getEmployeeLogin: async (employeeId) => {
+    const response = await axios.get(
+      `${API_BASE_URL}/auth/employee-login/${employeeId}`
+    );
+    return response.data;
+  },
+  getCustomerLogin: async (customerId) => {
+    const response = await axios.get(
+      `${API_BASE_URL}/auth/customer-login/${customerId}`
+    );
+    return response.data;
+  },
   register: async (userData) => {
     const response = await axios.post(
       `${API_BASE_URL}/auth/register`,

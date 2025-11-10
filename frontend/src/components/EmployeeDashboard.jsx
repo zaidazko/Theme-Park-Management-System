@@ -22,6 +22,7 @@ const EmployeeDashboard = () => {
     salary: "",
     departmentId: "",
     roleId: "",
+    password: "",
   });
 
   const [createEmployeeForm, setCreateEmployeeForm] = useState({
@@ -85,6 +86,7 @@ const EmployeeDashboard = () => {
       salary: employee.salary || "",
       departmentId: employee.departmentId || "",
       roleId: employee.roleId || "",
+      password: "",
     });
     setShowEditModal(true);
   };
@@ -121,6 +123,23 @@ const EmployeeDashboard = () => {
           selectedEmployee.employeeId,
           updateData
         );
+
+        // If a password was provided, update it via the auth API (separate user_login table)
+        if (formData.password && formData.password.trim() !== "") {
+          try {
+            await authAPI.updateProfile(selectedEmployee.employeeId, { Password: formData.password }, "Employee");
+          } catch (pwErr) {
+            console.error("Error updating password:", pwErr);
+            // Surface server message if present
+            if (pwErr?.response?.data?.message) {
+              alert(`Password update failed: ${pwErr.response.data.message}`);
+            } else {
+              alert("Password update failed. See console for details.");
+            }
+            // Don't continue to close modal / reload if password update failed
+            return;
+          }
+        }
       }
       setShowEditModal(false);
       setSelectedEmployee(null);
@@ -903,6 +922,18 @@ const EmployeeDashboard = () => {
                 value={formData.phone}
                 onChange={(e) =>
                   setFormData({ ...formData, phone: e.target.value })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Password</label>
+              <input
+                type="password"
+                value={formData.password}
+                placeholder="Leave blank to keep current password"
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
                 }
                 style={styles.input}
               />
