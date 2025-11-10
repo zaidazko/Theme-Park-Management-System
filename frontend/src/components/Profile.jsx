@@ -71,12 +71,12 @@ function Profile({ user }) {
           employeeId
         );
       const inProgressAssignments = (assignments || []).filter((request) => {
-        const status = (request.status || "").toLowerCase();
-        return status === "in progress";
+        const alertID = request.alertId || request.AlertID || request.alert?.alertID || request.alert?.AlertID;
+        return alertID !== null && alertID !== undefined && [1,2,3].includes(alertID);
       });
 
       // Optional: sort by request date descending
-      inProgressAssignments.sort((a, b) => {
+      inProgressAssignments.sort((b, a) => {
         const aDate = new Date(a.requestDate || 0).getTime();
         const bDate = new Date(b.requestDate || 0).getTime();
         return bDate - aDate;
