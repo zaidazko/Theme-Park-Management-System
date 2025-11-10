@@ -197,6 +197,20 @@
   animation: kenBurns 20s infinite alternate;
 }
 
+.hero-bg-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: cover;
+  filter: brightness(0.85);
+  z-index: 1;
+}
+
 @keyframes kenBurns {
   0% {
     transform: scale(1);

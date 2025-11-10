@@ -8,5 +8,6 @@ namespace AmusementParkAPI.Models
         public int Commodity_Store { get; set; }
         public int Stock_Quantity { get; set; } = 0;
         public string Category { get; set; } = "merchandise";
+        public string Display_Category { get; set; } = "Uncategorized";
     }
 }

@@ -71,7 +71,7 @@ function App() {
       {/* Navigation Bar - Show only when logged in */}
       {user && (
         <nav style={styles.nav}>
-          <h2 style={styles.title}>🎢 Amusement Park</h2>
+          <h2 style={styles.title}>ThrillWorld</h2>
           <div style={styles.navButtons}>
             <button
               onClick={() => setCurrentView("profile")}
@@ -216,7 +216,7 @@ function App() {
         <>
           <nav style={styles.guestNav}>
             <h2 style={styles.title} onClick={() => setCurrentView("landing")}>
-              🎢 ThrillWorld
+              ThrillWorld
             </h2>
             <div style={styles.navButtons}>
               <button onClick={() => setCurrentView("landing")} style={styles.navButton}>
@@ -239,7 +239,7 @@ function App() {
         <>
           <nav style={styles.guestNav}>
             <h2 style={styles.title} onClick={() => setCurrentView("landing")}>
-              🎢 ThrillWorld
+              ThrillWorld
             </h2>
             <div style={styles.navButtons}>
               <button onClick={() => setCurrentView("guest-shop")} style={styles.navButton}>
@@ -373,8 +373,11 @@ const styles = {
   },
   title: {
     margin: 0,
-    fontSize: "24px",
+    fontSize: "32px",
     cursor: "pointer",
+    color: "#1e40af",
+    fontWeight: "900",
+    letterSpacing: "-1px",
   },
   navButtons: {
     display: "flex",

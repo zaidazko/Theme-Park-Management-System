@@ -29,7 +29,8 @@ namespace AmusementParkAPI.Controllers
                     basePrice = c.Base_Price,
                     commodityStore = c.Commodity_Store,
                     stockQuantity = c.Stock_Quantity,
-                    category = c.Category
+                    category = c.Category,
+                    displayCategory = c.Display_Category
                 })
                 .ToListAsync();
 

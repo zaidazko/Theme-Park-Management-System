@@ -75,24 +75,90 @@ const Cart = () => {
     return cart.reduce((s, i) => s + (i.price || i.basePrice || i.totalPrice || 0) * (i.quantity || 1), 0).toFixed(2);
   };
 
+  // Generate image filename from product name
+  const getProductImage = (commodityName) => {
+    const filename = commodityName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    return `/merchandise/${filename}.jpg`;
+  };
+
+  // Fallback to category stock photos
+  const getCategoryImage = (commodityName) => {
+    const name = commodityName.toLowerCase();
+
+    // APPAREL - Each item gets unique image
+    if (name.includes("classic") && name.includes("logo tee")) {
+      return "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400&h=400&fit=crop";
+    } else if (name.includes("steel dragon") && name.includes("hoodie")) {
+      return "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400&h=400&fit=crop";
+    } else if (name.includes("glow") && name.includes("hoodie")) {
+      return "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=400&h=400&fit=crop";
+    } else if (name.includes("windbreaker")) {
+      return "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&h=400&fit=crop";
+    } else if (name.includes("anniversary") && name.includes("hoodie")) {
+      return "https://images.unsplash.com/photo-1578587018452-892bacefd3f2?w=400&h=400&fit=crop";
+
+    // ACCESSORIES
+    } else if (name.includes("snapback")) {
+      return "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&h=400&fit=crop";
+    } else if (name.includes("3d") && name.includes("keychain")) {
+      return "https://images.unsplash.com/photo-1582655299221-2f9a0f8f7d4f?w=400&h=400&fit=crop";
+    } else if (name.includes("pin set")) {
+      return "https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=400&h=400&fit=crop";
+    } else if (name.includes("mini backpack")) {
+      return "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop";
+    } else if (name.includes("light-up") && name.includes("keychain")) {
+      return "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
+
+    // TOYS
+    } else if (name.includes("bear") && name.includes("plush")) {
+      return "https://images.unsplash.com/photo-1530325553241-4f6e7690cf36?w=400&h=400&fit=crop";
+    } else if (name.includes("dragon") && name.includes("plush")) {
+      return "https://images.unsplash.com/photo-1563291074-2bf8677ac0e5?w=400&h=400&fit=crop";
+    } else if (name.includes("die-cast")) {
+      return "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
+    } else if (name.includes("popcorn bucket")) {
+      return "https://images.unsplash.com/photo-1585647347384-2593bc35786b?w=400&h=400&fit=crop";
+    } else if (name.includes("track display")) {
+      return "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=400&h=400&fit=crop";
+
+    // HOME
+    } else if (name.includes("ceramic") && name.includes("mug")) {
+      return "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=400&h=400&fit=crop";
+    } else if (name.includes("insulated tumbler")) {
+      return "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop";
+    } else if (name.includes("neon sign")) {
+      return "https://images.unsplash.com/photo-1513519245088-0e12902e35ca?w=400&h=400&fit=crop";
+    } else if (name.includes("blanket")) {
+      return "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=400&h=400&fit=crop";
+    } else if (name.includes("refillable cup")) {
+      return "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&h=400&fit=crop";
+
+    // TEST ITEMS
+    } else if (name.includes("survived")) {
+      return "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=400&h=400&fit=crop";
+    } else if (name.includes("crystal")) {
+      return "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop";
+
+    // Generic fallbacks
+    } else if (name.includes("tee") || name.includes("shirt")) {
+      return "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop";
+    } else if (name.includes("hoodie")) {
+      return "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400&h=400&fit=crop";
+    } else if (name.includes("cap") || name.includes("hat")) {
+      return "https://images.unsplash.com/photo-1575428652377-a2d80e2277fc?w=400&h=400&fit=crop";
+    } else {
+      return "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=400&h=400&fit=crop";
+    }
+  };
+
   // Get product image for cart items
   const getItemImage = (item) => {
-    const name = (item.name || item.commodityName || "").toLowerCase();
-
+    // For commodity items, try to load custom image first
     if (item.type === "commodity") {
-      if (name.includes("tee") || name.includes("shirt") || name.includes("hoodie") || name.includes("jacket")) {
-        return "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop";
-      } else if (name.includes("cap") || name.includes("hat")) {
-        return "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=200&h=200&fit=crop";
-      } else if (name.includes("plush") || name.includes("toy")) {
-        return "https://images.unsplash.com/photo-1530325553241-4f6e7690cf36?w=200&h=200&fit=crop";
-      } else if (name.includes("mug") || name.includes("cup") || name.includes("tumbler")) {
-        return "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=200&h=200&fit=crop";
-      } else if (name.includes("bag") || name.includes("backpack")) {
-        return "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=200&h=200&fit=crop";
-      } else {
-        return "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=200&h=200&fit=crop";
-      }
+      return getProductImage(item.name || item.commodityName);
     } else if (item.type === "ticket") {
       return "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=200&h=200&fit=crop";
     } else if (item.type === "restaurant") {
@@ -223,7 +289,9 @@ const Cart = () => {
     <div className="theme-park-page">
       <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "40px 20px" }}>
         <div className="theme-park-header">
-          <h1 className="theme-park-title">🛒 My Bag ({cart.length})</h1>
+          <h1 className="theme-park-title">
+            <span style={{ color: "#1e40af" }}>ThrillWorld</span> - My Bag ({cart.length})
+          </h1>
           <p className="theme-park-subtitle">Review items before checkout</p>
         </div>
 
@@ -253,6 +321,13 @@ const Cart = () => {
                     <img
                       src={getItemImage(item)}
                       alt={item.name || item.commodityName}
+                      onError={(e) => {
+                        // If custom image fails, use category stock photo
+                        e.target.onerror = null; // Prevent infinite loop
+                        if (item.type === "commodity") {
+                          e.target.src = getCategoryImage(item.name || item.commodityName);
+                        }
+                      }}
                       style={{
                         width: "100%",
                         height: "100%",
@@ -269,9 +344,11 @@ const Cart = () => {
                     <div style={{ color: '#6b7280', fontSize: 14, marginBottom: 8 }}>
                       Quantity: {item.quantity || 1}
                     </div>
-                    <div style={{ color: '#6b7280', fontSize: 14, marginBottom: 12, textTransform: "capitalize" }}>
-                      {item.type}
-                    </div>
+                    {item.size && (
+                      <div style={{ color: '#6b7280', fontSize: 14, marginBottom: 8 }}>
+                        Size: {item.size}
+                      </div>
+                    )}
                     <div style={{ display: "flex", gap: 10 }}>
                       <button
                         className="theme-park-btn theme-park-btn-outline"

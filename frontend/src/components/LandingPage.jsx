@@ -67,8 +67,6 @@ function LandingPage({ onGetStarted, onLogin, onShopClick }) {
               <span>Shop</span>
               <div className="dropdown-menu">
                 <a href="#" onClick={(e) => { e.preventDefault(); onShopClick && onShopClick(); }}>All Merchandise</a>
-                <a href="#" onClick={(e) => { e.preventDefault(); onShopClick && onShopClick(); }}>Apparel</a>
-                <a href="#" onClick={(e) => { e.preventDefault(); onShopClick && onShopClick(); }}>Souvenirs</a>
                 <a href="#" onClick={(e) => { e.preventDefault(); onShopClick && onShopClick(); }}>Gift Cards</a>
               </div>
             </div>
@@ -93,13 +91,16 @@ function LandingPage({ onGetStarted, onLogin, onShopClick }) {
       <section className="hero-video-section">
         <div className="video-background">
           <div className="video-overlay"></div>
-          <div className="video-placeholder">
-            <img
-              src="/ThemeParkPoster.jpg"
-              alt="Theme Park"
-              className="hero-bg-image"
-            />
-          </div>
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="hero-bg-video"
+          >
+            <source src="/ride-preview.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
         </div>
         <div className="hero-content-overlay">
           <h1 className="hero-main-title">

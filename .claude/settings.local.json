@@ -11,7 +11,13 @@
       "Bash(sed:*)",
       "Bash(dotnet ef dbcontext scaffold:*)",
       "Bash(echo:*)",
-      "Bash(frontend/public/merchandise/README.md)"
+      "Bash(frontend/public/merchandise/README.md)",
+      "Bash(taskkill //F //PID 4620)",
+      "Bash(taskkill //F //PID 29492)",
+      "Bash(taskkill //F //PID 7072)",
+      "Bash(git remote add:*)",
+      "Bash(git fetch:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
