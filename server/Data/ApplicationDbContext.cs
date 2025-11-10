@@ -39,6 +39,9 @@ namespace AmusementParkAPI.Data
         public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
         public DbSet<MaintenanceLog> MaintenanceLogs { get; set; }
 
+        // Alerts
+        public DbSet<Alert> Alerts { get; set; }
+
         // Reviews
         public DbSet<Reviews> Reviews { get; set; }
 
@@ -67,6 +70,7 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<Role>().ToTable("role");
             modelBuilder.Entity<MaintenanceRequest>().ToTable("maintenance_request");
             modelBuilder.Entity<MaintenanceLog>().ToTable("maintenance_log");
+            modelBuilder.Entity<Alert>().ToTable("alerts");
             modelBuilder.Entity<Reviews>().ToTable("reviews");
     
             
@@ -93,6 +97,7 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<Role>().HasKey(r => r.RoleId);
             modelBuilder.Entity<MaintenanceRequest>().HasKey(m => m.RequestId);
             modelBuilder.Entity<MaintenanceLog>().HasKey(m => m.LogId);
+            modelBuilder.Entity<Alert>().HasKey(a => a.AlertId);
             modelBuilder.Entity<Reviews>().HasKey(r => r.Review_ID);
 
             modelBuilder.Entity<TicketType>()
@@ -100,6 +105,14 @@ namespace AmusementParkAPI.Data
                 .WithMany()
                 .HasForeignKey(t => t.Ride_ID)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure MaintenanceRequest -> Alert relationship
+            modelBuilder.Entity<MaintenanceRequest>()
+                .HasOne(m => m.Alert)
+                .WithMany(a => a.MaintenanceRequests)
+                .HasForeignKey(m => m.AlertId)
+                .IsRequired(false) // AlertId is optional (nullable)
+                .OnDelete(DeleteBehavior.SetNull); // Set AlertId to null if alert is deleted
 
             base.OnModelCreating(modelBuilder);
         }

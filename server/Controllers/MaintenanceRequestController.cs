@@ -184,6 +184,29 @@ namespace AmusementParkAPI.Controllers
             // Update maintenance request
             maintenanceRequest.AssignedTo = request.AssignedTo;
             maintenanceRequest.Status = "In Progress";
+            
+            // Set Alert_ID to 1 by default when request is assigned
+            // Check elapsed time and set appropriate priority
+            if (maintenanceRequest.RequestDate.HasValue)
+            {
+                var timeSinceRequest = DateTime.Now - maintenanceRequest.RequestDate.Value;
+                if (timeSinceRequest.TotalHours >= 48)
+                {
+                    maintenanceRequest.AlertId = 3; // High priority (over 48 hours)
+                }
+                else if (timeSinceRequest.TotalHours >= 24)
+                {
+                    maintenanceRequest.AlertId = 2; // Medium priority (over 24 hours)
+                }
+                else
+                {
+                    maintenanceRequest.AlertId = 1; // Low priority (less than 24 hours)
+                }
+            }
+            else
+            {
+                maintenanceRequest.AlertId = 1; // Default to 1 if no request date
+            }
 
             await _context.SaveChangesAsync();
 
@@ -192,6 +215,7 @@ namespace AmusementParkAPI.Controllers
                 .Include(m => m.Ride)
                 .Include(m => m.Reporter)
                 .Include(m => m.Assignee)
+                .Include(m => m.Alert)
                 .Include(m => m.MaintenanceLogs)
                 .FirstOrDefaultAsync(m => m.RequestId == id);
 
@@ -206,6 +230,7 @@ namespace AmusementParkAPI.Controllers
                 .Include(m => m.Ride)
                 .Include(m => m.Reporter)
                 .Include(m => m.Assignee)
+                .Include(m => m.Alert)
                 .Include(m => m.MaintenanceLogs)
                 .Where(m => m.AssignedTo == employeeId)
                 .ToListAsync();
@@ -301,6 +326,70 @@ namespace AmusementParkAPI.Controllers
             return Ok(new { 
                 message = "Maintenance request cancelled successfully", 
                 maintenanceRequest 
+            });
+        }
+
+        // POST: api/maintenancerequest/update-priorities
+        // Manual endpoint to update priorities based on time (useful for testing or immediate updates)
+        [HttpPost("update-priorities")]
+        public async Task<IActionResult> UpdatePriorities()
+        {
+            var now = DateTime.Now;
+            int updatedCount = 0;
+
+            // Get all "In Progress" maintenance requests
+            var inProgressRequests = await _context.MaintenanceRequests
+                .Where(m => m.Status == "In Progress" && m.RequestDate != null)
+                .ToListAsync();
+
+            foreach (var request in inProgressRequests)
+            {
+                if (request.RequestDate == null) continue;
+
+                var timeSinceRequest = now - request.RequestDate.Value;
+
+                // Update priority based on elapsed time from Request_Date
+                int? newAlertId = null;
+                bool shouldUpdate = false;
+
+                if (timeSinceRequest.TotalHours >= 48)
+                {
+                    // Over 48 hours - should be Alert_ID 3 (High priority)
+                    newAlertId = 3;
+                    // Only update if current priority is less than 3
+                    shouldUpdate = request.AlertId == null || request.AlertId.Value < 3;
+                }
+                else if (timeSinceRequest.TotalHours >= 24)
+                {
+                    // Over 24 hours - should be Alert_ID 2 (Medium priority)
+                    newAlertId = 2;
+                    // Only update if current priority is less than 2 (don't downgrade from 3)
+                    shouldUpdate = request.AlertId == null || request.AlertId.Value < 2;
+                }
+                else
+                {
+                    // Less than 24 hours - should be Alert_ID 1 (Low priority)
+                    newAlertId = 1;
+                    // Only update if AlertId is null
+                    shouldUpdate = request.AlertId == null;
+                }
+
+                // Update only if needed
+                if (shouldUpdate && newAlertId.HasValue)
+                {
+                    request.AlertId = newAlertId.Value;
+                    updatedCount++;
+                }
+            }
+
+            if (updatedCount > 0)
+            {
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new { 
+                message = $"Updated {updatedCount} maintenance request priorities",
+                updatedCount 
             });
         }
     }
