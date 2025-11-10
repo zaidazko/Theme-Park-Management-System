@@ -17,8 +17,8 @@ const CommodityPurchase = () => {
     { name: "Apparel", icon: "👕" },
     { name: "Accessories", icon: "🧢" },
     { name: "Toys", icon: "🧸" },
-    { name: "Home", icon: "🏠" },
-    { name: "Special", icon: "⭐" }
+    { name: "Souvenirs", icon: "🎁" },
+    { name: "Home", icon: "🏠" }
   ];
 
   useEffect(() => {
@@ -49,36 +49,7 @@ const CommodityPurchase = () => {
     } else {
       // Use Display_Category from database
       const filtered = commodities.filter(item => {
-        // Use displayCategory from database if available
-        if (item.displayCategory) {
-          return item.displayCategory === selectedCategory;
-        }
-
-        // Fallback to name-based filtering (for backwards compatibility)
-        const name = item.commodityName.toLowerCase();
-        switch(selectedCategory) {
-          case "Apparel":
-            return name.includes("tee") || name.includes("shirt") || name.includes("hoodie") ||
-                   name.includes("jacket") || name.includes("sweat") || name.includes("pant");
-          case "Accessories":
-            return name.includes("cap") || name.includes("hat") || name.includes("keychain") ||
-                   name.includes("pin") || name.includes("bag") || name.includes("wallet") ||
-                   name.includes("lanyard");
-          case "Toys":
-            return name.includes("plush") || name.includes("toy") || name.includes("model") ||
-                   name.includes("bucket") || name.includes("figure") || name.includes("kit");
-          case "Home":
-            return name.includes("mug") || name.includes("cup") || name.includes("tumbler") ||
-                   name.includes("blanket") || name.includes("sign") || name.includes("bottle") ||
-                   name.includes("pillow") || name.includes("notebook") || name.includes("poster") ||
-                   name.includes("display");
-          case "Special":
-            return name.includes("limited") || name.includes("anniversary") || name.includes("edition") ||
-                   name.includes("exclusive") || name.includes("crystal") || name.includes("vip") ||
-                   name.includes("survived") || name.includes("fright") || name.includes("holiday");
-          default:
-            return true;
-        }
+        return item.displayCategory === selectedCategory;
       });
       setFilteredCommodities(filtered);
     }

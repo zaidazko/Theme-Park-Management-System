@@ -1,0 +1,93 @@
+-- Check current commodity_type table structure
+USE theme_park;
+
+DESCRIBE commodity_type;
+
+-- Show which columns we need
+SELECT
+    'Commodity_TypeID' as Required_Column,
+    CASE WHEN COUNT(*) > 0 THEN 'EXISTS' ELSE 'MISSING' END as Status
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = 'theme_park'
+AND TABLE_NAME = 'commodity_type'
+AND COLUMN_NAME = 'Commodity_TypeID'
+
+UNION ALL
+
+SELECT
+    'Commodity_Name',
+    CASE WHEN COUNT(*) > 0 THEN 'EXISTS' ELSE 'MISSING' END
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = 'theme_park'
+AND TABLE_NAME = 'commodity_type'
+AND COLUMN_NAME = 'Commodity_Name'
+
+UNION ALL
+
+SELECT
+    'Base_Price',
+    CASE WHEN COUNT(*) > 0 THEN 'EXISTS' ELSE 'MISSING' END
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = 'theme_park'
+AND TABLE_NAME = 'commodity_type'
+AND COLUMN_NAME = 'Base_Price'
+
+UNION ALL
+
+SELECT
+    'Stock_Quantity',
+    CASE WHEN COUNT(*) > 0 THEN 'EXISTS' ELSE 'MISSING' END
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = 'theme_park'
+AND TABLE_NAME = 'commodity_type'
+AND COLUMN_NAME = 'Stock_Quantity'
+
+UNION ALL
+
+SELECT
+    'Category',
+    CASE WHEN COUNT(*) > 0 THEN 'EXISTS' ELSE 'MISSING' END
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = 'theme_park'
+AND TABLE_NAME = 'commodity_type'
+AND COLUMN_NAME = 'Category'
+
+UNION ALL
+
+SELECT
+    'Display_Category',
+    CASE WHEN COUNT(*) > 0 THEN 'EXISTS' ELSE 'MISSING' END
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = 'theme_park'
+AND TABLE_NAME = 'commodity_type'
+AND COLUMN_NAME = 'Display_Category'
+
+UNION ALL
+
+SELECT
+    'Commodity_Store',
+    CASE WHEN COUNT(*) > 0 THEN 'EXISTS' ELSE 'MISSING' END
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = 'theme_park'
+AND TABLE_NAME = 'commodity_type'
+AND COLUMN_NAME = 'Commodity_Store'
+
+UNION ALL
+
+SELECT
+    'Description',
+    CASE WHEN COUNT(*) > 0 THEN 'EXISTS' ELSE 'MISSING' END
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = 'theme_park'
+AND TABLE_NAME = 'commodity_type'
+AND COLUMN_NAME = 'Description'
+
+UNION ALL
+
+SELECT
+    'Is_Discontinued',
+    CASE WHEN COUNT(*) > 0 THEN 'EXISTS' ELSE 'MISSING' END
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = 'theme_park'
+AND TABLE_NAME = 'commodity_type'
+AND COLUMN_NAME = 'Is_Discontinued';
