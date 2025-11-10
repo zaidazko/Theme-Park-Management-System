@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Diagnostic</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        pre { background: #000; padding: 15px; border: 1px solid #0f0; }
+        button { background: #0f0; color: #000; padding: 10px 20px; border: none; cursor: pointer; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>Backend API Diagnostic</h1>
+    <button onclick="testAPI()">Test API Connection</button>
+    <div id="results"></div>
+
+    <script>
+        async function testAPI() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>Testing...</h2>';
+
+            try {
+                // Try to fetch from relative path
+                const response = await fetch('/api/commodity/types');
+                const data = await response.json();
+
+                results.innerHTML = `
+                    <h2>✅ SUCCESS!</h2>
+                    <p><strong>API URL:</strong> ${response.url}</p>
+                    <p><strong>Total Items:</strong> ${data.length}</p>
+                    <p><strong>First Item:</strong></p>
+                    <pre>${JSON.stringify(data[0], null, 2)}</pre>
+                    <p><strong>Has displayCategory?</strong> ${data[0].displayCategory ? '✅ YES' : '❌ NO'}</p>
+                    <p><strong>Stock Quantity:</strong> ${data[0].stockQuantity}</p>
+                `;
+            } catch (error) {
+                results.innerHTML = `
+                    <h2>❌ ERROR</h2>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
