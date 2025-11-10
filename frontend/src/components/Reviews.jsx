@@ -120,8 +120,6 @@ function Reviews({ onSwitchToMakeReview }) {
     }
   };
 
-  console.log(ticketTypes)
-
   // For Customers - Show their reviews
   const fetchMyReviews = async () => {
     if (!currentUser.customerId) {
@@ -178,8 +176,11 @@ function Reviews({ onSwitchToMakeReview }) {
     setFilters((prev) => ({ ...prev, [name]: value }) );
   };
 
-  const getDaysInFilterRange = () => {
-    if (!filters.startDate || !filters.endDate) return 1;
+  const getDaysInFilterRange = (data) => {
+    if (!filters.startDate || !filters.endDate){
+      const totalDates = new Set(data.map(item => new Date(item.purchaseDate).toDateString()));
+      return totalDates.size;
+    }
     const start = new Date(filters.startDate);
     const end = new Date(filters.endDate);
     const diff = (end - start) / (1000 * 60 * 60 * 24);
@@ -256,15 +257,22 @@ function Reviews({ onSwitchToMakeReview }) {
               rideReviews.reduce((sum, r) => sum + r.score, 0) / totalReviews
             ).toFixed(2)
           : "N/A";
+      
+      const totalDays = getDaysInFilterRange(rideSales)
+      const averageRidershipPerDay = 
+            totalDays > 0
+            ? (
+              totalRidership / totalDays
+            ).toFixed(1)
+            : 0;
 
       rideStats[rideName] = {
         rideName,
         totalRidership,
-        averageRidershipPerDay: (
-          totalRidership / getDaysInFilterRange()
-        ).toFixed(1),
+        averageRidershipPerDay,
         averageRating,
         totalReviews,
+        totalDays,
       };
     });
 
@@ -687,7 +695,7 @@ function Reviews({ onSwitchToMakeReview }) {
 
                 <div
                   className="theme-park-table-container"
-                  style={{ overflowX: "auto", overflowY: "auto", maxHeight: "600px", width: "100%" }}
+                  style={{ overflowX: "auto", overflowY: "auto", width: "100%" }}
                 >
 
                   <table className="theme-park-table" style={{ tableLayout: "fixed", width: "100%" }}>
@@ -805,6 +813,32 @@ function Reviews({ onSwitchToMakeReview }) {
                   </button>
                 </div>
 
+              </div>
+
+              <div className="theme-park-grid-3" style = {{display: "flex", justifyContent: "center"}}>
+                <div className="theme-park-card" style = {{width: "600px", height: "200px", marginRight: "40px"}}>
+                    <div className="theme-park-card-header">
+                      <h3>Total Ridership</h3>  
+                    </div>
+                    <div style={{fontSize: "30px", textAlign:"center", color: "#667eea"}}>
+                      <b>{(sortedRideStats.reduce((accumulator, ride) => accumulator + ride.totalRidership, 0))}</b> Total Riders
+                    </div>
+                </div>
+                <div className="theme-park-card" style = {{width: "600px"}}>
+                    <div className="theme-park-card-header">
+                      <h3>Total Average Ridership</h3>
+                    </div>
+                    <div style={{fontSize: "30px", textAlign:"center", color: "#667eea"}}>
+                      <b>{(() => {
+                        const allDays = (sortedRideStats.reduce((acc, ride) => acc + ride.totalDays, 0))
+                        const allRidership = (sortedRideStats.reduce((acc, ride) => acc + ride.totalRidership, 0))
+                        return allDays > 0
+                          ? (allRidership / allDays).toFixed(2)
+                          : 0
+                      })()}
+                      </b> Average Riders Per Day
+                    </div>
+                </div>
               </div>
 
               <div className="theme-park-card" style={{ padding: "30px 15px" }}>
