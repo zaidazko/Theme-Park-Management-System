@@ -469,6 +469,46 @@ const EmployeeDashboard = () => {
     },
   };
 
+  // CustomerStatsBox: shows total and average accounts added per month
+  function CustomerStatsBox({ customers }) {
+    // Group customers by month
+    const monthCounts = {};
+    let total = 0;
+    customers.forEach((c) => {
+      if (!c.createdAt) return;
+      const d = new Date(c.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      monthCounts[key] = (monthCounts[key] || 0) + 1;
+      total++;
+    });
+    const months = Object.keys(monthCounts).sort();
+    const avg = months.length > 0 ? (total / months.length).toFixed(2) : "0";
+    return (
+      <div style={{
+        background: "#f3f4f6",
+        borderRadius: "8px",
+        padding: "18px 24px",
+        marginBottom: "18px",
+        display: "flex",
+        gap: "32px",
+        alignItems: "center",
+        justifyContent: "flex-start",
+        fontSize: "16px",
+        color: "#374151",
+        fontWeight: 500,
+      }}>
+        <div>
+          <span style={{ fontSize: "22px", fontWeight: 700 }}>{total}</span>
+          <span style={{ marginLeft: "8px" }}>Total Accounts Added</span>
+        </div>
+        <div>
+          <span style={{ fontSize: "22px", fontWeight: 700 }}>{avg}</span>
+          <span style={{ marginLeft: "8px" }}>Average Per Month</span>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div style={styles.loading}>
@@ -486,18 +526,12 @@ const EmployeeDashboard = () => {
         </p>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs (removed department and role add tabs) */}
       <div style={styles.tabsContainer}>
         <nav style={styles.tabsNav}>
           {[
             { id: "employees", name: "Employees", count: employees.length },
-            { id: "customers", name: "Customers", count: customers.length },
-            {
-              id: "departments",
-              name: "Departments",
-              count: departments.length,
-            },
-            { id: "roles", name: "Roles", count: roles.length },
+            { id: "customers", name: "Customers", count: customers.length }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -643,6 +677,8 @@ const EmployeeDashboard = () => {
                 Promote customers to employees
               </p>
             </div>
+            {/* Stats Box: Total and Average Accounts Added Per Month */}
+            <CustomerStatsBox customers={customers} />
             <div style={{ overflowX: "auto" }}>
               <table style={styles.table}>
                 <thead style={styles.tableHeader}>
