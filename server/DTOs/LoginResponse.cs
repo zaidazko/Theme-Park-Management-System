@@ -13,5 +13,9 @@ namespace AmusementParkAPI.DTOs
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? Email { get; set; }
+
+        // Role info (for employees)
+        public int? RoleId { get; set; }
+        public string? RoleName { get; set; }
     }
 }
