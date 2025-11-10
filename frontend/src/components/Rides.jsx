@@ -7,6 +7,14 @@ const Rides = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showCreateRideModal, setShowCreateRideModal] = useState(false);
+  const [showEditRideModal, setShowEditRideModal] = useState(false);
+  const [selectedRide, setSelectedRide] = useState(null);
+
+  const [rideFormData, setRideFormData] = useState({
+    ride_Name: "",
+    capacity: "",
+    image: ""
+  });
 
   const [createRideForm, setCreateRideForm] = useState({
     ride_Name: "",
@@ -65,13 +73,64 @@ const Rides = () => {
         image: createRideForm.image,
         status: "Operational",
       };
+
       await ridesAPI.createRide(rideData);
+
+      setCreateRideForm({
+        ride_Name: "",
+        capacity: "",
+        image: "https://media.istockphoto.com/id/186293315/photo/looping-roller-coaster.jpg?s=612x612&w=0&k=20&c=r0Uq8QvhEjoFOodlgaD_5gMOYOF4rbFxKIp6UOFrcJA=",
+      });
+      setShowCreateRideModal(false);
+      fetchRides();
+      alert("Ride created successfully!");
     } catch (err) {
       console.error("Failed to create ride", err);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleDeleteRide = async (rideId) => {
+    if (window.confirm("Are you sure you want to delete this ride?")) {
+      try {
+        await ridesAPI.deleteRide(rideId);
+        fetchRides();
+      } catch (error) {
+        console.error("Failed to delete ride", error);
+      }
+    }
+  };
+
+  const handleEditRide = (ride) => {
+    setSelectedRide(ride);
+    setRideFormData({
+      ride_Name: ride.ride_Name || "",
+      capacity: ride.capacity || "",
+      image: ride.image || "",
+    });
+    setShowEditRideModal(true);
+  };
+
+const handleSaveRide = async () => {
+  try {
+    if (selectedRide) {
+      const updateRideData = {
+        Ride_ID: selectedRide.ride_ID,
+        Ride_Name: rideFormData.ride_Name || null,
+        Capacity: rideFormData.capacity || null,
+        Image: rideFormData.image || null,
+        Status: selectedRide.status || "Operational",
+      };
+      await ridesAPI.updateRideData(selectedRide.ride_ID, updateRideData);
+    }
+    setShowEditRideModal(false);
+    setSelectedRide(null);
+    fetchRides();
+  } catch (error){
+    console.error("Error saving ride:", error);
+  }
+};
 
   const styles = {
     container: {
@@ -288,11 +347,46 @@ const Rides = () => {
   return (
     <div className="theme-park-page">
       <div className="theme-park-container-wide">
-        <div className="theme-park-header">
-          <h1 className="theme-park-title">🎢 Our Rides</h1>
-          <p className="theme-park-subtitle">
-            Experience the ultimate thrills and excitement
-          </p>
+        <div 
+          className="theme-park-header"
+          style={{
+            textAlign: "center",
+            position: "relative",
+            marginBottom: "40px",
+          }}
+        >
+          <h1 className="theme-park-title">🎢 Our Rides</h1>          
+          
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+              marginTop: "8px",
+            }}
+          >
+
+            {isEmployee && (
+                <button
+                  className="theme-park-btn theme-park-btn-primary theme-park-btn-lg"
+                  onClick={() => setShowCreateRideModal(true)}
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    marginBottom: "10px"
+                  }}
+                >
+                  New Ride
+                </button>
+            )}
+        
+            <p className="theme-park-subtitle">
+              Experience the ultimate thrills and excitement
+            </p>
+        
+          </div>
+
         </div>
 
         {error && (
@@ -312,21 +406,7 @@ const Rides = () => {
           </div>
         ) : (
           <div>
-            {isEmployee && (<div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              margin: "20px 0px 50px 0px",
-            }}
-            >
-              <button
-                className="theme-park-btn theme-park-btn-primary theme-park-btn-sm"
-                onClick={() => setShowCreateRideModal(true)}
-              >
-                New Ride
-              </button>
-            </div>)}
+
             <div className="theme-park-grid">
               {rides.map((ride) => (
                 <div
@@ -386,6 +466,32 @@ const Rides = () => {
                     >
                       Capacity: {ride.capacity} riders
                     </div>
+                    {isEmployee && (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-around",
+                          alignItems: "center",
+                          margin: "20px 0px 20px 0px",
+                        }}
+                      >
+                        
+                        <button
+                          onClick={() => handleEditRide(ride)}
+                          className='theme-park-btn theme-park-btn-sm theme-park-btn-outline'
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteRide(ride.ride_ID)}
+                          className='theme-park-btn theme-park-btn-sm theme-park-btn-danger'
+                        >
+                          Delete
+                        </button>
+
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -468,6 +574,89 @@ const Rides = () => {
             </div>
           </div>
         )}
+
+        {/*Edit Ride Modal */}
+        {showEditRideModal && (
+          <div style={styles.modal}>
+            <div style={styles.modalContent}>
+              <h3
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "500",
+                  color: "#111827",
+                  marginBottom: "16px",
+                }}
+              >
+              Edit Ride
+              </h3>
+
+              <div style={{ marginBottom: "16px"}}>
+                <label style={styles.label}>Ride Name</label>
+                <input
+                  type="text"
+                  value={rideFormData.ride_Name}
+                  onChange={(e) =>
+                    setRideFormData({
+                      ...rideFormData,
+                      ride_Name: e.target.value,
+                    })
+                  }
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Capacity</label>
+                
+                <input
+                  type="number"
+                  value={rideFormData.capacity}
+                  onChange={(e) =>
+                    setRideFormData({
+                      ...rideFormData,
+                      capacity: e.target.value,
+                    })
+                  }
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Image</label>
+
+                <input
+                  type="text"
+                  value={rideFormData.image}
+                  onChange = {(e) =>
+                    setRideFormData({
+                      ...rideFormData,
+                      image: e.target.value,
+                    })
+                  }
+                  style={styles.input}
+                />
+
+              </div>
+
+              <div style={styles.modalFooter}>
+                <button
+                  onClick={() => setShowEditRideModal(false)}
+                  style={styles.buttonSecondary}
+                >
+                  Cancel
+                </button>
+                
+                <button
+                  onClick={handleSaveRide}
+                  style={styles.button}
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

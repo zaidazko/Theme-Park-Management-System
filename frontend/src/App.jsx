@@ -113,7 +113,7 @@ function App() {
                   onClick={() => setCurrentView("reviews")}
                   style={styles.navButton}
                 >
-                  View Reviews
+                  Ridership Report
                 </button>
                 <button
                   onClick={() => setCurrentView("maintenance-request")}

@@ -63,7 +63,7 @@ namespace AmusementParkAPI.Controllers
 
         // GET: api/reviews/ride
         [HttpGet("ride")]
-        public async Task<ActionResult<IEnumerable<object>>> GetReviewsByRide(int rideId)
+        public async Task<ActionResult<IEnumerable<object>>> GetReviewsByRide()
         {
             var reviews = await _context.Reviews
                 .Join(_context.Rides,
