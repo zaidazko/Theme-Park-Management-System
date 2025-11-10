@@ -21,12 +21,14 @@ import ManageFood from "./components/ManageFood";
 import ManageTickets from "./components/ManageTickets";
 import UnifiedSalesReport from "./components/UnifiedSalesReport";
 import Cart from "./components/Cart";
+import RideDetail from "./components/RideDetail";
 import "./App.css";
 
 function App() {
   const [currentView, setCurrentView] = useState("landing");
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedRide, setSelectedRide] = useState(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -230,7 +232,39 @@ function App() {
           onGetStarted={() => setCurrentView("register")}
           onLogin={() => setCurrentView("login")}
           onShopClick={() => setCurrentView("guest-shop")}
+          onAttractionsClick={() => setCurrentView("guest-rides")}
+          onDiningClick={() => setCurrentView("guest-dining")}
+          onRideDetailClick={(rideName) => {
+            setSelectedRide(rideName);
+            setCurrentView("ride-detail");
+          }}
         />
+      )}
+
+      {/* Ride Detail Page - No login required */}
+      {currentView === "ride-detail" && selectedRide && (
+        <>
+          <nav style={styles.guestNav}>
+            <h2 style={styles.title} onClick={() => setCurrentView("landing")}>
+              ThrillWorld
+            </h2>
+            <div style={styles.navButtons}>
+              <button onClick={() => setCurrentView("landing")} style={styles.navButton}>
+                Back to Home
+              </button>
+              <button onClick={() => setCurrentView("guest-rides")} style={styles.navButton}>
+                All Rides
+              </button>
+              <button onClick={() => setCurrentView("login")} style={styles.navButton}>
+                Sign In
+              </button>
+            </div>
+          </nav>
+          <RideDetail
+            rideName={selectedRide}
+            onBack={() => setCurrentView("landing")}
+          />
+        </>
       )}
 
       {/* Guest Shop - No login required */}
@@ -273,6 +307,52 @@ function App() {
             </div>
           </nav>
           <Cart />
+        </>
+      )}
+
+      {/* Guest Rides - No login required */}
+      {currentView === "guest-rides" && (
+        <>
+          <nav style={styles.guestNav}>
+            <h2 style={styles.title} onClick={() => setCurrentView("landing")}>
+              ThrillWorld
+            </h2>
+            <div style={styles.navButtons}>
+              <button onClick={() => setCurrentView("landing")} style={styles.navButton}>
+                Back to Home
+              </button>
+              <button onClick={() => setCurrentView("guest-shop")} style={styles.navButton}>
+                Shop
+              </button>
+              <button onClick={() => setCurrentView("login")} style={styles.navButton}>
+                Sign In
+              </button>
+            </div>
+          </nav>
+          <Rides />
+        </>
+      )}
+
+      {/* Guest Dining - No login required */}
+      {currentView === "guest-dining" && (
+        <>
+          <nav style={styles.guestNav}>
+            <h2 style={styles.title} onClick={() => setCurrentView("landing")}>
+              ThrillWorld
+            </h2>
+            <div style={styles.navButtons}>
+              <button onClick={() => setCurrentView("landing")} style={styles.navButton}>
+                Back to Home
+              </button>
+              <button onClick={() => setCurrentView("guest-shop")} style={styles.navButton}>
+                Shop
+              </button>
+              <button onClick={() => setCurrentView("login")} style={styles.navButton}>
+                Sign In to Order
+              </button>
+            </div>
+          </nav>
+          <RestaurantMenu />
         </>
       )}
 

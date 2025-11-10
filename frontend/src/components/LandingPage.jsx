@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./LandingPage.css";
 
-function LandingPage({ onGetStarted, onLogin, onShopClick }) {
+function LandingPage({ onGetStarted, onLogin, onShopClick, onAttractionsClick, onDiningClick, onRideDetailClick }) {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const featuredAttractions = [
@@ -56,10 +56,9 @@ function LandingPage({ onGetStarted, onLogin, onShopClick }) {
             <div className="nav-item dropdown-trigger">
               <span>Things to Do</span>
               <div className="dropdown-menu">
-                <a href="#attractions">Attractions</a>
-                <a href="#dining">Dining</a>
-                <a href="#entertainment">Entertainment</a>
-                <a href="#events">Special Events</a>
+                <a href="#" onClick={(e) => { e.preventDefault(); onAttractionsClick && onAttractionsClick(); }}>Attractions</a>
+                <a href="#" onClick={(e) => { e.preventDefault(); onDiningClick && onDiningClick(); }}>Dining</a>
+                <a href="#events" onClick={(e) => { e.preventDefault(); const eventsSection = document.querySelector('.events-section'); if (eventsSection) { eventsSection.scrollIntoView({ behavior: 'smooth' }); } }}>Special Events</a>
               </div>
             </div>
 
@@ -109,7 +108,7 @@ function LandingPage({ onGetStarted, onLogin, onShopClick }) {
             <span className="highlight-text">THRILL</span>
           </h1>
           <p className="hero-tagline">
-            America's Premier Amusement Park • 50+ World-Class Rides
+            America's Premier Amusement Park
           </p>
           <div className="hero-cta-buttons">
             <button className="cta-primary" onClick={onGetStarted}>
@@ -228,7 +227,12 @@ function LandingPage({ onGetStarted, onLogin, onShopClick }) {
               <p className="slide-description">
                 {featuredAttractions[currentSlide].description}
               </p>
-              <button className="slide-btn">Learn More →</button>
+              <button
+                className="slide-btn"
+                onClick={() => onRideDetailClick && onRideDetailClick(featuredAttractions[currentSlide].name)}
+              >
+                Learn More →
+              </button>
             </div>
           </div>
           <div className="carousel-dots">

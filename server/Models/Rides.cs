@@ -23,6 +23,9 @@ namespace AmusementParkAPI.Models
         [Column("Image")]
         public string Image { get; set; } = string.Empty;
 
+        [Column("Description")]
+        public string Description { get; set; } = string.Empty;
+
     }
 
 }
