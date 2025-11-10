@@ -32,6 +32,9 @@ namespace AmusementParkAPI.Models
         [Column("Completion_Date")]
         public DateTime? CompletionDate { get; set; }
 
+        [Column("Alert_ID")]
+        public int? AlertId { get; set; }
+
         // Navigation properties
         [ForeignKey("RideId")]
         public virtual Rides? Ride { get; set; }
@@ -41,6 +44,9 @@ namespace AmusementParkAPI.Models
 
         [ForeignKey("AssignedTo")]
         public virtual Employee? Assignee { get; set; }
+
+        [ForeignKey("AlertId")]
+        public virtual Alert? Alert { get; set; }
 
         // Maintenance logs for this request
         public virtual ICollection<MaintenanceLog>? MaintenanceLogs { get; set; }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { commodityAPI } from "../api";
 import "./ThemePark.css";
 
@@ -7,6 +7,9 @@ const defaultFormState = {
   basePrice: "",
   stockQuantity: "",
   description: "",
+  displayCategory: "",
+  customCategory: "",
+  imageUrl: "",
 };
 
 const ManageMerch = () => {
@@ -20,6 +23,7 @@ const ManageMerch = () => {
   const [restoringId, setRestoringId] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [useCustomCategory, setUseCustomCategory] = useState(false);
 
   useEffect(() => {
     loadMerchandiseData();
@@ -43,20 +47,53 @@ const ManageMerch = () => {
     }
   };
 
+  const categoryOptions = useMemo(() => {
+    const defaults = [
+      "Apparel",
+      "Accessories",
+      "Toys",
+      "Souvenirs",
+      "Home",
+      "Collectibles",
+    ];
+
+    const collected = new Set(defaults);
+
+    [...commodities, ...discontinued].forEach((item) => {
+      const label =
+        item.displayCategory || item.category || item.commodityCategory;
+      if (label) {
+        collected.add(label);
+      }
+    });
+
+    return Array.from(collected).sort((a, b) => a.localeCompare(b));
+  }, [commodities, discontinued]);
+
   const resetForm = () => {
     setFormState(defaultFormState);
     setEditingId(null);
     setDeletingId(null);
-  setRestoringId(null);
+    setRestoringId(null);
+    setUseCustomCategory(false);
   };
 
   const handleEdit = (commodity) => {
     setEditingId(commodity.commodityTypeId);
+    const existingCategory =
+      commodity.displayCategory || commodity.category || "";
+    const categoryInOptions = existingCategory
+      ? categoryOptions.includes(existingCategory)
+      : false;
+    setUseCustomCategory(existingCategory ? !categoryInOptions : false);
     setFormState({
       commodityName: commodity.commodityName,
       basePrice: commodity.basePrice?.toString() ?? "",
       stockQuantity: commodity.stockQuantity?.toString() ?? "",
       description: commodity.description ?? "",
+      displayCategory: categoryInOptions ? existingCategory : "",
+      customCategory: categoryInOptions ? "" : existingCategory,
+      imageUrl: commodity.imageUrl ?? "",
     });
     setSuccess("");
     setError("");
@@ -72,6 +109,10 @@ const ManageMerch = () => {
     const basePrice = parseFloat(formState.basePrice);
     const stockQuantity = parseInt(formState.stockQuantity, 10);
     const description = formState.description.trim();
+    const selectedCategory = useCustomCategory
+      ? formState.customCategory.trim()
+      : formState.displayCategory.trim();
+    const imageUrl = formState.imageUrl.trim();
 
     if (!commodityName) {
       setError("Please provide a merchandise name.");
@@ -91,11 +132,26 @@ const ManageMerch = () => {
       return;
     }
 
+    if (!selectedCategory) {
+      setError("Select a category for this merchandise item.");
+      setSubmitting(false);
+      return;
+    }
+
+    if (imageUrl && !/^https?:\/\//i.test(imageUrl)) {
+      setError("Image URL must start with http:// or https:// when provided.");
+      setSubmitting(false);
+      return;
+    }
+
     const payload = {
       commodityName,
       basePrice,
       stockQuantity,
       description,
+      category: "merchandise",
+      displayCategory: selectedCategory,
+      imageUrl,
     };
 
     try {
@@ -107,8 +163,8 @@ const ManageMerch = () => {
         setSuccess("New merchandise created successfully.");
       }
 
-  resetForm();
-  await loadMerchandiseData();
+      resetForm();
+      await loadMerchandiseData();
     } catch (err) {
       console.error("Error saving merchandise", err);
       setError("Unable to save merchandise. Please try again.");
@@ -141,8 +197,8 @@ const ManageMerch = () => {
         resetForm();
       }
 
-  setSuccess(`${commodity.commodityName} moved to discontinued merchandise.`);
-  await loadMerchandiseData();
+      setSuccess(`${commodity.commodityName} moved to discontinued merchandise.`);
+      await loadMerchandiseData();
     } catch (err) {
       console.error("Error deleting merchandise", err);
       const responseMessage = err?.response?.data?.message;
@@ -281,6 +337,76 @@ const ManageMerch = () => {
               </div>
             </div>
 
+            <div className="theme-park-form-row">
+              <div className="theme-park-form-group">
+                <label className="theme-park-label">Display Category</label>
+                <select
+                  className="theme-park-select"
+                  value={useCustomCategory ? "__custom" : formState.displayCategory}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value === "__custom") {
+                      setUseCustomCategory(true);
+                      setFormState((prev) => ({
+                        ...prev,
+                        displayCategory: "",
+                      }));
+                    } else {
+                      setUseCustomCategory(false);
+                      setFormState((prev) => ({
+                        ...prev,
+                        displayCategory: value,
+                        customCategory: "",
+                      }));
+                    }
+                    setError("");
+                    setSuccess("");
+                  }}
+                >
+                  <option value="">Select a category</option>
+                  {categoryOptions.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                  <option value="__custom">Custom category...</option>
+                </select>
+                {useCustomCategory && (
+                  <input
+                    className="theme-park-input"
+                    type="text"
+                    placeholder="Enter category name"
+                    value={formState.customCategory}
+                    onChange={(event) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        customCategory: event.target.value,
+                      }))
+                    }
+                    style={{ marginTop: "8px" }}
+                    maxLength={50}
+                  />
+                )}
+              </div>
+
+              <div className="theme-park-form-group">
+                <label className="theme-park-label">Image URL</label>
+                <input
+                  className="theme-park-input"
+                  type="url"
+                  value={formState.imageUrl}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      imageUrl: event.target.value,
+                    }))
+                  }
+                  placeholder="https://example.com/image.jpg"
+                  maxLength={500}
+                />
+              </div>
+            </div>
+
             <div className="theme-park-form-group">
               <label className="theme-park-label">Description</label>
               <textarea
@@ -330,6 +456,8 @@ const ManageMerch = () => {
                   <th>Name</th>
                   <th>Base Price</th>
                   <th>Stock</th>
+                  <th>Category</th>
+                  <th>Image</th>
                   <th>Description</th>
                   <th style={{ width: "120px" }}>Actions</th>
                 </tr>
@@ -337,7 +465,7 @@ const ManageMerch = () => {
               <tbody>
                 {commodities.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: "center", padding: "20px" }}>
+                    <td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>
                       No merchandise configured yet.
                     </td>
                   </tr>
@@ -348,6 +476,25 @@ const ManageMerch = () => {
                       <td>{commodity.commodityName}</td>
                       <td>${Number(commodity.basePrice).toFixed(2)}</td>
                       <td>{commodity.stockQuantity}</td>
+                      <td>
+                        {commodity.displayCategory ||
+                          commodity.category ||
+                          "Uncategorized"}
+                      </td>
+                      <td>
+                        {commodity.imageUrl ? (
+                          <a
+                            href={commodity.imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "var(--primary-color)" }}
+                          >
+                            View
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td>{commodity.description || "—"}</td>
                       <td>
                         <div style={{ display: "flex", gap: "8px" }}>
@@ -394,6 +541,8 @@ const ManageMerch = () => {
                   <th>Name</th>
                   <th>Base Price</th>
                   <th>Stock</th>
+                  <th>Category</th>
+                  <th>Image</th>
                   <th>Description</th>
                   <th style={{ width: "120px" }}>Actions</th>
                 </tr>
@@ -401,7 +550,7 @@ const ManageMerch = () => {
               <tbody>
                 {discontinued.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: "center", padding: "20px" }}>
+                    <td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>
                       No discontinued merchandise.
                     </td>
                   </tr>
@@ -412,6 +561,23 @@ const ManageMerch = () => {
                       <td>{item.commodityName}</td>
                       <td>${Number(item.basePrice).toFixed(2)}</td>
                       <td>{item.stockQuantity}</td>
+                      <td>
+                        {item.displayCategory || item.category || "Uncategorized"}
+                      </td>
+                      <td>
+                        {item.imageUrl ? (
+                          <a
+                            href={item.imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "var(--primary-color)" }}
+                          >
+                            View
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td>{item.description || "—"}</td>
                       <td>
                         <button

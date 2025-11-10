@@ -93,6 +93,19 @@ export const ridesAPI = {
     const response = await axios.post(`${API_BASE_URL}/rides`, rideData);
     return response.data;
   },
+
+  deleteRide: async (rideId) => {
+    const response = await axios.delete(`${API_BASE_URL}/rides/${rideId}`);
+    return response.data;
+  },
+
+  updateRideData: async (rideId, rideData) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/rides/${rideId}`,
+      rideData
+    );
+    return response.data;
+  }
 };
 
 export const employeeAPI = {
@@ -400,4 +413,9 @@ export const ReviewsAPI = {
     const response = await axios.post(`${API_BASE_URL}/reviews`, reviewData);
     return response.data;
   },
+
+  getAllReviews: async () => {
+    const response = await axios.get(`${API_BASE_URL}/reviews/ride`);
+    return response.data;
+  }
 };

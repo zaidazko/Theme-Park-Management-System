@@ -32,7 +32,8 @@ namespace AmusementParkAPI.Controllers
                     rideId = t.Ride_ID,
                     rideName = t.Ride != null ? t.Ride.Ride_Name : null,
                     description = t.Description,
-                    isDiscontinued = t.Is_Discontinued
+                        rideImage = t.Ride != null ? t.Ride.Image : null,
+                        isDiscontinued = t.Is_Discontinued
                 })
                 .OrderBy(t => t.ticketTypeId)
                 .ToListAsync();
@@ -55,7 +56,8 @@ namespace AmusementParkAPI.Controllers
                     rideId = t.Ride_ID,
                     rideName = t.Ride != null ? t.Ride.Ride_Name : null,
                     description = t.Description,
-                    isDiscontinued = t.Is_Discontinued
+                        rideImage = t.Ride != null ? t.Ride.Image : null,
+                        isDiscontinued = t.Is_Discontinued
                 })
                 .OrderBy(t => t.ticketTypeId)
                 .ToListAsync();

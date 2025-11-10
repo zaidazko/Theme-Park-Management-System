@@ -29,6 +29,7 @@ namespace AmusementParkAPI.Controllers
                     foodName = mt.Food_Name,
                     basePrice = mt.Base_Price,
                     description = mt.Description,
+                    imageUrl = mt.Image_Url,
                     isDiscontinued = mt.Is_Discontinued
                 })
                 .ToListAsync();
@@ -48,6 +49,7 @@ namespace AmusementParkAPI.Controllers
                     foodName = mt.Food_Name,
                     basePrice = mt.Base_Price,
                     description = mt.Description,
+                    imageUrl = mt.Image_Url,
                     isDiscontinued = mt.Is_Discontinued
                 })
                 .ToListAsync();
@@ -71,6 +73,9 @@ namespace AmusementParkAPI.Controllers
                 Description = string.IsNullOrWhiteSpace(request.Description)
                     ? null
                     : request.Description.Trim(),
+                Image_Url = string.IsNullOrWhiteSpace(request.ImageUrl)
+                    ? null
+                    : request.ImageUrl.Trim(),
                 Is_Discontinued = request.IsDiscontinued ?? false
             };
 
@@ -86,6 +91,7 @@ namespace AmusementParkAPI.Controllers
                     foodName = menuType.Food_Name,
                     basePrice = menuType.Base_Price,
                     description = menuType.Description,
+                    imageUrl = menuType.Image_Url,
                     isDiscontinued = menuType.Is_Discontinued
                 });
         }
@@ -121,6 +127,13 @@ namespace AmusementParkAPI.Controllers
                 menuType.Description = string.IsNullOrWhiteSpace(request.Description)
                     ? null
                     : request.Description.Trim();
+            }
+
+            if (request.ImageUrl != null)
+            {
+                menuType.Image_Url = string.IsNullOrWhiteSpace(request.ImageUrl)
+                    ? null
+                    : request.ImageUrl.Trim();
             }
 
             if (request.IsDiscontinued.HasValue)
@@ -248,6 +261,9 @@ namespace AmusementParkAPI.Controllers
         [MaxLength(255)]
         public string? Description { get; set; }
 
+        [MaxLength(500)]
+        public string? ImageUrl { get; set; }
+
         public bool? IsDiscontinued { get; set; }
     }
 
@@ -261,6 +277,9 @@ namespace AmusementParkAPI.Controllers
 
         [MaxLength(255)]
         public string? Description { get; set; }
+
+        [MaxLength(500)]
+        public string? ImageUrl { get; set; }
 
         public bool? IsDiscontinued { get; set; }
     }

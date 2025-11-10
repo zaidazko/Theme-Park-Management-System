@@ -136,7 +136,7 @@ const AssignMaintenance = () => {
 
       setMaintenanceRequests(requestsData || []);
 
-      // Filter employees to only show those in Maintenance department with Maintenance Worker role
+      // Filter employees to include Maintenance department OR Role_ID 4 (Ride Operator)
       const maintenanceWorkers = employeesData.filter((employee) => {
         const departmentName =
           employee.department?.department_Name ||
@@ -150,10 +150,30 @@ const AssignMaintenance = () => {
           employee.role?.name ||
           employee.roleName;
 
-        return (
-          departmentName?.toLowerCase() === "maintenance" &&
-          roleName?.toLowerCase() === "maintenance worker"
-        );
+        const roleId =
+          employee.role?.roleId ||
+          employee.role?.role_ID ||
+          employee.roleId ||
+          employee.Role_ID;
+
+        const departmentNormalized = (departmentName || "")
+          .toLowerCase()
+          .trim();
+        const roleNormalized = (roleName || "").toLowerCase().trim();
+
+        const isMaintenanceDept =
+          departmentNormalized === "maintenance" ||
+          departmentNormalized.includes("maintenance");
+
+        const isMaintenanceRole =
+          roleNormalized.includes("maintenance") ||
+          roleNormalized === "maintenance worker";
+
+        const isRideOperatorRole =
+          roleNormalized === "ride operator" || roleId === 4;
+
+        // Eligible if in Maintenance dept OR explicitly a Ride Operator (Role_ID 4)
+        return isMaintenanceDept || isMaintenanceRole || isRideOperatorRole;
       });
 
       setEmployees(maintenanceWorkers);

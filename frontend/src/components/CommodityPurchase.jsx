@@ -49,11 +49,8 @@ const CommodityPurchase = () => {
     } else {
       // Use Display_Category from database
       const filtered = commodities.filter(item => {
-        // Debug: log what we're comparing
-        console.log(`Item: ${item.commodityName}, displayCategory: "${item.displayCategory}", selectedCategory: "${selectedCategory}", match: ${item.displayCategory === selectedCategory}`);
         return item.displayCategory === selectedCategory;
       });
-      console.log(`Filtered ${filtered.length} items for category: ${selectedCategory}`);
       setFilteredCommodities(filtered);
     }
   };
@@ -114,19 +111,7 @@ const CommodityPurchase = () => {
     setQuantities({ ...quantities, [itemId]: qty });
   };
 
-  // Generate image filename from product name
-  const getProductImage = (commodityName) => {
-    // Convert product name to filename format
-    const filename = commodityName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-
-    return `/merchandise/${filename}.jpg`;
-  };
-
-  // Map each specific product to a UNIQUE image (no duplicates!)
-  const getCategoryImage = (commodityName) => {
+  const getFallbackImage = (commodityName) => {
     const name = commodityName.toLowerCase();
 
     // APPAREL - Each item gets unique image
@@ -193,6 +178,14 @@ const CommodityPurchase = () => {
     } else {
       return "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=400&h=400&fit=crop";
     }
+  };
+
+  const getCommodityImage = (item) => {
+    if (item.imageUrl && item.imageUrl.trim().length > 0) {
+      return item.imageUrl;
+    }
+
+    return getFallbackImage(item.commodityName);
   };
 
   return (
@@ -270,12 +263,12 @@ const CommodityPurchase = () => {
               {/* Product Image */}
               <div style={{ marginBottom: "15px", overflow: "hidden", borderRadius: "12px", height: "200px", backgroundColor: "#f0f0f0" }}>
                 <img
-                  src={getProductImage(item.commodityName)}
+                  src={getCommodityImage(item)}
                   alt={item.commodityName}
                   onError={(e) => {
                     // If custom image fails, use category stock photo
                     e.target.onerror = null; // Prevent infinite loop
-                    e.target.src = getCategoryImage(item.commodityName);
+                    e.target.src = getFallbackImage(item.commodityName);
                   }}
                   style={{
                     width: "100%",
@@ -290,10 +283,18 @@ const CommodityPurchase = () => {
               <h4 className="theme-park-feature-title">{item.commodityName}</h4>
               <p
                 className="theme-park-feature-description"
-                style={{ marginBottom: "15px" }}
+                style={{ marginBottom: "10px" }}
               >
-                {item.commodityStore && `Available at: Store ${item.commodityStore}`}
+                {item.description || "No description available."}
               </p>
+              {item.commodityStore && (
+                <p
+                  className="theme-park-feature-description"
+                  style={{ marginBottom: "15px", color: "#4b5563", fontSize: "0.85rem" }}
+                >
+                  Available at: Store {item.commodityStore}
+                </p>
+              )}
               <div
                 style={{
                   fontSize: "28px",

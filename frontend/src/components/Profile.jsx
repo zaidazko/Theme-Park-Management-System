@@ -236,16 +236,6 @@ function Profile({ user, onLogout }) {
                       : "Not provided"}
                   </div>
                 </div>
-
-                {user.userType === "Customer" && (
-                  <div style={{
-                    padding: '20px',
-                    background: 'linear-gradient(135deg, rgba(255, 0, 110, 0.05) 0%, rgba(255, 69, 0, 0.05) 100%)',
-                    borderRadius: '12px',
-                    borderLeft: '4px solid var(--accent-color)'
-                  }}>
-                  </div>
-                )}
               </div>
             </div>
           ) : (

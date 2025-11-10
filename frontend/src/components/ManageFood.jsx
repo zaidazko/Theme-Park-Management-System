@@ -6,6 +6,7 @@ const defaultFormState = {
   foodName: "",
   basePrice: "",
   description: "",
+  imageUrl: "",
 };
 
 const ManageFood = () => {
@@ -55,6 +56,7 @@ const ManageFood = () => {
       foodName: item.foodName,
       basePrice: item.basePrice?.toString() ?? "",
       description: item.description ?? "",
+      imageUrl: item.imageUrl ?? "",
     });
     setSuccess("");
     setError("");
@@ -69,6 +71,7 @@ const ManageFood = () => {
     const foodName = formState.foodName.trim();
     const basePrice = parseFloat(formState.basePrice);
     const description = formState.description.trim();
+    const imageUrl = formState.imageUrl.trim();
 
     if (!foodName) {
       setError("Please provide a food name.");
@@ -82,10 +85,17 @@ const ManageFood = () => {
       return;
     }
 
+    if (imageUrl && !/^https?:\/\//i.test(imageUrl)) {
+      setError("Image URL must start with http:// or https:// when provided.");
+      setSubmitting(false);
+      return;
+    }
+
     const payload = {
       foodName,
       basePrice,
       description,
+      imageUrl,
     };
 
     try {
@@ -272,6 +282,23 @@ const ManageFood = () => {
               />
             </div>
 
+            <div className="theme-park-form-group">
+              <label className="theme-park-label">Image URL</label>
+              <input
+                className="theme-park-input"
+                type="url"
+                value={formState.imageUrl}
+                onChange={(event) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    imageUrl: event.target.value,
+                  }))
+                }
+                placeholder="https://example.com/food.jpg"
+                maxLength={500}
+              />
+            </div>
+
             <button
               type="submit"
               className="theme-park-btn theme-park-btn-primary theme-park-btn-lg"
@@ -303,6 +330,7 @@ const ManageFood = () => {
                   <th>ID</th>
                   <th>Name</th>
                   <th>Base Price</th>
+                  <th>Image</th>
                   <th>Description</th>
                   <th style={{ width: "120px" }}>Actions</th>
                 </tr>
@@ -310,7 +338,7 @@ const ManageFood = () => {
               <tbody>
                 {menuItems.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: "center", padding: "20px" }}>
+                    <td colSpan={6} style={{ textAlign: "center", padding: "20px" }}>
                       No menu items configured yet.
                     </td>
                   </tr>
@@ -320,6 +348,20 @@ const ManageFood = () => {
                       <td>#{item.menuTypeId}</td>
                       <td>{item.foodName}</td>
                       <td>${formatPrice(item.basePrice)}</td>
+                      <td>
+                        {item.imageUrl ? (
+                          <a
+                            href={item.imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "var(--primary-color)" }}
+                          >
+                            View
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td>{item.description || "—"}</td>
                       <td>
                         <div style={{ display: "flex", gap: "8px" }}>
@@ -365,6 +407,7 @@ const ManageFood = () => {
                   <th>ID</th>
                   <th>Name</th>
                   <th>Base Price</th>
+                  <th>Image</th>
                   <th>Description</th>
                   <th style={{ width: "120px" }}>Actions</th>
                 </tr>
@@ -372,7 +415,7 @@ const ManageFood = () => {
               <tbody>
                 {discontinued.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: "center", padding: "20px" }}>
+                    <td colSpan={6} style={{ textAlign: "center", padding: "20px" }}>
                       No discontinued menu items.
                     </td>
                   </tr>
@@ -382,6 +425,20 @@ const ManageFood = () => {
                       <td>#{item.menuTypeId}</td>
                       <td>{item.foodName}</td>
                       <td>${formatPrice(item.basePrice)}</td>
+                      <td>
+                        {item.imageUrl ? (
+                          <a
+                            href={item.imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "var(--primary-color)" }}
+                          >
+                            View
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td>{item.description || "—"}</td>
                       <td>
                         <button

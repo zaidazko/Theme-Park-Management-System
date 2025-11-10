@@ -33,6 +33,7 @@ namespace AmusementParkAPI.Controllers
                     category = c.Category,
                     displayCategory = c.Display_Category,
                     description = c.Description,
+                    imageUrl = c.Image_Url,
                     isDiscontinued = c.Is_Discontinued
                 })
                 .OrderBy(c => c.commodityTypeId)
@@ -54,6 +55,7 @@ namespace AmusementParkAPI.Controllers
                     basePrice = c.Base_Price,
                     stockQuantity = c.Stock_Quantity,
                     description = c.Description,
+                    imageUrl = c.Image_Url,
                     isDiscontinued = c.Is_Discontinued,
                     category = c.Category,
                     displayCategory = c.Display_Category
@@ -84,6 +86,9 @@ namespace AmusementParkAPI.Controllers
                 Category = request.Category ?? "merchandise",
                 Display_Category = request.DisplayCategory ?? "Uncategorized",
                 Commodity_Store = request.CommodityStore,
+                Image_Url = string.IsNullOrWhiteSpace(request.ImageUrl)
+                    ? null
+                    : request.ImageUrl.Trim(),
                 Is_Discontinued = false
             };
 
@@ -102,6 +107,7 @@ namespace AmusementParkAPI.Controllers
                     description = commodityType.Description,
                     category = commodityType.Category,
                     displayCategory = commodityType.Display_Category,
+                    imageUrl = commodityType.Image_Url,
                     isDiscontinued = commodityType.Is_Discontinued
                 });
         }
@@ -141,6 +147,13 @@ namespace AmusementParkAPI.Controllers
                 commodityType.Description = string.IsNullOrWhiteSpace(request.Description)
                     ? null
                     : request.Description.Trim();
+            }
+
+            if (request.ImageUrl != null)
+            {
+                commodityType.Image_Url = string.IsNullOrWhiteSpace(request.ImageUrl)
+                    ? null
+                    : request.ImageUrl.Trim();
             }
 
             if (request.IsDiscontinued.HasValue)
@@ -307,7 +320,8 @@ namespace AmusementParkAPI.Controllers
                     commodityStore = c.Commodity_Store,
                     stockQuantity = c.Stock_Quantity,
                     category = c.Category,
-                    displayCategory = c.Display_Category
+                    displayCategory = c.Display_Category,
+                    imageUrl = c.Image_Url
                 })
                 .ToListAsync();
 
@@ -361,6 +375,9 @@ namespace AmusementParkAPI.Controllers
         public string? Category { get; set; }
         public string? DisplayCategory { get; set; }
         public int CommodityStore { get; set; } = 1;
+
+        [MaxLength(500)]
+        public string? ImageUrl { get; set; }
     }
 
     public class CommodityTypeUpdateRequest
@@ -381,6 +398,9 @@ namespace AmusementParkAPI.Controllers
 
         public string? Category { get; set; }
         public string? DisplayCategory { get; set; }
+
+        [MaxLength(500)]
+        public string? ImageUrl { get; set; }
     }
 
     public class CommodityPurchaseDto

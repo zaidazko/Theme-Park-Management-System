@@ -3,12 +3,13 @@ import LandingPage from "./components/LandingPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Profile from "./components/Profile";
-import TicketPurchase from "./components/TicketPurchase";
 import TicketSales from "./components/TicketSales";
 import CommodityPurchase from "./components/CommodityPurchase";
 import CommoditySales from "./components/CommoditySales";
+import MyPurchases from "./components/MyPurchases";
 import RestaurantMenu from "./components/RestaurantMenu";
 import RestaurantSales from "./components/RestaurantSales";
+import UnifiedPurchase from "./components/UnifiedPurchase";
 import RequestMaintenance from "./components/RequestMaintenance";
 import AssignMaintenance from "./components/AssignMaintenance";
 import SubmitMaintenance from "./components/SubmitMaintenance";
@@ -22,6 +23,7 @@ import ManageTickets from "./components/ManageTickets";
 import UnifiedSalesReport from "./components/UnifiedSalesReport";
 import Cart from "./components/Cart";
 import RideDetail from "./components/RideDetail";
+import Merchandise from "./components/Merchandise";
 import "./App.css";
 
 function App() {
@@ -115,7 +117,7 @@ function App() {
                   onClick={() => setCurrentView("reviews")}
                   style={styles.navButton}
                 >
-                  View Reviews
+                  Ridership Report
                 </button>
                 <button
                   onClick={() => setCurrentView("maintenance-request")}
@@ -169,52 +171,40 @@ function App() {
             {!isEmployee && (
               <>
                 <button
-                  onClick={() => setCurrentView("buy-tickets")}
+                  onClick={() => setCurrentView("unified-purchase")}
                   style={styles.navButton}
                 >
-                  Buy Tickets
+                  Marketplace
                 </button>
                 <button
-                  onClick={() => setCurrentView("buy-items")}
+                  onClick={() => setCurrentView("food-menu")}
                   style={styles.navButton}
                 >
-                  Shop Merchandise
+                  Food
                 </button>
                 <button
-                  onClick={() => setCurrentView("cart")}
-                  style={styles.cartButton}
+                  onClick={() => setCurrentView("merch")}
+                  style={styles.navButton}
                 >
-                  🛒 Cart
+                  Merch
                 </button>
                 <button
                   onClick={() => setCurrentView("rides")}
                   style={styles.navButton}
                 >
-                  Rides
-                </button>
-                <button
-                  onClick={() => setCurrentView("my-tickets")}
-                  style={styles.navButton}
-                >
-                  My Tickets
+                  Rides & Tickets
                 </button>
                 <button
                   onClick={() => setCurrentView("my-purchases")}
                   style={styles.navButton}
                 >
-                  My Merchandise
+                  My Purchases
                 </button>
                 <button
                   onClick={() => setCurrentView("my-reviews")}
                   style={styles.navButton}
                 >
                   My Reviews
-                </button>
-                <button onClick={() => setCurrentView('restaurant-menu')} style={styles.navButton}>
-                  Dining & Food
-                </button>
-                <button onClick={() => setCurrentView('my-restaurant-orders')} style={styles.navButton}>
-                  My Orders
                 </button>
               </>
             )}
@@ -379,22 +369,18 @@ function App() {
       {currentView === "rides" && <Rides />}
 
       {/* Customer Pages */}
-      {currentView === "buy-tickets" && user && !isEmployee && (
-        <TicketPurchase />
+      {currentView === "unified-purchase" && user && !isEmployee && (
+        <UnifiedPurchase />
       )}
 
-      {currentView === "buy-items" && user && !isEmployee && (
-        <CommodityPurchase />
+      {currentView === "food-menu" && user && !isEmployee && (
+        <RestaurantMenu />
       )}
 
-      {currentView === "cart" && user && !isEmployee && (
-        <Cart />
-      )}
-
-      {currentView === "my-tickets" && user && !isEmployee && <TicketSales />}
+      {currentView === "merch" && user && !isEmployee && <Merchandise />}
 
       {currentView === "my-purchases" && user && !isEmployee && (
-        <CommoditySales />
+        <MyPurchases />
       )}
 
       {currentView === "my-reviews" && user && !isEmployee && (
@@ -445,14 +431,6 @@ function App() {
       {currentView === "reviews" && user && isEmployee && <Reviews />}
 
       {/* Restaurant Pages */}
-      {currentView === 'restaurant-menu' && user && !isEmployee && (
-        <RestaurantMenu />
-      )}
-
-      {currentView === 'my-restaurant-orders' && user && !isEmployee && (
-        <RestaurantSales />
-      )}
-
       {currentView === 'restaurant-sales' && user && isEmployee && (
         <RestaurantSales />
       )}

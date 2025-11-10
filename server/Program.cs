@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using AmusementParkAPI.Data;
+using AmusementParkAPI.Services;
 using System.Text.Json.Serialization;  // Add this line
 
 
@@ -35,6 +36,9 @@ builder.Services.AddCors(options =>
                   .AllowAnyMethod();
         });
 });
+
+// Register background service for priority updates
+builder.Services.AddHostedService<PriorityUpdateService>();
 
 var app = builder.Build();
 
