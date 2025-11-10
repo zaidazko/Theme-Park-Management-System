@@ -10,8 +10,8 @@ import {
   Title,
   Tooltip,
   Legend,
-} from "chart.js";
-import { Bar, Doughnut, Line } from "react-chartjs-2";
+} from "chart.js/auto";
+import { Line } from "react-chartjs-2";
 import "./UnifiedSalesReport.css";
 import { ridesAPI, ReviewsAPI } from "../api";
 
@@ -66,24 +66,43 @@ function Reviews({ onSwitchToMakeReview }) {
   const fetchRidershipData = async () => {
     setLoading(true);
     try{
-      const[ticketSaleResponse, ticketTypeResponse] = await Promise.all([
+      const[ticketSaleResponse, ticketTypeResponse, discontinuedTicketTypeResponse] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_URL}/ticket/sales`),
-        fetch(`${import.meta.env.VITE_API_URL}/ticket/types`)
+        fetch(`${import.meta.env.VITE_API_URL}/ticket/types`),
+        fetch(`${import.meta.env.VITE_API_URL}/ticket/types/discontinued`)
       ]);
 
       if (!ticketSaleResponse.ok) throw new Error("Failed to fetch ticket sales");
       if (!ticketTypeResponse.ok) throw new Error("Failed to fetch ticket types");
+      if (!discontinuedTicketTypeResponse.ok) throw new Error("Failed to fetch discontinued ticket types");
 
-      const [ridesData, reviewsData, ticketSalesData, ticketTypesData] = await Promise.all([
+      const [ridesData, reviewsData, ticketSalesData, ticketTypesData, discontinuedTicketTypesData] = await Promise.all([
         ridesAPI.getAllRides(),
         ReviewsAPI.getAllReviews(),
         ticketSaleResponse.json(),
-        ticketTypeResponse.json()
+        ticketTypeResponse.json(),
+        discontinuedTicketTypeResponse.json()
       ]);
+
+      const salesWithRides = ticketSalesData.map((sale) => {
+        let ticketType = ticketTypesData.find((t) => t.typeName === sale.ticketType);
+        
+        if(!ticketType){
+          ticketType = discontinuedTicketTypesData.find((t) => t.typeName === sale.ticketType);
+        };
+
+        if(!ticketType) return sale 
+
+        const ride = ridesData.find((r) => r.ride_ID === ticketType.rideId)
+        return{
+          ...sale,
+          rideName: ride.ride_Name,
+        };
+      });
 
       setRides(ridesData);
       setReviews(reviewsData);
-      setTicketSales(ticketSalesData);
+      setTicketSales(salesWithRides);
       setTicketTypes(ticketTypesData);
 
       const uniqueRides = new Set();
@@ -100,6 +119,8 @@ function Reviews({ onSwitchToMakeReview }) {
       setLoading(false);
     }
   };
+
+  console.log(ticketTypes)
 
   // For Customers - Show their reviews
   const fetchMyReviews = async () => {
@@ -142,7 +163,7 @@ function Reviews({ onSwitchToMakeReview }) {
       }
 
       if(filters.ride) {
-        const rideName = sale.ticketType;
+        const rideName = sale.rideName;
         if (!rideName || rideName !== filters.ride) return false;
       }
       
@@ -222,7 +243,7 @@ function Reviews({ onSwitchToMakeReview }) {
       const rideName = ride.ride_Name;
 
       const rideSales = filterSales().filter(
-        (sale) => sale.ticketType === rideName
+        (sale) => sale.rideName === rideName
       );
 
       const rideReviews = reviews.filter((r) => r.rideName === rideName);
@@ -267,7 +288,7 @@ function Reviews({ onSwitchToMakeReview }) {
 
   const ticketHistory = filteredSales.map((sale) => ({
     ticketId: sale.ticketId,
-    rideName: sale.ticketType,
+    rideName: sale.rideName,
     customerName: sale.customerName,
     date: sale.purchaseDate,
   }));
@@ -316,6 +337,72 @@ function Reviews({ onSwitchToMakeReview }) {
       year: "numeric",
     });
   };
+
+  const computeRidershipByDay = () =>{
+    const dailyData = {};
+
+    filterSales().forEach((sale) => {
+      const date = sale.purchaseDate.split("T")[0];
+      const ride = sale.rideName;
+      const qty = sale.quantity || 1;
+
+      if (!dailyData[date]) dailyData[date] = {};
+      if (!dailyData[date][ride]) dailyData[date][ride] = 0;
+
+      dailyData[date][ride] += qty;
+    });
+
+    return dailyData;
+  }
+
+  const buildLineChartData = () => {
+    const dailyData = computeRidershipByDay();
+
+    const dates = Object.keys(dailyData).sort();
+
+    const rideNames = new Set();
+    dates.forEach((d) => {
+      Object.keys(dailyData[d]).forEach((r) => rideNames.add(r));
+    });
+
+    const datasets = Array.from(rideNames).map((ride) => ({
+      label: ride,
+      data: dates.map((d) => dailyData[d][ride] || 0),
+      fill: false,
+      tension: 0.3,
+    }));
+
+    return { dates, datasets };
+  };
+
+  const { dates, datasets } = buildLineChartData();
+
+  const lineChartData = {
+    labels: dates,
+    datasets,
+  };
+
+  const lineChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: "top" },
+      title: { display: true, text: "Daily Ridership" },
+    },
+    scales: {
+      x: { title: { display: true, text: "Date" } },
+      y: {
+        title: { display: true, text: "Total Ridership" },
+        beginAtZero: true,
+        ticks: { stepSize: 1 },
+      },
+    },
+  };
+
+  const [currentHistoryPage, setCurrentHistoryPage] = useState(1);
+  const rowsPerPage = 10;
+  const currentHistoryRows = sortedHistory.slice((currentHistoryPage * rowsPerPage) - rowsPerPage ,currentHistoryPage * rowsPerPage);
+  const totalHistoryPages = Math.ceil(sortedHistory.length / rowsPerPage);
 
   return (
     <div className="theme-park-page" style={{ padding: "40px 10px" }}>
@@ -371,7 +458,12 @@ function Reviews({ onSwitchToMakeReview }) {
       )}
 
       {loading ? (
-        <div style={{ textAlign: "center", padding: "40px" }}>Loading...</div>
+        <div className="theme-park-page">
+          <div className="theme-park-loading">
+            <div className="theme-park-spinner"></div>
+            <div className="theme-park-loading-text">Loading ride data...</div>
+          </div>
+        </div>
       ) : reviews.length === 0 ? (
         <div style={{ textAlign: "center", padding: "40px", color: "#999" }}>
           {isEmployee ? "No reviews yet" : "You haven't made any reviews yet"}
@@ -381,113 +473,15 @@ function Reviews({ onSwitchToMakeReview }) {
           {isEmployee && (
             <>
 
-              <div className="theme-park-card" style={{ marginTop: "1.5rem" }}>
+              <div className="theme-park-card" style={{ marginTop: "1.5rem"}}>
                 <div className="theme-park-card-header">
                   <h3 className="theme-park-card-title">
                     <span>📊</span> Ridership Over Time
                   </h3>
                 </div>
 
-                <div style={{ padding: "1.5rem", height: "400px" }}>
-                </div>
-              </div>
-
-              <div className="theme-park-card" style={{ padding: "30px 15px" }}>
-                <div className="theme-park-card-header">
-                  <h3 className="theme-park-card-title">
-                    <span>📋</span> Ridership and Review Summary
-                  </h3>
-                </div>
-
-                {/* Stats Table */}
-                <div
-                  className="theme-park-table-container"
-                  style={{ overflowX: "auto", width: "100%" }}
-                >
-                  <table className="theme-park-table" style={{ tableLayout: "fixed", width: "100%" }}>
-                    <thead>
-                      <tr>
-                        <th
-                          onClick={() => handleSort("rideName")}
-                          className="sortable"
-                        >
-                          Ride
-                          {sortConfig.key === "rideName" ? 
-                            sortConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-
-                        <th
-                          onClick={() => handleSort("totalRidership")}
-                          className="sortable"
-                        >
-                          Total Ridership
-                          {sortConfig.key === "totalRidership" ? 
-                            sortConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-
-                        <th
-                          onClick={() => handleSort("averageRidershipPerDay")}
-                          className="sortable"
-                        >
-                          Average Ridership Per Day
-                          {sortConfig.key === "averageRidershipPerDay" ? 
-                            sortConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-
-                        <th
-                          onClick={() => handleSort("averageRating")}
-                          className="sortable"
-                        >
-                          Average Rating
-                          {sortConfig.key === "averageRating" ? 
-                            sortConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-
-                        <th
-                          onClick={() => handleSort("totalReviews")}
-                          className="sortable"
-                        >
-                          Total Reviews
-                          {sortConfig.key === "totalReviews" ? 
-                            sortConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedRideStats.length === 0 ? (
-                        <tr>
-                          <td colSpan="5" style={{ textAlign: "center", padding: "20px" }}>
-                            No data available for the selected filters.
-                          </td>
-                        </tr>
-                      ) : (
-                        sortedRideStats.map((stat) => (
-                          <tr key={stat.rideName}>
-                            <td>{stat.rideName}</td>
-                            <td>{stat.totalRidership}</td>
-                            <td>{stat.averageRidershipPerDay}</td>
-                            <td>{stat.averageRating}</td>
-                            <td>{stat.totalReviews}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                <div style={{ padding: "1.5rem", height: "400px", flex: 1 }}>
+                  <Line key={lineChartData.labels.join(",")} data={lineChartData} options={lineChartOptions} />
                 </div>
               </div>
               
@@ -693,12 +687,12 @@ function Reviews({ onSwitchToMakeReview }) {
 
                 <div
                   className="theme-park-table-container"
-                  style={{ overflowX: "auto", width: "100%" }}
+                  style={{ overflowX: "auto", overflowY: "auto", maxHeight: "600px", width: "100%" }}
                 >
 
                   <table className="theme-park-table" style={{ tableLayout: "fixed", width: "100%" }}>
                     
-                    <thead>
+                    <thead style={{position: "sticky", top:"0", zIndex: "1"}}>
                       <tr>
                         <th
                           onClick={() => handleHistorySort("ticketId")}
@@ -750,7 +744,7 @@ function Reviews({ onSwitchToMakeReview }) {
                     </thead>
 
                     <tbody>
-                      {sortedHistory.length === 0 ? (
+                      {currentHistoryRows.length === 0 ? (
                         <tr>
                           <td
                             colSpan="4"
@@ -768,7 +762,7 @@ function Reviews({ onSwitchToMakeReview }) {
                           </td>
                         </tr>
                       ) : (
-                        sortedHistory.map((rider) => (
+                        currentHistoryRows.map((rider) => (
                           <tr
                             key={rider.ticketId}
                           >
@@ -785,7 +779,131 @@ function Reviews({ onSwitchToMakeReview }) {
                   </table>
 
                 </div>
+                
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "left",
+                    margin: "20px 0px 20px 0px",
+                  }}
+                >
+                  <button
+                    className="theme-park-btn theme-park-btn-primary theme-park-btn-sm"
+                    style={{margin:"5px"}}  
+                    onClick={() => setCurrentHistoryPage((page) => Math.max(page - 1, 1))}
+                    disabled={currentHistoryPage === 1}
+                  >
+                    Prev
+                  </button>
+                  <button
+                    className="theme-park-btn theme-park-btn-primary theme-park-btn-sm"
+                    style={{margin:"5px"}}  
+                    onClick={() => setCurrentHistoryPage((page) => Math.min(page + 1, totalHistoryPages))}
+                    disabled={currentHistoryPage === totalHistoryPages}
+                  >
+                    Next
+                  </button>
+                </div>
 
+              </div>
+
+              <div className="theme-park-card" style={{ padding: "30px 15px" }}>
+                <div className="theme-park-card-header">
+                  <h3 className="theme-park-card-title">
+                    <span>📋</span> Ridership and Review Summary
+                  </h3>
+                </div>
+
+                {/* Stats Table */}
+                <div
+                  className="theme-park-table-container"
+                  style={{ overflowX: "auto", width: "100%" }}
+                >
+                  <table className="theme-park-table" style={{ tableLayout: "fixed", width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th
+                          onClick={() => handleSort("rideName")}
+                          className="sortable"
+                        >
+                          Ride
+                          {sortConfig.key === "rideName" ? 
+                            sortConfig.direction === "asc"
+                              ? " ↑"
+                              : " ↓"
+                            : ""}
+                        </th>
+
+                        <th
+                          onClick={() => handleSort("totalRidership")}
+                          className="sortable"
+                        >
+                          Total Ridership
+                          {sortConfig.key === "totalRidership" ? 
+                            sortConfig.direction === "asc"
+                              ? " ↑"
+                              : " ↓"
+                            : ""}
+                        </th>
+
+                        <th
+                          onClick={() => handleSort("averageRidershipPerDay")}
+                          className="sortable"
+                        >
+                          Average Ridership Per Day
+                          {sortConfig.key === "averageRidershipPerDay" ? 
+                            sortConfig.direction === "asc"
+                              ? " ↑"
+                              : " ↓"
+                            : ""}
+                        </th>
+
+                        <th
+                          onClick={() => handleSort("averageRating")}
+                          className="sortable"
+                        >
+                          Average Rating
+                          {sortConfig.key === "averageRating" ? 
+                            sortConfig.direction === "asc"
+                              ? " ↑"
+                              : " ↓"
+                            : ""}
+                        </th>
+
+                        <th
+                          onClick={() => handleSort("totalReviews")}
+                          className="sortable"
+                        >
+                          Total Reviews
+                          {sortConfig.key === "totalReviews" ? 
+                            sortConfig.direction === "asc"
+                              ? " ↑"
+                              : " ↓"
+                            : ""}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedRideStats.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" style={{ textAlign: "center", padding: "20px" }}>
+                            No data available for the selected filters.
+                          </td>
+                        </tr>
+                      ) : (
+                        sortedRideStats.map((stat) => (
+                          <tr key={stat.rideName}>
+                            <td>{stat.rideName}</td>
+                            <td>{stat.totalRidership}</td>
+                            <td>{stat.averageRidershipPerDay}</td>
+                            <td>{stat.averageRating}</td>
+                            <td>{stat.totalReviews}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </>
           )}
