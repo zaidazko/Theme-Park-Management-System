@@ -17,7 +17,15 @@
       "Bash(taskkill //F //PID 7072)",
       "Bash(git remote add:*)",
       "Bash(git fetch:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git merge:*)",
+      "Bash(git push:*)",
+      "Bash(findstr:*)",
+      "Bash(database/restore_original_22_items.sql)",
+      "Bash(database/check_starter.sql)",
+      "Bash(taskkill //F //PID 40052)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
