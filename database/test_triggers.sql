@@ -33,7 +33,7 @@ SET @stock_before_test1 = (
 );
 
 -- Attempt to purchase 2 items
-INSERT INTO commodity_sale (Customer_ID, Commodity_TypeID, Quantity, Total_Price, Payment_Method, Purchase_Date)
+INSERT INTO commodity_sale (Customer_ID, Commodity_TypeID, Quantity, Price, Payment_Method, Purchase_Date)
 VALUES (1, @test_commodity_id, 2, 50.00, 'credit', NOW());
 
 SET @stock_after_test1 = (
@@ -80,7 +80,7 @@ SELECT
 
 -- This should fail with trigger error
 -- Uncomment to test (will cause error):
--- INSERT INTO commodity_sale (Customer_ID, Commodity_TypeID, Quantity, Total_Price, Payment_Method, Purchase_Date)
+-- INSERT INTO commodity_sale (Customer_ID, Commodity_TypeID, Quantity, Price, Payment_Method, Purchase_Date)
 -- VALUES (1, @low_stock_commodity, @low_stock_amount + 10, 100.00, 'credit', NOW());
 
 SELECT '✅ TEST 2 SETUP COMPLETE - Uncomment INSERT to test insufficient stock error' AS result;
@@ -105,7 +105,7 @@ SELECT
 
 -- This should fail with trigger error
 -- Uncomment to test (will cause error):
--- INSERT INTO commodity_sale (Customer_ID, Commodity_TypeID, Quantity, Total_Price, Payment_Method, Purchase_Date)
+-- INSERT INTO commodity_sale (Customer_ID, Commodity_TypeID, Quantity, Price, Payment_Method, Purchase_Date)
 -- VALUES (1, @zero_stock_commodity, 1, 10.00, 'credit', NOW());
 
 SELECT '✅ TEST 3 SETUP COMPLETE - Uncomment INSERT to test out-of-stock error' AS result;
@@ -119,7 +119,7 @@ SET @any_commodity = (SELECT Commodity_TypeID FROM commodity_type LIMIT 1);
 
 -- This should fail with trigger error
 -- Uncomment to test (will cause error):
--- INSERT INTO commodity_sale (Customer_ID, Commodity_TypeID, Quantity, Total_Price, Payment_Method, Purchase_Date)
+-- INSERT INTO commodity_sale (Customer_ID, Commodity_TypeID, Quantity, Price, Payment_Method, Purchase_Date)
 -- VALUES (1, @any_commodity, 0, 0.00, 'credit', NOW());
 
 SELECT '✅ TEST 4 SETUP COMPLETE - Uncomment INSERT to test invalid quantity error' AS result;
@@ -143,11 +143,11 @@ SET @stock_before_seq = (
 );
 
 -- Purchase 1
-INSERT INTO commodity_sale (Customer_ID, Commodity_TypeID, Quantity, Total_Price, Payment_Method, Purchase_Date)
+INSERT INTO commodity_sale (Customer_ID, Commodity_TypeID, Quantity, Price, Payment_Method, Purchase_Date)
 VALUES (1, @seq_commodity, 2, 20.00, 'credit', NOW());
 
 -- Purchase 2
-INSERT INTO commodity_sale (Customer_ID, Commodity_TypeID, Quantity, Total_Price, Payment_Method, Purchase_Date)
+INSERT INTO commodity_sale (Customer_ID, Commodity_TypeID, Quantity, Price, Payment_Method, Purchase_Date)
 VALUES (2, @seq_commodity, 3, 30.00, 'debit', NOW());
 
 SET @stock_after_seq = (
