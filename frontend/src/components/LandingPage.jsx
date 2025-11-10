@@ -125,79 +125,31 @@ function LandingPage({ onGetStarted, onLogin, onShopClick }) {
       {/* Ticket Deals Section */}
       <section className="tickets-section">
         <div className="section-header">
-          <h2 className="section-title">TICKETS & SEASON PASSES</h2>
+          <h2 className="section-title">TICKETS TO THRILLS</h2>
           <p className="section-subtitle">
             Choose your adventure - from single day tickets to unlimited annual
             passes
           </p>
         </div>
 
-        <div className="tickets-grid">
-          {/* Daily Admission */}
-          <div className="ticket-card featured">
-            <div className="ticket-badge">BEST VALUE</div>
-            <div className="ticket-header">
-              <h3>Daily Admission</h3>
-              <div className="price-section">
-                <span className="original-price">$79.99</span>
-                <span className="current-price">$49.99</span>
-                <span className="price-label">per person</span>
+        <div className="ticket-invitation-container">
+          <div className="ticket-invitation-card">
+            <div className="invitation-image-wrapper">
+              <img src="/hypercoaster.jpg" alt="Experience thrilling rides" className="invitation-image" />
+              <div className="invitation-overlay">
+                <h3 className="invitation-title">Experience the Thrill</h3>
+                <p className="invitation-subtitle">Discover World-Class Rides & Unforgettable Memories</p>
               </div>
             </div>
-            <ul className="ticket-features">
-              <li>✓ Access to all rides & attractions</li>
-              <li>✓ Live shows & entertainment</li>
-              <li>✓ Water park included</li>
-              <li>✓ Free parking</li>
-            </ul>
-            <button className="ticket-btn" onClick={onGetStarted}>
-              Buy Now
-            </button>
-          </div>
-
-          {/* Season Pass */}
-          <div className="ticket-card premium">
-            <div className="ticket-badge popular">MOST POPULAR</div>
-            <div className="ticket-header">
-              <h3>Gold Season Pass</h3>
-              <div className="price-section">
-                <span className="current-price">$99.99</span>
-                <span className="price-label">Pay monthly: $8.33/mo</span>
-              </div>
+            <div className="invitation-content">
+              <p className="invitation-text">
+                From heart-pounding roller coasters to family-friendly attractions, ThrillWorld offers something for everyone. 
+                Get your tickets today and start your adventure!
+              </p>
+              <button className="invitation-cta" onClick={onGetStarted}>
+                Buy Tickets Now
+              </button>
             </div>
-            <ul className="ticket-features">
-              <li>✓ Unlimited visits all year</li>
-              <li>✓ Free parking every visit</li>
-              <li>✓ 10% discount on food & merchandise</li>
-              <li>✓ Exclusive member events</li>
-              <li>✓ Skip the line on select rides</li>
-            </ul>
-            <button className="ticket-btn premium-btn" onClick={onGetStarted}>
-              Get Season Pass
-            </button>
-          </div>
-
-          {/* VIP Experience */}
-          <div className="ticket-card vip">
-            <div className="ticket-badge vip-badge">VIP</div>
-            <div className="ticket-header">
-              <h3>Platinum VIP Pass</h3>
-              <div className="price-section">
-                <span className="current-price">$299.99</span>
-                <span className="price-label">Ultimate experience</span>
-              </div>
-            </div>
-            <ul className="ticket-features">
-              <li>✓ Everything in Gold Pass</li>
-              <li>✓ Front-of-line access on ALL rides</li>
-              <li>✓ VIP lounge access</li>
-              <li>✓ Free meals & snacks</li>
-              <li>✓ Private parking</li>
-              <li>✓ Exclusive merchandise</li>
-            </ul>
-            <button className="ticket-btn vip-btn" onClick={onGetStarted}>
-              Go VIP
-            </button>
           </div>
         </div>
       </section>
