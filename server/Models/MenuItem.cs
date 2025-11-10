@@ -21,6 +21,10 @@ namespace AmusementParkAPI.Models
         [MaxLength(255)]
         public string? Item_Description { get; set; }
 
+    [Column("Image_Url")]
+    [MaxLength(500)]
+    public string? Image_Url { get; set; }
+
         [Column("Price")]
         public decimal Price { get; set; }
 

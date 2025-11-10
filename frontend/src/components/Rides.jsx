@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { ridesAPI } from "../api";
 import "./ThemePark.css";
 
+const DEFAULT_IMAGE =
+  "https://media.istockphoto.com/id/186293315/photo/looping-roller-coaster.jpg?s=612x612&w=0&k=20&c=r0Uq8QvhEjoFOodlgaD_5gMOYOF4rbFxKIp6UOFrcJA=";
+
 const Rides = () => {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -9,17 +12,15 @@ const Rides = () => {
   const [showCreateRideModal, setShowCreateRideModal] = useState(false);
   const [showEditRideModal, setShowEditRideModal] = useState(false);
   const [selectedRide, setSelectedRide] = useState(null);
-
   const [rideFormData, setRideFormData] = useState({
     ride_Name: "",
     capacity: "",
-    image: ""
+    image: "",
   });
-
   const [createRideForm, setCreateRideForm] = useState({
     ride_Name: "",
     capacity: "",
-    image: "https://media.istockphoto.com/id/186293315/photo/looping-roller-coaster.jpg?s=612x612&w=0&k=20&c=r0Uq8QvhEjoFOodlgaD_5gMOYOF4rbFxKIp6UOFrcJA=",
+    image: DEFAULT_IMAGE,
   });
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -27,50 +28,47 @@ const Rides = () => {
     currentUser.userType === "Employee" || currentUser.userType === "Manager";
 
   useEffect(() => {
+    const fetchRides = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/rides`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch rides");
+        }
+        const data = await response.json();
+        setRides(data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load rides");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchRides();
   }, []);
-
-  const fetchRides = async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/rides`);
-      if (!response.ok) throw new Error("Failed to fetch rides");
-      const data = await response.json();
-      setRides(data);
-    } catch (err) {
-      setError("Failed to load rides");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getRideStatusBadge = (status) => {
     if (status === "Open" || status === "Operational") {
       return (
-        <span className="theme-park-badge theme-park-badge-success">
-          ✅ Open
-        </span>
-      );
-    } else if (status === "Closed" || status === "Under Maintenance") {
-      return (
-        <span className="theme-park-badge theme-park-badge-danger">
-          🔧 Closed
-        </span>
-      );
-    } else {
-      return (
-        <span className="theme-park-badge theme-park-badge-warning">
-          ⚠️ {status}
-        </span>
+        <span className="theme-park-badge theme-park-badge-success">✅ Open</span>
       );
     }
+    if (status === "Closed" || status === "Under Maintenance") {
+      return (
+        <span className="theme-park-badge theme-park-badge-danger">🔧 Closed</span>
+      );
+    }
+    return (
+      <span className="theme-park-badge theme-park-badge-warning">⚠️ {status}</span>
+    );
   };
 
   const handleCreateRide = async () => {
-    try{
+    try {
       const rideData = {
         ride_Name: createRideForm.ride_Name,
-        capacity: parseInt(createRideForm.capacity),
-        image: createRideForm.image,
+        capacity: Number.parseInt(createRideForm.capacity, 10) || 0,
+        image: createRideForm.image || DEFAULT_IMAGE,
         status: "Operational",
       };
 
@@ -79,26 +77,36 @@ const Rides = () => {
       setCreateRideForm({
         ride_Name: "",
         capacity: "",
-        image: "https://media.istockphoto.com/id/186293315/photo/looping-roller-coaster.jpg?s=612x612&w=0&k=20&c=r0Uq8QvhEjoFOodlgaD_5gMOYOF4rbFxKIp6UOFrcJA=",
+        image: DEFAULT_IMAGE,
       });
       setShowCreateRideModal(false);
-      fetchRides();
+      setLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/rides`);
+      const data = await response.json();
+      setRides(data);
+      setLoading(false);
       alert("Ride created successfully!");
     } catch (err) {
       console.error("Failed to create ride", err);
-    } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteRide = async (rideId) => {
-    if (window.confirm("Are you sure you want to delete this ride?")) {
-      try {
-        await ridesAPI.deleteRide(rideId);
-        fetchRides();
-      } catch (error) {
-        console.error("Failed to delete ride", error);
-      }
+    if (!window.confirm("Are you sure you want to delete this ride?")) {
+      return;
+    }
+
+    try {
+      await ridesAPI.deleteRide(rideId);
+      setLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/rides`);
+      const data = await response.json();
+      setRides(data);
+    } catch (err) {
+      console.error("Failed to delete ride", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -112,25 +120,33 @@ const Rides = () => {
     setShowEditRideModal(true);
   };
 
-const handleSaveRide = async () => {
-  try {
-    if (selectedRide) {
+  const handleSaveRide = async () => {
+    if (!selectedRide) {
+      return;
+    }
+
+    try {
       const updateRideData = {
         Ride_ID: selectedRide.ride_ID,
-        Ride_Name: rideFormData.ride_Name || null,
-        Capacity: rideFormData.capacity || null,
-        Image: rideFormData.image || null,
+        Ride_Name: rideFormData.ride_Name || selectedRide.ride_Name,
+        Capacity: Number.parseInt(rideFormData.capacity, 10) || selectedRide.capacity,
+        Image: rideFormData.image || selectedRide.image || DEFAULT_IMAGE,
         Status: selectedRide.status || "Operational",
       };
+
       await ridesAPI.updateRideData(selectedRide.ride_ID, updateRideData);
+      setShowEditRideModal(false);
+      setSelectedRide(null);
+      setLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/rides`);
+      const data = await response.json();
+      setRides(data);
+    } catch (err) {
+      console.error("Error saving ride", err);
+    } finally {
+      setLoading(false);
     }
-    setShowEditRideModal(false);
-    setSelectedRide(null);
-    fetchRides();
-  } catch (error){
-    console.error("Error saving ride:", error);
-  }
-};
+  };
 
   const styles = {
     container: {
@@ -426,7 +442,7 @@ const handleSaveRide = async () => {
                     <img
                       src={
                         ride.image ||
-                        "https://media.istockphoto.com/id/186293315/photo/looping-roller-coaster.jpg?s=612x612&w=0&k=20&c=r0Uq8QvhEjoFOodlgaD_5gMOYOF4rbFxKIp6UOFrcJA="
+                        DEFAULT_IMAGE
                       }
                       alt={ride.ride_Name}
                       style={{

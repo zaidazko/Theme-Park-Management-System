@@ -46,6 +46,7 @@ namespace AmusementParkAPI.Controllers
                     menuId = m.Menu_ID,
                     itemName = m.Item_Name,
                     itemDescription = m.Item_Description,
+                    imageUrl = m.Image_Url,
                     price = m.Price,
                     category = m.Category
                 })

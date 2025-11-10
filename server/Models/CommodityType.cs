@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace AmusementParkAPI.Models
 {
     public class CommodityType
@@ -10,6 +12,10 @@ namespace AmusementParkAPI.Models
         public string Category { get; set; } = "merchandise";
         public string Display_Category { get; set; } = "Uncategorized";
         public string? Description { get; set; }
+
+        [Column("Image_Url")]
+        public string? Image_Url { get; set; }
+
         public bool Is_Discontinued { get; set; } = false;
     }
 }
