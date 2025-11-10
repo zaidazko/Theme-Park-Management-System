@@ -49,8 +49,11 @@ const CommodityPurchase = () => {
     } else {
       // Use Display_Category from database
       const filtered = commodities.filter(item => {
+        // Debug: log what we're comparing
+        console.log(`Item: ${item.commodityName}, displayCategory: "${item.displayCategory}", selectedCategory: "${selectedCategory}", match: ${item.displayCategory === selectedCategory}`);
         return item.displayCategory === selectedCategory;
       });
+      console.log(`Filtered ${filtered.length} items for category: ${selectedCategory}`);
       setFilteredCommodities(filtered);
     }
   };
