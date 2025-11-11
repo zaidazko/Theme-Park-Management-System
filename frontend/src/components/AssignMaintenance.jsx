@@ -36,6 +36,7 @@ const AssignMaintenance = () => {
   const [selectedDescription, setSelectedDescription] = useState("");
   const [showWorkDetailsModal, setShowWorkDetailsModal] = useState(false);
   const [selectedWorkDetails, setSelectedWorkDetails] = useState("");
+  const [selectedTimeTakenHours, setSelectedTimeTakenHours] = useState(null);
 
   const [filters, setFilters] = useState({
     startDate: "",
@@ -449,8 +450,29 @@ const AssignMaintenance = () => {
     });
   };
 
-  // Helper function to extract work details from maintenance request
-  const getWorkDetailsFromRequest = async (request) => {
+  // Helper function to format time taken (converts minutes to hours if >= 60)
+  const formatTimeTaken = (minutes) => {
+    if (minutes === null || minutes === undefined) {
+      return "N/A";
+    }
+
+    if (minutes >= 60) {
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      if (remainingMinutes === 0) {
+        return `${hours} hour${hours !== 1 ? "s" : ""}`;
+      } else {
+        return `${hours} hour${
+          hours !== 1 ? "s" : ""
+        } ${remainingMinutes} minute${remainingMinutes !== 1 ? "s" : ""}`;
+      }
+    } else {
+      return `${minutes} minute${minutes !== 1 ? "s" : ""}`;
+    }
+  };
+
+  // Helper function to extract work details and time taken from maintenance request
+  const getWorkDetailsAndTimeFromRequest = async (request) => {
     // Handle different possible field name formats (camelCase, PascalCase, snake_case)
     const maintenanceLogs =
       request.maintenanceLogs ||
@@ -483,9 +505,20 @@ const AssignMaintenance = () => {
         matchingLog?.Work_Details ||
         "";
 
+      // Extract time taken hours handling different field name formats
+      const timeTakenHours =
+        matchingLog?.timeTakenHours ||
+        matchingLog?.TimeTakenHours ||
+        matchingLog?.time_Taken_Hours ||
+        matchingLog?.Time_Taken_Hours ||
+        null;
+
+      // Return work details and time taken if work details exist
       if (workDetails && workDetails.trim() !== "") {
-        return workDetails;
+        return { workDetails, timeTakenHours };
       }
+      // If no work details but we have a log, still extract time taken for potential use
+      // (though we'll still need to fetch from API to be sure we have the most recent log)
     }
 
     // If no logs in request or no work details found, fetch from API
@@ -498,7 +531,10 @@ const AssignMaintenance = () => {
 
       if (!requestId) {
         console.log("No request ID found");
-        return "No work details available";
+        return {
+          workDetails: "No work details available",
+          timeTakenHours: null,
+        };
       }
 
       console.log("Fetching logs for request ID:", requestId);
@@ -520,11 +556,26 @@ const AssignMaintenance = () => {
           mostRecentLog.Work_Details ||
           "";
 
-        console.log("Extracted work details:", workDetails);
+        // Extract time taken hours handling different field name formats
+        const timeTakenHours =
+          mostRecentLog.timeTakenHours ||
+          mostRecentLog.TimeTakenHours ||
+          mostRecentLog.time_Taken_Hours ||
+          mostRecentLog.Time_Taken_Hours ||
+          null;
 
-        if (workDetails && workDetails.trim() !== "") {
-          return workDetails;
-        }
+        console.log("Extracted work details:", workDetails);
+        console.log("Extracted time taken hours:", timeTakenHours);
+
+        // Return work details (even if empty) and time taken hours
+        // If work details are empty, we'll show "No work details available"
+        return {
+          workDetails:
+            workDetails && workDetails.trim() !== ""
+              ? workDetails
+              : "No work details available",
+          timeTakenHours,
+        };
       } else {
         console.log("No logs found or empty array");
       }
@@ -536,11 +587,14 @@ const AssignMaintenance = () => {
       // If it's a 404, that's okay - just means no logs exist or route doesn't exist
       if (error.response && error.response.status === 404) {
         console.log("404 error - route might not exist or no logs found");
-        return "No work details available";
+        return {
+          workDetails: "No work details available",
+          timeTakenHours: null,
+        };
       }
     }
 
-    return "No work details available";
+    return { workDetails: "No work details available", timeTakenHours: null };
   };
 
   if (loading) {
@@ -1538,13 +1592,17 @@ const AssignMaintenance = () => {
                         {request.status?.toLowerCase() === "completed" ? (
                           <button
                             onClick={async () => {
-                              // Get work details from maintenance logs using helper function
+                              // Get work details and time taken from maintenance logs using helper function
                               setShowWorkDetailsModal(true);
                               setSelectedWorkDetails("Loading work details...");
+                              setSelectedTimeTakenHours(null);
                               try {
-                                const workDetails =
-                                  await getWorkDetailsFromRequest(request);
+                                const { workDetails, timeTakenHours } =
+                                  await getWorkDetailsAndTimeFromRequest(
+                                    request
+                                  );
                                 setSelectedWorkDetails(workDetails);
+                                setSelectedTimeTakenHours(timeTakenHours);
                               } catch (error) {
                                 console.error(
                                   "Error getting work details:",
@@ -1553,6 +1611,7 @@ const AssignMaintenance = () => {
                                 setSelectedWorkDetails(
                                   "Error loading work details. Please try again."
                                 );
+                                setSelectedTimeTakenHours(null);
                               }
                             }}
                             style={{
@@ -1884,6 +1943,39 @@ const AssignMaintenance = () => {
               >
                 {selectedWorkDetails}
               </div>
+              {selectedWorkDetails !== "Loading work details..." &&
+                selectedWorkDetails !==
+                  "Error loading work details. Please try again." && (
+                  <div
+                    style={{
+                      marginTop: "15px",
+                      padding: "12px 15px",
+                      backgroundColor: "#eff6ff",
+                      borderRadius: "6px",
+                      border: "1px solid #bfdbfe",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: "600",
+                        color: "#1e40af",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Time Taken:
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "16px",
+                        color: "#1e3a8a",
+                        fontWeight: "500",
+                      }}
+                    >
+                      {formatTimeTaken(selectedTimeTakenHours)}
+                    </div>
+                  </div>
+                )}
               <div
                 style={{
                   display: "flex",
