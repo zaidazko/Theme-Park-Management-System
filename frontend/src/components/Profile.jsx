@@ -125,7 +125,11 @@ function Profile({ user, onLogout }) {
   }, [loadProfile]);
 
   useEffect(() => {
-    if (user?.userType === "Employee" && user?.employeeId) {
+    // Only fetch maintenance requests if user is an employee with Role_ID 4 (Maintenance Worker)
+    const roleId = user?.roleId || user?.RoleId || user?.role?.roleId || user?.role?.RoleId;
+    const isMaintenanceWorker = roleId === 4;
+    
+    if (user?.userType === "Employee" && user?.employeeId && isMaintenanceWorker) {
       fetchAssignedMaintenance(user.employeeId);
     }
   }, [user, fetchAssignedMaintenance]);
@@ -546,8 +550,12 @@ function Profile({ user, onLogout }) {
           )}
         </div>
 
-        {/* Assigned Maintenance Section for Employees */}
-        {user.userType === "Employee" && (
+        {/* Assigned Maintenance Section for Maintenance Workers Only */}
+        {(() => {
+          const roleId = user?.roleId || user?.RoleId || user?.role?.roleId || user?.role?.RoleId;
+          const isMaintenanceWorker = roleId === 4;
+          return user.userType === "Employee" && isMaintenanceWorker;
+        })() && (
           <div className="theme-park-card" style={{ marginTop: "30px" }}>
             <div className="theme-park-card-header">
               <h3 className="theme-park-card-title">

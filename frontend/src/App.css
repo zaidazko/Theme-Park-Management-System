@@ -1,0 +1,58 @@
+/* App.css - Enhanced styles for professional sidebar navigation */
+
+.App {
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+/* Sidebar hover effects */
+button[style*="navItem"]:hover:not([style*="navItemActive"]) {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #e2e8f0 !important;
+}
+
+button[style*="logoutButton"]:hover {
+  background-color: rgba(220, 38, 38, 0.2) !important;
+  color: #fca5a5 !important;
+}
+
+/* Smooth transitions */
+button {
+  transition: all 0.2s ease;
+}
+
+/* Scrollbar styling for sidebar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .App [style*="sidebar"] {
+    width: 240px !important;
+  }
+  
+  .App [style*="mainContent"] {
+    margin-left: 240px !important;
+  }
+}
+
+/* Ensure content doesn't get hidden behind sidebar */
+body {
+  margin: 0;
+  padding: 0;
+}
+

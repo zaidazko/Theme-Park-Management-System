@@ -45,6 +45,13 @@ const AssignMaintenance = () => {
     ride: "",
   });
 
+  const [workerFilters, setWorkerFilters] = useState({
+    startDate: "",
+    endDate: "",
+    minCompleted: "",
+    showOnlyActive: false,
+  });
+
   const [availableRides, setAvailableRides] = useState(new Set());
 
   // Stats state
@@ -67,8 +74,8 @@ const AssignMaintenance = () => {
   });
 
   const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "asc",
+    key: "status",
+    direction: "desc",
   });
 
   const [workerSortConfig, setWorkerSortConfig] = useState({
@@ -82,6 +89,7 @@ const AssignMaintenance = () => {
     key: null,
     direction: "asc",
   });
+  const [activeTab, setActiveTab] = useState("requests"); // "workers" or "requests"
 
   useEffect(() => {
     fetchAllData();
@@ -201,6 +209,143 @@ const AssignMaintenance = () => {
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleWorkerFilterChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setWorkerFilters((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleQuickDateFilter = (days) => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - days);
+    
+    // Format dates as YYYY-MM-DD for input fields
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    setFilters((prev) => ({
+      ...prev,
+      startDate: formatDate(startDate),
+      endDate: formatDate(endDate),
+    }));
+  };
+
+  const handleTodayFilter = () => {
+    const today = new Date();
+    
+    // Format date as YYYY-MM-DD for input fields
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    const todayFormatted = formatDate(today);
+    setFilters((prev) => ({
+      ...prev,
+      startDate: todayFormatted,
+      endDate: todayFormatted,
+    }));
+  };
+
+  const handleWorkerQuickDateFilter = (days) => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - days);
+    
+    // Format dates as YYYY-MM-DD for input fields
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    setWorkerFilters((prev) => ({
+      ...prev,
+      startDate: formatDate(startDate),
+      endDate: formatDate(endDate),
+    }));
+  };
+
+  const handleWorkerTodayFilter = () => {
+    const today = new Date();
+    
+    // Format date as YYYY-MM-DD for input fields
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    const todayFormatted = formatDate(today);
+    setWorkerFilters((prev) => ({
+      ...prev,
+      startDate: todayFormatted,
+      endDate: todayFormatted,
+    }));
+  };
+
+  // Filter workers based on workerFilters
+  const getFilteredWorkers = () => {
+    if (!stats.workers || !stats.workers.workerDetails) {
+      return [];
+    }
+
+    let filtered = [...stats.workers.workerDetails];
+
+    // Filter by minimum completed count
+    if (workerFilters.minCompleted) {
+      const minCompleted = parseInt(workerFilters.minCompleted, 10);
+      if (!isNaN(minCompleted)) {
+        filtered = filtered.filter((worker) => worker.completed >= minCompleted);
+      }
+    }
+
+    // Filter by date range (based on last completed date)
+    if (workerFilters.startDate || workerFilters.endDate) {
+      filtered = filtered.filter((worker) => {
+        if (!worker.lastCompletedDate) {
+          // If no completion date and we have a start date filter, exclude
+          return !workerFilters.startDate;
+        }
+
+        const lastCompleted = new Date(worker.lastCompletedDate);
+        lastCompleted.setHours(0, 0, 0, 0);
+
+        if (workerFilters.startDate) {
+          const start = new Date(workerFilters.startDate);
+          start.setHours(0, 0, 0, 0);
+          if (lastCompleted < start) return false;
+        }
+
+        if (workerFilters.endDate) {
+          const end = new Date(workerFilters.endDate);
+          end.setHours(23, 59, 59, 999);
+          if (lastCompleted > end) return false;
+        }
+
+        return true;
+      });
+    }
+
+    // Filter by active workers (those with in-progress tasks)
+    if (workerFilters.showOnlyActive) {
+      filtered = filtered.filter((worker) => worker.inProgress > 0);
+    }
+
+    return filtered;
   };
 
   const handleAssignRequest = async (requestId) => {
@@ -377,8 +522,32 @@ const AssignMaintenance = () => {
         aValue = a.ride?.ride_Name || "";
         bValue = b.ride?.ride_Name || "";
       } else if (sortConfig.key === "status") {
-        aValue = (a.status || "").toLowerCase();
-        bValue = (b.status || "").toLowerCase();
+        // Priority order: Open > In Progress > Assigned > Completed > Cancelled
+        // Lower number = higher priority (should appear first)
+        const statusPriority = {
+          open: 1,
+          "in progress": 2,
+          assigned: 3,
+          completed: 4,
+          cancelled: 5,
+        };
+        const aStatus = (a.status || "").toLowerCase();
+        const bStatus = (b.status || "").toLowerCase();
+        aValue = statusPriority[aStatus] || 99;
+        bValue = statusPriority[bStatus] || 99;
+        // For status priority, "desc" means show higher priority (lower numbers) first
+        // So we use ascending order of priority values when direction is "desc"
+        if (sortConfig.direction === "desc") {
+          // Ascending order of priority values (1 before 2)
+          if (aValue < bValue) return -1;
+          if (aValue > bValue) return 1;
+          return 0;
+        } else {
+          // Ascending direction: reverse the priority order
+          if (aValue < bValue) return 1;
+          if (aValue > bValue) return -1;
+          return 0;
+        }
       } else if (sortConfig.key === "reporter") {
         aValue = `${a.reporter?.firstName || ""} ${
           a.reporter?.lastName || ""
@@ -740,15 +909,479 @@ const AssignMaintenance = () => {
           </div>
         </div>
 
-        {/* Maintenance Workers Table */}
-        {stats.workers &&
-          stats.workers.workerDetails &&
-          stats.workers.workerDetails.length > 0 && (
-            <div className="theme-park-card" style={{ marginTop: "1.5rem" }}>
+        {/* Reports Section with Tabs */}
+        <div style={{ marginTop: "2rem" }}>
+          <div style={{ marginBottom: "1.5rem" }}>
+            <h2
+              style={{
+                fontSize: "1.5rem",
+                fontWeight: "600",
+                color: "#1f2937",
+                marginBottom: "0.5rem",
+              }}
+            >
+              📊 Maintenance Reports
+            </h2>
+            <p
+              style={{
+                color: "#6b7280",
+                fontSize: "0.875rem",
+                margin: 0,
+                marginBottom: "1.5rem",
+              }}
+            >
+              View maintenance worker performance and track all maintenance requests
+            </p>
+
+            {/* Tab Navigation */}
+            <div
+              style={{
+                display: "flex",
+                gap: "0.5rem",
+                borderBottom: "2px solid #e5e7eb",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <button
+                onClick={() => setActiveTab("requests")}
+                style={{
+                  padding: "12px 24px",
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  color: activeTab === "requests" ? "#3b82f6" : "#6b7280",
+                  backgroundColor: "transparent",
+                  border: "none",
+                  borderBottom: activeTab === "requests" ? "3px solid #3b82f6" : "3px solid transparent",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  marginBottom: "-2px",
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== "requests") {
+                    e.currentTarget.style.color = "#374151";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== "requests") {
+                    e.currentTarget.style.color = "#6b7280";
+                  }
+                }}
+              >
+                📋 Requests Report
+              </button>
+              <button
+                onClick={() => setActiveTab("workers")}
+                style={{
+                  padding: "12px 24px",
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  color: activeTab === "workers" ? "#3b82f6" : "#6b7280",
+                  backgroundColor: "transparent",
+                  border: "none",
+                  borderBottom: activeTab === "workers" ? "3px solid #3b82f6" : "3px solid transparent",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  marginBottom: "-2px",
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== "workers") {
+                    e.currentTarget.style.color = "#374151";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== "workers") {
+                    e.currentTarget.style.color = "#6b7280";
+                  }
+                }}
+              >
+                👷 Workers Report
+              </button>
+            </div>
+          </div>
+
+          {/* Workers Tab Content */}
+          {activeTab === "workers" && (
+            <div>
+              {/* Worker Filters */}
+              <div className="theme-park-card" style={{ marginBottom: "1.5rem" }}>
+                <div className="theme-park-card-header">
+                  <h3 className="theme-park-card-title">
+                    <span>🔍</span> Filters
+                  </h3>
+                  {(workerFilters.startDate ||
+                    workerFilters.endDate ||
+                    workerFilters.minCompleted ||
+                    workerFilters.showOnlyActive) && (
+                    <button
+                      onClick={() => {
+                        setWorkerFilters({
+                          startDate: "",
+                          endDate: "",
+                          minCompleted: "",
+                          showOnlyActive: false,
+                        });
+                      }}
+                      style={{
+                        backgroundColor: "#ef4444",
+                        color: "white",
+                        border: "none",
+                        padding: "8px 16px",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#dc2626";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "#ef4444";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }}
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
+
+                {/* Quick Date Filter Buttons */}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "0.75rem",
+                    flexWrap: "wrap",
+                    padding: "1rem 0",
+                    borderBottom: "1px solid #e5e7eb",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  <button
+                    onClick={handleWorkerTodayFilter}
+                    style={{
+                      backgroundColor: "#f3f4f6",
+                      color: "#374151",
+                      border: "1px solid #d1d5db",
+                      padding: "8px 16px",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#e5e7eb";
+                      e.currentTarget.style.borderColor = "#9ca3af";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#f3f4f6";
+                      e.currentTarget.style.borderColor = "#d1d5db";
+                    }}
+                  >
+                    Today
+                  </button>
+                  <button
+                    onClick={() => handleWorkerQuickDateFilter(7)}
+                    style={{
+                      backgroundColor: "#f3f4f6",
+                      color: "#374151",
+                      border: "1px solid #d1d5db",
+                      padding: "8px 16px",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#e5e7eb";
+                      e.currentTarget.style.borderColor = "#9ca3af";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#f3f4f6";
+                      e.currentTarget.style.borderColor = "#d1d5db";
+                    }}
+                  >
+                    Last 7 Days
+                  </button>
+                  <button
+                    onClick={() => handleWorkerQuickDateFilter(30)}
+                    style={{
+                      backgroundColor: "#f3f4f6",
+                      color: "#374151",
+                      border: "1px solid #d1d5db",
+                      padding: "8px 16px",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#e5e7eb";
+                      e.currentTarget.style.borderColor = "#9ca3af";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#f3f4f6";
+                      e.currentTarget.style.borderColor = "#d1d5db";
+                    }}
+                  >
+                    Last 30 Days
+                  </button>
+                  <button
+                    onClick={() => handleWorkerQuickDateFilter(90)}
+                    style={{
+                      backgroundColor: "#f3f4f6",
+                      color: "#374151",
+                      border: "1px solid #d1d5db",
+                      padding: "8px 16px",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#e5e7eb";
+                      e.currentTarget.style.borderColor = "#9ca3af";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#f3f4f6";
+                      e.currentTarget.style.borderColor = "#d1d5db";
+                    }}
+                  >
+                    Last 90 Days
+                  </button>
+                  <button
+                    onClick={() => handleWorkerQuickDateFilter(365)}
+                    style={{
+                      backgroundColor: "#f3f4f6",
+                      color: "#374151",
+                      border: "1px solid #d1d5db",
+                      padding: "8px 16px",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#e5e7eb";
+                      e.currentTarget.style.borderColor = "#9ca3af";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#f3f4f6";
+                      e.currentTarget.style.borderColor = "#d1d5db";
+                    }}
+                  >
+                    Last Year
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: "1.5rem",
+                    padding: "1rem 0",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <label
+                      style={{
+                        fontSize: "0.875rem",
+                        fontWeight: "600",
+                        color: "#374151",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      Start Date (Last Completed)
+                    </label>
+                    <input
+                      type="date"
+                      name="startDate"
+                      value={workerFilters.startDate}
+                      onChange={handleWorkerFilterChange}
+                      style={{
+                        padding: "10px 12px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "6px",
+                        fontSize: "14px",
+                        backgroundColor: "white",
+                        transition: "all 0.2s",
+                        outline: "none",
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = "#3b82f6";
+                        e.currentTarget.style.boxShadow =
+                          "0 0 0 3px rgba(59, 130, 246, 0.1)";
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = "#d1d5db";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <label
+                      style={{
+                        fontSize: "0.875rem",
+                        fontWeight: "600",
+                        color: "#374151",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      End Date (Last Completed)
+                    </label>
+                    <input
+                      type="date"
+                      name="endDate"
+                      value={workerFilters.endDate}
+                      onChange={handleWorkerFilterChange}
+                      style={{
+                        padding: "10px 12px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "6px",
+                        fontSize: "14px",
+                        backgroundColor: "white",
+                        transition: "all 0.2s",
+                        outline: "none",
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = "#3b82f6";
+                        e.currentTarget.style.boxShadow =
+                          "0 0 0 3px rgba(59, 130, 246, 0.1)";
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = "#d1d5db";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <label
+                      style={{
+                        fontSize: "0.875rem",
+                        fontWeight: "600",
+                        color: "#374151",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      Minimum Completed
+                    </label>
+                    <input
+                      type="number"
+                      name="minCompleted"
+                      value={workerFilters.minCompleted}
+                      onChange={handleWorkerFilterChange}
+                      min="0"
+                      placeholder="Any"
+                      style={{
+                        padding: "10px 12px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "6px",
+                        fontSize: "14px",
+                        backgroundColor: "white",
+                        transition: "all 0.2s",
+                        outline: "none",
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = "#3b82f6";
+                        e.currentTarget.style.boxShadow =
+                          "0 0 0 3px rgba(59, 130, 246, 0.1)";
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = "#d1d5db";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.5rem",
+                      justifyContent: "flex-end",
+                    }}
+                  >
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        cursor: "pointer",
+                        fontSize: "0.875rem",
+                        fontWeight: "600",
+                        color: "#374151",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        name="showOnlyActive"
+                        checked={workerFilters.showOnlyActive}
+                        onChange={handleWorkerFilterChange}
+                        style={{
+                          width: "18px",
+                          height: "18px",
+                          cursor: "pointer",
+                        }}
+                      />
+                      Show Only Active Workers
+                      <span
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "#6b7280",
+                          fontWeight: "400",
+                        }}
+                      >
+                        (with in-progress tasks)
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {stats.workers &&
+              stats.workers.workerDetails &&
+              stats.workers.workerDetails.length > 0 ? (
+            <div className="theme-park-card">
               <div className="theme-park-card-header">
                 <h3 className="theme-park-card-title">
-                  <span>👷</span> Maintenance Workers
+                  <span>📊</span> Worker Performance
                 </h3>
+                <div className="theme-park-badge theme-park-badge-info">
+                  {getFilteredWorkers().length}{" "}
+                  {getFilteredWorkers().length === 1
+                    ? "Worker"
+                    : "Workers"}
+                  {getFilteredWorkers().length !== stats.workers.workerDetails.length && 
+                    ` (of ${stats.workers.workerDetails.length} total)`}
+                </div>
               </div>
               <div
                 className="theme-park-table-container"
@@ -928,8 +1561,10 @@ const AssignMaintenance = () => {
                   </thead>
                   <tbody>
                     {(() => {
+                      // Get filtered workers first
+                      const filteredWorkersList = getFilteredWorkers();
                       // Sort workers based on sortConfig
-                      let sortedWorkers = [...stats.workers.workerDetails];
+                      let sortedWorkers = [...filteredWorkersList];
                       if (workerSortConfig.key) {
                         sortedWorkers.sort((a, b) => {
                           let aValue, bValue;
@@ -966,8 +1601,38 @@ const AssignMaintenance = () => {
                         });
                       }
 
-                      return sortedWorkers;
-                    })().map((worker, index) => {
+                      if (sortedWorkers.length === 0) {
+                        return (
+                          <tr>
+                            <td
+                              colSpan="5"
+                              style={{
+                                textAlign: "center",
+                                padding: "40px",
+                                color: "#6b7280",
+                              }}
+                            >
+                              <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>
+                                🔍
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: "1.125rem",
+                                  fontWeight: "600",
+                                  color: "#374151",
+                                  marginBottom: "0.5rem",
+                                }}
+                              >
+                                No Workers Match Filters
+                              </div>
+                              <div>
+                                Try adjusting your filter criteria to see more workers.
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }
+
                       const formatDate = (dateString) => {
                         if (!dateString) return "N/A";
                         const date = new Date(dateString);
@@ -978,7 +1643,8 @@ const AssignMaintenance = () => {
                         });
                       };
 
-                      return (
+                      return sortedWorkers.map((worker, index) => {
+                        return (
                         <tr
                           key={worker.employeeId}
                           style={{
@@ -1082,20 +1748,53 @@ const AssignMaintenance = () => {
                               : "No completions yet"}
                           </td>
                         </tr>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
               </div>
             </div>
+          ) : (
+            <div className="theme-park-card">
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "3rem",
+                  color: "#6b7280",
+                }}
+              >
+                <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>
+                  👷
+                </div>
+                <div
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: "600",
+                    color: "#374151",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  No Maintenance Workers Found
+                </div>
+                <div>
+                  No maintenance workers have been assigned to requests yet.
+                </div>
+              </div>
+            </div>
+          )}
+            </div>
           )}
 
-        {/* Filters */}
-        <div className="theme-park-card">
-          <div className="theme-park-card-header">
-            <h3 className="theme-park-card-title">
-              <span>🔍</span> Filters
-            </h3>
+          {/* Requests Tab Content */}
+          {activeTab === "requests" && (
+            <div>
+              {/* Filters */}
+              <div className="theme-park-card" style={{ marginBottom: "1.5rem" }}>
+            <div className="theme-park-card-header">
+              <h3 className="theme-park-card-title">
+                <span>🔍</span> Filters
+              </h3>
             {(filters.startDate ||
               filters.endDate ||
               filters.status ||
@@ -1133,6 +1832,140 @@ const AssignMaintenance = () => {
               </button>
             )}
           </div>
+          
+          {/* Quick Date Filter Buttons */}
+          <div
+            style={{
+              display: "flex",
+              gap: "0.75rem",
+              flexWrap: "wrap",
+              padding: "1rem 0",
+              borderBottom: "1px solid #e5e7eb",
+              marginBottom: "1rem",
+            }}
+          >
+            <button
+              onClick={handleTodayFilter}
+              style={{
+                backgroundColor: "#f3f4f6",
+                color: "#374151",
+                border: "1px solid #d1d5db",
+                padding: "8px 16px",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#e5e7eb";
+                e.currentTarget.style.borderColor = "#9ca3af";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#f3f4f6";
+                e.currentTarget.style.borderColor = "#d1d5db";
+              }}
+            >
+              Today
+            </button>
+            <button
+              onClick={() => handleQuickDateFilter(7)}
+              style={{
+                backgroundColor: "#f3f4f6",
+                color: "#374151",
+                border: "1px solid #d1d5db",
+                padding: "8px 16px",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#e5e7eb";
+                e.currentTarget.style.borderColor = "#9ca3af";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#f3f4f6";
+                e.currentTarget.style.borderColor = "#d1d5db";
+              }}
+            >
+              Last 7 Days
+            </button>
+            <button
+              onClick={() => handleQuickDateFilter(30)}
+              style={{
+                backgroundColor: "#f3f4f6",
+                color: "#374151",
+                border: "1px solid #d1d5db",
+                padding: "8px 16px",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#e5e7eb";
+                e.currentTarget.style.borderColor = "#9ca3af";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#f3f4f6";
+                e.currentTarget.style.borderColor = "#d1d5db";
+              }}
+            >
+              Last 30 Days
+            </button>
+            <button
+              onClick={() => handleQuickDateFilter(90)}
+              style={{
+                backgroundColor: "#f3f4f6",
+                color: "#374151",
+                border: "1px solid #d1d5db",
+                padding: "8px 16px",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#e5e7eb";
+                e.currentTarget.style.borderColor = "#9ca3af";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#f3f4f6";
+                e.currentTarget.style.borderColor = "#d1d5db";
+              }}
+            >
+              Last 90 Days
+            </button>
+            <button
+              onClick={() => handleQuickDateFilter(365)}
+              style={{
+                backgroundColor: "#f3f4f6",
+                color: "#374151",
+                border: "1px solid #d1d5db",
+                padding: "8px 16px",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#e5e7eb";
+                e.currentTarget.style.borderColor = "#9ca3af";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#f3f4f6";
+                e.currentTarget.style.borderColor = "#d1d5db";
+              }}
+            >
+              Last Year
+            </button>
+          </div>
+
           <div
             style={{
               display: "grid",
@@ -1334,17 +2167,17 @@ const AssignMaintenance = () => {
           </div>
         </div>
 
-        {/* Maintenance Requests Table */}
-        <div className="theme-park-card" style={{ padding: "30px 15px" }}>
-          <div className="theme-park-card-header">
-            <h3 className="theme-park-card-title">
-              <span>📋</span> Maintenance Requests
-            </h3>
-            <div className="theme-park-badge theme-park-badge-primary">
-              {filteredRequests.length}{" "}
-              {filteredRequests.length === 1 ? "Request" : "Requests"}
+          {/* Maintenance Requests Table */}
+          <div className="theme-park-card" style={{ padding: "30px 15px" }}>
+            <div className="theme-park-card-header">
+              <h3 className="theme-park-card-title">
+                <span>📋</span> All Maintenance Requests
+              </h3>
+              <div className="theme-park-badge theme-park-badge-primary">
+                {filteredRequests.length}{" "}
+                {filteredRequests.length === 1 ? "Request" : "Requests"}
+              </div>
             </div>
-          </div>
 
           <div
             className="theme-park-table-container"
@@ -1753,6 +2586,9 @@ const AssignMaintenance = () => {
               </tbody>
             </table>
           </div>
+          </div>
+            </div>
+          )}
         </div>
 
         {/* Description Modal */}
