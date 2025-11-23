@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import "./ThemePark.css";
 
+const ITEMS_PER_PAGE = 10;
+
 const MyPurchases = () => {
   const [tickets, setTickets] = useState([]);
   const [merchandise, setMerchandise] = useState([]);
   const [foodPurchases, setFoodPurchases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [ticketPage, setTicketPage] = useState(1);
+  const [merchPage, setMerchPage] = useState(1);
+  const [foodPage, setFoodPage] = useState(1);
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const customerId = currentUser?.customerId;
@@ -55,9 +60,12 @@ const MyPurchases = () => {
           return;
         }
 
-        setTickets(ticketData || []);
-        setMerchandise(merchandiseData || []);
-        setFoodPurchases(foodData || []);
+  setTickets(ticketData || []);
+  setMerchandise(merchandiseData || []);
+  setFoodPurchases(foodData || []);
+  setTicketPage(1);
+  setMerchPage(1);
+  setFoodPage(1);
 
         if (partialFailure) {
           setError("Some purchases could not be loaded. Please refresh to try again.");
@@ -114,6 +122,69 @@ const MyPurchases = () => {
   const formatCurrency = (value) => `$${Number(value ?? 0).toFixed(2)}`;
   const formatDate = (value) =>
     value ? new Date(value).toLocaleDateString() : "Unknown";
+
+  const ticketPageCount = Math.max(1, Math.ceil(tickets.length / ITEMS_PER_PAGE));
+  const merchPageCount = Math.max(1, Math.ceil(merchandise.length / ITEMS_PER_PAGE));
+  const foodPageCount = Math.max(1, Math.ceil(foodPurchases.length / ITEMS_PER_PAGE));
+
+  const paginatedTickets = useMemo(() => {
+    const start = (ticketPage - 1) * ITEMS_PER_PAGE;
+    return tickets.slice(start, start + ITEMS_PER_PAGE);
+  }, [ticketPage, tickets]);
+
+  const paginatedMerchandise = useMemo(() => {
+    const start = (merchPage - 1) * ITEMS_PER_PAGE;
+    return merchandise.slice(start, start + ITEMS_PER_PAGE);
+  }, [merchPage, merchandise]);
+
+  const paginatedFood = useMemo(() => {
+    const start = (foodPage - 1) * ITEMS_PER_PAGE;
+    return foodPurchases.slice(start, start + ITEMS_PER_PAGE);
+  }, [foodPage, foodPurchases]);
+
+  useEffect(() => {
+    setTicketPage((prev) => Math.min(prev, ticketPageCount));
+  }, [ticketPageCount]);
+
+  useEffect(() => {
+    setMerchPage((prev) => Math.min(prev, merchPageCount));
+  }, [merchPageCount]);
+
+  useEffect(() => {
+    setFoodPage((prev) => Math.min(prev, foodPageCount));
+  }, [foodPageCount]);
+
+  const renderPagination = (currentPage, totalPages, onPageChange) => (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginTop: "12px",
+        gap: "12px",
+      }}
+    >
+      <button
+        type="button"
+        className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage <= 1}
+      >
+        Previous
+      </button>
+      <span style={{ flexGrow: 1, textAlign: "center" }}>
+        Page {Math.min(currentPage, totalPages)} of {totalPages}
+      </span>
+      <button
+        type="button"
+        className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage >= totalPages}
+      >
+        Next
+      </button>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -197,32 +268,36 @@ const MyPurchases = () => {
               </div>
             </div>
           ) : (
-            <div className="theme-park-table-container">
-              <table className="theme-park-table">
-                <thead>
-                  <tr>
-                    <th>Ticket ID</th>
-                    <th>Type</th>
-                    <th>Price</th>
-                    <th>Payment</th>
-                    <th>Purchase Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tickets.map((ticket) => (
-                    <tr key={ticket.ticketId}>
-                      <td>#{ticket.ticketId}</td>
-                      <td>🎢 {ticket.ticketType}</td>
-                      <td style={{ fontWeight: 700, color: "var(--success-color)" }}>
-                        {formatCurrency(ticket.price)}
-                      </td>
-                      <td>💳 {ticket.paymentMethod}</td>
-                      <td>{formatDate(ticket.purchaseDate)}</td>
+            <>
+              <div className="theme-park-table-container">
+                <table className="theme-park-table">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Quantity</th>
+                      <th>Price</th>
+                      <th>Payment</th>
+                      <th>Purchase Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paginatedTickets.map((ticket) => (
+                      <tr key={ticket.ticketId}>
+                        <td>🎢 {ticket.ticketType}</td>
+                        <td>x{ticket.quantity ?? 1}</td>
+                        <td style={{ fontWeight: 700, color: "var(--success-color)" }}>
+                          {formatCurrency(ticket.price)}
+                        </td>
+                        <td>💳 {ticket.paymentMethod}</td>
+                        <td>{formatDate(ticket.purchaseDate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {tickets.length > ITEMS_PER_PAGE &&
+                renderPagination(ticketPage, ticketPageCount, (page) => setTicketPage(page))}
+            </>
           )}
         </div>
 
@@ -244,32 +319,36 @@ const MyPurchases = () => {
               </div>
             </div>
           ) : (
-            <div className="theme-park-table-container">
-              <table className="theme-park-table">
-                <thead>
-                  <tr>
-                    <th>Sale ID</th>
-                    <th>Item</th>
-                    <th>Price</th>
-                    <th>Payment</th>
-                    <th>Purchase Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {merchandise.map((sale) => (
-                    <tr key={sale.saleId}>
-                      <td>#{sale.saleId}</td>
-                      <td>🎁 {sale.commodityName}</td>
-                      <td style={{ fontWeight: 700, color: "var(--success-color)" }}>
-                        {formatCurrency(sale.price)}
-                      </td>
-                      <td>💳 {sale.paymentMethod}</td>
-                      <td>{formatDate(sale.purchaseDate)}</td>
+            <>
+              <div className="theme-park-table-container">
+                <table className="theme-park-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Quantity</th>
+                      <th>Price</th>
+                      <th>Payment</th>
+                      <th>Purchase Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paginatedMerchandise.map((sale) => (
+                      <tr key={sale.saleId}>
+                        <td>🎁 {sale.commodityName}</td>
+                        <td>x{sale.quantity ?? 1}</td>
+                        <td style={{ fontWeight: 700, color: "var(--success-color)" }}>
+                          {formatCurrency(sale.price)}
+                        </td>
+                        <td>💳 {sale.paymentMethod}</td>
+                        <td>{formatDate(sale.purchaseDate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {merchandise.length > ITEMS_PER_PAGE &&
+                renderPagination(merchPage, merchPageCount, (page) => setMerchPage(page))}
+            </>
           )}
         </div>
 
@@ -291,34 +370,36 @@ const MyPurchases = () => {
               </div>
             </div>
           ) : (
-            <div className="theme-park-table-container">
-              <table className="theme-park-table">
-                <thead>
-                  <tr>
-                    <th>Sale ID</th>
-                    <th>Menu Item</th>
-                    <th>Quantity</th>
-                    <th>Total</th>
-                    <th>Payment</th>
-                    <th>Purchase Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {foodPurchases.map((purchase) => (
-                    <tr key={purchase.saleId}>
-                      <td>#{purchase.saleId}</td>
-                      <td>{purchase.menuItem}</td>
-                      <td>x{purchase.quantity}</td>
-                      <td style={{ fontWeight: 700, color: "var(--success-color)" }}>
-                        {formatCurrency(purchase.price)}
-                      </td>
-                      <td>💳 {purchase.paymentMethod}</td>
-                      <td>{formatDate(purchase.purchaseDate)}</td>
+            <>
+              <div className="theme-park-table-container">
+                <table className="theme-park-table">
+                  <thead>
+                    <tr>
+                      <th>Menu Item</th>
+                      <th>Quantity</th>
+                      <th>Total</th>
+                      <th>Payment</th>
+                      <th>Purchase Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paginatedFood.map((purchase) => (
+                      <tr key={purchase.saleId}>
+                        <td>{purchase.menuItem}</td>
+                        <td>x{purchase.quantity}</td>
+                        <td style={{ fontWeight: 700, color: "var(--success-color)" }}>
+                          {formatCurrency(purchase.price)}
+                        </td>
+                        <td>💳 {purchase.paymentMethod}</td>
+                        <td>{formatDate(purchase.purchaseDate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {foodPurchases.length > ITEMS_PER_PAGE &&
+                renderPagination(foodPage, foodPageCount, (page) => setFoodPage(page))}
+            </>
           )}
         </div>
       </div>

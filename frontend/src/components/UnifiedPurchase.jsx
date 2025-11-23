@@ -56,6 +56,7 @@ const UnifiedPurchase = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [activeCategory, setActiveCategory] = useState("ticket");
 
   const [cart, setCart] = useState(() => loadStoredCart());
   const [paymentMethod, setPaymentMethod] = useState("credit");
@@ -283,6 +284,31 @@ const UnifiedPurchase = () => {
     }
   };
 
+  const catalogSections = useMemo(
+    () => [
+      { category: "ticket", items: ticketTypes, emptyText: "No tickets available." },
+      { category: "menu", items: menuItems, emptyText: "No menu items available." },
+      {
+        category: "commodity",
+        items: commodities,
+        emptyText: "No merchandise available.",
+      },
+    ],
+    [ticketTypes, menuItems, commodities]
+  );
+
+  useEffect(() => {
+    if (!catalogSections.some((section) => section.category === activeCategory)) {
+      setActiveCategory(catalogSections[0]?.category ?? "ticket");
+    }
+  }, [activeCategory, catalogSections]);
+
+  const activeSection = catalogSections.find(
+    (section) => section.category === activeCategory
+  );
+  const activeItems = activeSection?.items ?? [];
+  const activeEmptyText = activeSection?.emptyText ?? "No items available.";
+
   if (loading) {
     return (
       <div className="theme-park-page">
@@ -293,12 +319,6 @@ const UnifiedPurchase = () => {
       </div>
     );
   }
-
-  const sections = [
-    { category: "ticket", items: ticketTypes, emptyText: "No tickets available." },
-    { category: "menu", items: menuItems, emptyText: "No menu items available." },
-    { category: "commodity", items: commodities, emptyText: "No merchandise available." },
-  ];
 
   return (
     <div className="theme-park-page">
@@ -333,64 +353,91 @@ const UnifiedPurchase = () => {
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            {sections.map(({ category, items, emptyText }) => (
-              <div className="theme-park-card" key={category}>
-                <div className="theme-park-card-header">
-                  <h3 className="theme-park-card-title">
-                    <span>{categoryMeta[category].icon}</span> {categoryMeta[category].title}
-                  </h3>
-                  <div className="theme-park-badge theme-park-badge-info">
-                    {items.length} {items.length === 1 ? "item" : "items"}
-                  </div>
-                </div>
-
-                <div className="theme-park-table-container">
-                  <table className="theme-park-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Price</th>
-                        <th>Description</th>
-                        <th style={{ width: "120px" }}>Add</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {items.length === 0 ? (
-                        <tr>
-                          <td colSpan={4} style={{ textAlign: "center", padding: "18px" }}>
-                            {emptyText}
-                          </td>
-                        </tr>
-                      ) : (
-                        items.map((item) => {
-                          const name = item.typeName || item.foodName || item.commodityName;
-                          const price = item.price ?? item.basePrice ?? 0;
-                          const description = item.description || "—";
-
-                          return (
-                            <tr key={item.ticketTypeId || item.menuTypeId || item.commodityTypeId}>
-                              <td>{name}</td>
-                              <td style={{ fontWeight: 600, color: "var(--success-color)" }}>
-                                ${Number(price).toFixed(2)}
-                              </td>
-                              <td>{description}</td>
-                              <td>
-                                <button
-                                  className="theme-park-btn theme-park-btn-primary theme-park-btn-sm"
-                                  onClick={() => handleAddToCart(category, item)}
-                                >
-                                  Add
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
+            <div className="theme-park-card">
+              <div className="theme-park-card-header" style={{ flexWrap: "wrap", gap: "12px" }}>
+                <h3 className="theme-park-card-title" style={{ marginRight: "auto" }}>
+                  <span>{categoryMeta[activeSection?.category ?? "ticket"].icon}</span>{" "}
+                  {categoryMeta[activeSection?.category ?? "ticket"].title}
+                </h3>
+                <div className="theme-park-badge theme-park-badge-info">
+                  {activeItems.length} {activeItems.length === 1 ? "item" : "items"}
                 </div>
               </div>
-            ))}
+
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                  padding: "0 20px 20px",
+                }}
+              >
+                {catalogSections.map((section) => {
+                  const isActive = section.category === (activeSection?.category ?? activeCategory);
+                  const meta = categoryMeta[section.category];
+                  const label = `${meta.title} (${section.items.length})`;
+                  return (
+                    <button
+                      key={section.category}
+                      type="button"
+                      className={`theme-park-btn theme-park-btn-sm ${
+                        isActive ? "theme-park-btn-primary" : "theme-park-btn-outline"
+                      }`}
+                      onClick={() => setActiveCategory(section.category)}
+                    >
+                      {meta.icon} {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="theme-park-table-container">
+                <table className="theme-park-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Price</th>
+                      <th>Description</th>
+                      <th style={{ width: "120px" }}>Add</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeItems.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} style={{ textAlign: "center", padding: "18px" }}>
+                          {activeEmptyText}
+                        </td>
+                      </tr>
+                    ) : (
+                      activeItems.map((item) => {
+                        const name = item.typeName || item.foodName || item.commodityName;
+                        const price = item.price ?? item.basePrice ?? 0;
+                        const description = item.description || "—";
+                        const id = item.ticketTypeId || item.menuTypeId || item.commodityTypeId;
+
+                        return (
+                          <tr key={id}>
+                            <td>{name}</td>
+                            <td style={{ fontWeight: 600, color: "var(--success-color)" }}>
+                              ${Number(price).toFixed(2)}
+                            </td>
+                            <td>{description}</td>
+                            <td>
+                              <button
+                                className="theme-park-btn theme-park-btn-primary theme-park-btn-sm"
+                                onClick={() => activeSection && handleAddToCart(activeSection.category, item)}
+                              >
+                                Add
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
           <div style={{ position: "sticky", top: "24px" }}>
@@ -589,8 +636,8 @@ const UnifiedPurchase = () => {
                           maxLength={19}
                         />
                       </div>
-                      <div style={{ display: "flex", gap: "12px" }}>
-                        <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                        <div style={{ flex: "1 1 200px" }}>
                           <label className="theme-park-label">Expiry (MM/YY)</label>
                           <input
                             className="theme-park-input"
@@ -603,9 +650,10 @@ const UnifiedPurchase = () => {
                             }
                             placeholder="08/27"
                             maxLength={5}
+                            style={{ width: "100%" }}
                           />
                         </div>
-                        <div style={{ width: "120px" }}>
+                        <div style={{ flex: "1 1 120px", maxWidth: "160px" }}>
                           <label className="theme-park-label">CVV</label>
                           <input
                             className="theme-park-input"
@@ -618,6 +666,7 @@ const UnifiedPurchase = () => {
                             }
                             placeholder="123"
                             maxLength={4}
+                            style={{ width: "100%" }}
                           />
                         </div>
                       </div>

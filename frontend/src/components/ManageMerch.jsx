@@ -12,6 +12,9 @@ const defaultFormState = {
   imageUrl: "",
 };
 
+const DEFAULT_IMAGE_URL =
+  "https://www.shutterstock.com/shutterstock/photos/2450891049/display_1500/stock-vector-no-image-no-picture-available-on-white-background-2450891049.jpg";
+
 const ManageMerch = () => {
   const [commodities, setCommodities] = useState([]);
   const [discontinued, setDiscontinued] = useState([]);
@@ -112,7 +115,7 @@ const ManageMerch = () => {
     const selectedCategory = useCustomCategory
       ? formState.customCategory.trim()
       : formState.displayCategory.trim();
-    const imageUrl = formState.imageUrl.trim();
+    const providedImageUrl = formState.imageUrl.trim();
 
     if (!commodityName) {
       setError("Please provide a merchandise name.");
@@ -138,7 +141,7 @@ const ManageMerch = () => {
       return;
     }
 
-    if (imageUrl && !/^https?:\/\//i.test(imageUrl)) {
+    if (providedImageUrl && !/^https?:\/\//i.test(providedImageUrl)) {
       setError("Image URL must start with http:// or https:// when provided.");
       setSubmitting(false);
       return;
@@ -151,7 +154,7 @@ const ManageMerch = () => {
       description,
       category: "merchandise",
       displayCategory: selectedCategory,
-      imageUrl,
+      imageUrl: providedImageUrl || DEFAULT_IMAGE_URL,
     };
 
     try {
@@ -489,7 +492,9 @@ const ManageMerch = () => {
                             rel="noopener noreferrer"
                             style={{ color: "var(--primary-color)" }}
                           >
-                            View
+                            {commodity.imageUrl === DEFAULT_IMAGE_URL
+                              ? "Default"
+                              : "View"}
                           </a>
                         ) : (
                           "—"
@@ -510,8 +515,8 @@ const ManageMerch = () => {
                             disabled={deletingId === commodity.commodityTypeId}
                           >
                             {deletingId === commodity.commodityTypeId
-                              ? "Deleting..."
-                              : "Delete"}
+                              ? "Discontinuing..."
+                              : "Discontinue"}
                           </button>
                         </div>
                       </td>
@@ -572,7 +577,9 @@ const ManageMerch = () => {
                             rel="noopener noreferrer"
                             style={{ color: "var(--primary-color)" }}
                           >
-                            View
+                            {item.imageUrl === DEFAULT_IMAGE_URL
+                              ? "Default"
+                              : "View"}
                           </a>
                         ) : (
                           "—"

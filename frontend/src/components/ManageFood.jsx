@@ -9,6 +9,9 @@ const defaultFormState = {
   imageUrl: "",
 };
 
+const DEFAULT_IMAGE_URL =
+  "https://www.shutterstock.com/shutterstock/photos/2450891049/display_1500/stock-vector-no-image-no-picture-available-on-white-background-2450891049.jpg";
+
 const ManageFood = () => {
   const [menuItems, setMenuItems] = useState([]);
   const [discontinued, setDiscontinued] = useState([]);
@@ -71,7 +74,7 @@ const ManageFood = () => {
     const foodName = formState.foodName.trim();
     const basePrice = parseFloat(formState.basePrice);
     const description = formState.description.trim();
-    const imageUrl = formState.imageUrl.trim();
+    const providedImageUrl = formState.imageUrl.trim();
 
     if (!foodName) {
       setError("Please provide a food name.");
@@ -85,7 +88,7 @@ const ManageFood = () => {
       return;
     }
 
-    if (imageUrl && !/^https?:\/\//i.test(imageUrl)) {
+    if (providedImageUrl && !/^https?:\/\//i.test(providedImageUrl)) {
       setError("Image URL must start with http:// or https:// when provided.");
       setSubmitting(false);
       return;
@@ -95,7 +98,7 @@ const ManageFood = () => {
       foodName,
       basePrice,
       description,
-      imageUrl,
+      imageUrl: providedImageUrl || DEFAULT_IMAGE_URL,
     };
 
     try {
@@ -356,7 +359,9 @@ const ManageFood = () => {
                             rel="noopener noreferrer"
                             style={{ color: "var(--primary-color)" }}
                           >
-                            View
+                            {item.imageUrl === DEFAULT_IMAGE_URL
+                              ? "Default"
+                              : "View"}
                           </a>
                         ) : (
                           "—"
@@ -433,7 +438,9 @@ const ManageFood = () => {
                             rel="noopener noreferrer"
                             style={{ color: "var(--primary-color)" }}
                           >
-                            View
+                            {item.imageUrl === DEFAULT_IMAGE_URL
+                              ? "Default"
+                              : "View"}
                           </a>
                         ) : (
                           "—"
