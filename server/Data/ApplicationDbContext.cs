@@ -42,6 +42,9 @@ namespace AmusementParkAPI.Data
         // Alerts
         public DbSet<Alert> Alerts { get; set; }
 
+        // Weather
+        public DbSet<Weather> Weather { get; set; }
+
         // Reviews
         public DbSet<Reviews> Reviews { get; set; }
 
@@ -71,6 +74,7 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<MaintenanceRequest>().ToTable("maintenance_request");
             modelBuilder.Entity<MaintenanceLog>().ToTable("maintenance_log");
             modelBuilder.Entity<Alert>().ToTable("alerts");
+            modelBuilder.Entity<Weather>().ToTable("weather");
             modelBuilder.Entity<Reviews>().ToTable("reviews");
     
             
@@ -98,6 +102,7 @@ namespace AmusementParkAPI.Data
             modelBuilder.Entity<MaintenanceRequest>().HasKey(m => m.RequestId);
             modelBuilder.Entity<MaintenanceLog>().HasKey(m => m.LogId);
             modelBuilder.Entity<Alert>().HasKey(a => a.AlertId);
+            modelBuilder.Entity<Weather>().HasKey(w => w.WeatherId);
             modelBuilder.Entity<Reviews>().HasKey(r => r.Review_ID);
 
             modelBuilder.Entity<TicketType>()
