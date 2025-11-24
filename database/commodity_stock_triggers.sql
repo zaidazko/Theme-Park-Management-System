@@ -11,7 +11,6 @@ USE theme_park;
 -- Drop existing triggers if they exist
 DROP TRIGGER IF EXISTS check_commodity_stock_before_purchase;
 DROP TRIGGER IF EXISTS deduct_commodity_stock_after_purchase;
-
 -- ========================================
 -- TRIGGER 1: CHECK STOCK BEFORE PURCHASE
 -- ========================================
@@ -79,6 +78,7 @@ END$$
 
 DELIMITER ;
 
+-- ========================================
 -- ========================================
 -- VERIFICATION
 -- ========================================

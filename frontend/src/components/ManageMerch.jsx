@@ -6,6 +6,7 @@ const defaultFormState = {
   commodityName: "",
   basePrice: "",
   stockQuantity: "",
+  stockFloor: "",
   description: "",
   displayCategory: "",
   customCategory: "",
@@ -15,7 +16,7 @@ const defaultFormState = {
 const DEFAULT_IMAGE_URL =
   "https://www.shutterstock.com/shutterstock/photos/2450891049/display_1500/stock-vector-no-image-no-picture-available-on-white-background-2450891049.jpg";
 
-const ManageMerch = () => {
+const ManageMerch = ({ onAlertsChange }) => {
   const [commodities, setCommodities] = useState([]);
   const [discontinued, setDiscontinued] = useState([]);
   const [formState, setFormState] = useState(defaultFormState);
@@ -77,6 +78,31 @@ const ManageMerch = () => {
     return Array.from(collected).sort((a, b) => a.localeCompare(b));
   }, [commodities, discontinued]);
 
+  const lowStockItems = useMemo(() => {
+    return commodities
+      .filter((item) => {
+        if (item.isLowStock !== undefined) {
+          return Boolean(item.isLowStock);
+        }
+        const floor = Number(item.stockFloor ?? 0);
+        const quantity = Number(item.stockQuantity ?? 0);
+        return floor > 0 && quantity < floor;
+      })
+      .map((item) => ({
+        commodityTypeId: item.commodityTypeId,
+        commodityName: item.commodityName,
+        stockFloor: Number(item.stockFloor ?? 0),
+        stockQuantity: Number(item.stockQuantity ?? 0),
+      }))
+      .sort((a, b) => a.commodityName.localeCompare(b.commodityName));
+  }, [commodities]);
+
+  useEffect(() => {
+    if (typeof onAlertsChange === "function") {
+      onAlertsChange(lowStockItems.length);
+    }
+  }, [lowStockItems, onAlertsChange]);
+
   const resetForm = () => {
     setFormState(defaultFormState);
     setEditingId(null);
@@ -99,6 +125,7 @@ const ManageMerch = () => {
       commodityName: commodity.commodityName,
       basePrice: commodity.basePrice?.toString() ?? "",
       stockQuantity: commodity.stockQuantity?.toString() ?? "",
+      stockFloor: commodity.stockFloor?.toString() ?? "",
       description: commodity.description ?? "",
       displayCategory: categoryInOptions ? existingCategory : "",
       customCategory: categoryInOptions ? "" : existingCategory,
@@ -117,6 +144,8 @@ const ManageMerch = () => {
     const commodityName = formState.commodityName.trim();
     const basePrice = parseFloat(formState.basePrice);
     const stockQuantity = parseInt(formState.stockQuantity, 10);
+    const stockFloorInput = (formState.stockFloor ?? "").toString().trim();
+    const stockFloor = stockFloorInput === "" ? 0 : parseInt(stockFloorInput, 10);
     const description = formState.description.trim();
     const selectedCategory = useCustomCategory
       ? formState.customCategory.trim()
@@ -141,6 +170,12 @@ const ManageMerch = () => {
       return;
     }
 
+    if (Number.isNaN(stockFloor) || stockFloor < 0) {
+      setError("Stock floor must be zero or higher.");
+      setSubmitting(false);
+      return;
+    }
+
     if (!selectedCategory) {
       setError("Select a category for this merchandise item.");
       setSubmitting(false);
@@ -160,6 +195,7 @@ const ManageMerch = () => {
       description,
       category: "merchandise",
       displayCategory: selectedCategory,
+      stockFloor,
       imageUrl: providedImageUrl || DEFAULT_IMAGE_URL,
     };
 
@@ -288,6 +324,24 @@ const ManageMerch = () => {
           </p>
         </div>
 
+        {lowStockItems.length > 0 && (
+          <div className="theme-park-alert theme-park-alert-warning">
+            <span style={{ fontSize: "24px" }}>⚠️</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <strong>
+                {lowStockItems.length === 1
+                  ? `${lowStockItems[0].commodityName} has fallen below the stock floor.`
+                  : `${lowStockItems.length} items have fallen below their stock floors.`}
+              </strong>
+              {lowStockItems.map((item) => (
+                <span key={item.commodityTypeId}>
+                  {item.commodityName} is at {item.stockQuantity} units with a floor of {item.stockFloor}. Please take action.
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="theme-park-alert theme-park-alert-error">
             <span style={{ fontSize: "24px" }}>⚠️</span>
@@ -370,6 +424,24 @@ const ManageMerch = () => {
                     }))
                   }
                   required
+                />
+              </div>
+
+              <div className="theme-park-form-group">
+                <label className="theme-park-label">Stock Floor</label>
+                <input
+                  className="theme-park-input"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formState.stockFloor}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      stockFloor: event.target.value,
+                    }))
+                  }
+                  placeholder="Alert threshold"
                 />
               </div>
             </div>
@@ -520,6 +592,7 @@ const ManageMerch = () => {
                   <th>Name</th>
                   <th>Base Price</th>
                   <th>Stock</th>
+                  <th>Stock Floor</th>
                   <th>Category</th>
                   <th>Image</th>
                   <th>Description</th>
@@ -529,102 +602,129 @@ const ManageMerch = () => {
               <tbody>
                 {(activeTab === "active" ? commodities : discontinued).length === 0 ? (
                   <tr>
-                    <td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>
+                    <td colSpan={9} style={{ textAlign: "center", padding: "20px" }}>
                       {activeTab === "active"
                         ? "No merchandise configured yet."
                         : "No discontinued merchandise."}
                     </td>
                   </tr>
                 ) : (
-                  (activeTab === "active" ? commodities : discontinued).map((commodity) => (
-                    <tr key={commodity.commodityTypeId}>
-                      <td>#{commodity.commodityTypeId}</td>
-                      <td>{commodity.commodityName}</td>
-                      <td>${Number(commodity.basePrice).toFixed(2)}</td>
-                      <td>{commodity.stockQuantity}</td>
-                      <td>
-                        {commodity.displayCategory ||
-                          commodity.category ||
-                          "Uncategorized"}
-                      </td>
-                      <td>
-                        {commodity.imageUrl ? (
-                          <a
-                            href={commodity.imageUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ color: "var(--primary-color)" }}
-                          >
-                            {commodity.imageUrl === DEFAULT_IMAGE_URL
-                              ? "Default"
-                              : "View"}
-                          </a>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td>{commodity.description || "—"}</td>
-                      <td>
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          {activeTab === "active" ? (
-                            <>
-                              <button
-                                className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
-                                onClick={() => handleEdit(commodity)}
-                              >
-                                Edit
-                              </button>
-                              <button
-                                className="theme-park-btn theme-park-btn-danger theme-park-btn-sm"
-                                onClick={() => handleDelete(commodity)}
-                                disabled={deletingId === commodity.commodityTypeId}
-                              >
-                                {deletingId === commodity.commodityTypeId
-                                  ? "Discontinuing..."
-                                  : "Discontinue"}
-                              </button>
-                              <button
-                                className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
-                                style={{ borderColor: "#ef4444", color: "#ef4444" }}
-                                onClick={() => {
-                                  setConfirmDeleteTarget(commodity);
-                                  setSuccess("");
-                                  setError("");
-                                }}
-                                disabled={removingId === commodity.commodityTypeId}
-                              >
-                                Delete
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                className="theme-park-btn theme-park-btn-success theme-park-btn-sm"
-                                onClick={() => handleRestore(commodity)}
-                                disabled={restoringId === commodity.commodityTypeId}
-                              >
-                                {restoringId === commodity.commodityTypeId
-                                  ? "Restoring..."
-                                  : "Restore"}
-                              </button>
-                              <button
-                                className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
-                                style={{ borderColor: "#ef4444", color: "#ef4444" }}
-                                onClick={() => {
-                                  setConfirmDeleteTarget(commodity);
-                                  setSuccess("");
-                                  setError("");
-                                }}
-                                disabled={removingId === commodity.commodityTypeId}
-                              >
-                                Delete
-                              </button>
-                            </>
+                  (activeTab === "active" ? commodities : discontinued).map((commodity) => {
+                    const quantity = Number(commodity.stockQuantity ?? 0);
+                    const floor = Number(commodity.stockFloor ?? 0);
+                    const isLow =
+                      commodity.isLowStock !== undefined
+                        ? Boolean(commodity.isLowStock)
+                        : floor > 0 && quantity < floor;
+
+                    return (
+                      <tr
+                        key={commodity.commodityTypeId}
+                        style={
+                          isLow && activeTab === "active"
+                            ? { backgroundColor: "rgba(255, 183, 0, 0.12)" }
+                            : undefined
+                        }
+                      >
+                        <td>#{commodity.commodityTypeId}</td>
+                        <td>{commodity.commodityName}</td>
+                        <td>${Number(commodity.basePrice).toFixed(2)}</td>
+                        <td>
+                          {commodity.stockQuantity}
+                          {isLow && activeTab === "active" && (
+                            <span
+                              className="theme-park-badge theme-park-badge-warning"
+                              style={{ marginLeft: "8px" }}
+                            >
+                              Low
+                            </span>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td>{floor}</td>
+                        <td>
+                          {commodity.displayCategory ||
+                            commodity.category ||
+                            "Uncategorized"}
+                        </td>
+                        <td>
+                          {commodity.imageUrl ? (
+                            <a
+                              href={commodity.imageUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: "var(--primary-color)" }}
+                            >
+                              {commodity.imageUrl === DEFAULT_IMAGE_URL
+                                ? "Default"
+                                : "View"}
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td>{commodity.description || "—"}</td>
+                        <td>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            {activeTab === "active" ? (
+                              <>
+                                <button
+                                  className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+                                  onClick={() => handleEdit(commodity)}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="theme-park-btn theme-park-btn-danger theme-park-btn-sm"
+                                  onClick={() => handleDelete(commodity)}
+                                  disabled={deletingId === commodity.commodityTypeId}
+                                >
+                                  {deletingId === commodity.commodityTypeId
+                                    ? "Discontinuing..."
+                                    : "Discontinue"}
+                                </button>
+                                <button
+                                  className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+                                  style={{ borderColor: "#ef4444", color: "#ef4444" }}
+                                  onClick={() => {
+                                    setConfirmDeleteTarget(commodity);
+                                    setSuccess("");
+                                    setError("");
+                                  }}
+                                  disabled={removingId === commodity.commodityTypeId}
+                                >
+                                  Delete
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  className="theme-park-btn theme-park-btn-success theme-park-btn-sm"
+                                  onClick={() => handleRestore(commodity)}
+                                  disabled={restoringId === commodity.commodityTypeId}
+                                >
+                                  {restoringId === commodity.commodityTypeId
+                                    ? "Restoring..."
+                                    : "Restore"}
+                                </button>
+                                <button
+                                  className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+                                  style={{ borderColor: "#ef4444", color: "#ef4444" }}
+                                  onClick={() => {
+                                    setConfirmDeleteTarget(commodity);
+                                    setSuccess("");
+                                    setError("");
+                                  }}
+                                  disabled={removingId === commodity.commodityTypeId}
+                                >
+                                  Delete
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

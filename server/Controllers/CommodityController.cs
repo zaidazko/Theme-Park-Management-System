@@ -30,6 +30,8 @@ namespace AmusementParkAPI.Controllers
                     basePrice = c.Base_Price,
                     commodityStore = c.Commodity_Store,
                     stockQuantity = c.Stock_Quantity,
+                    stockFloor = c.Stock_Floor,
+                    isLowStock = c.Is_Stock_Low,
                     category = c.Category,
                     displayCategory = c.Display_Category,
                     description = c.Description,
@@ -55,6 +57,8 @@ namespace AmusementParkAPI.Controllers
                     commodityName = c.Commodity_Name,
                     basePrice = c.Base_Price,
                     stockQuantity = c.Stock_Quantity,
+                    stockFloor = c.Stock_Floor,
+                    isLowStock = c.Is_Stock_Low,
                     description = c.Description,
                     imageUrl = c.Image_Url,
                     status = c.LifecycleStatus,
@@ -82,6 +86,8 @@ namespace AmusementParkAPI.Controllers
                 Commodity_Name = request.CommodityName.Trim(),
                 Base_Price = request.BasePrice,
                 Stock_Quantity = request.StockQuantity,
+                Stock_Floor = request.StockFloor,
+                Is_Stock_Low = request.StockQuantity < request.StockFloor,
                 Description = string.IsNullOrWhiteSpace(request.Description)
                     ? null
                     : request.Description.Trim(),
@@ -106,6 +112,8 @@ namespace AmusementParkAPI.Controllers
                     commodityName = commodityType.Commodity_Name,
                     basePrice = commodityType.Base_Price,
                     stockQuantity = commodityType.Stock_Quantity,
+                    stockFloor = commodityType.Stock_Floor,
+                    isLowStock = commodityType.Is_Stock_Low,
                     description = commodityType.Description,
                     category = commodityType.Category,
                     displayCategory = commodityType.Display_Category,
@@ -145,6 +153,11 @@ namespace AmusementParkAPI.Controllers
                 commodityType.Stock_Quantity = request.StockQuantity.Value;
             }
 
+            if (request.StockFloor.HasValue)
+            {
+                commodityType.Stock_Floor = request.StockFloor.Value;
+            }
+
             if (request.Description != null)
             {
                 commodityType.Description = string.IsNullOrWhiteSpace(request.Description)
@@ -179,6 +192,8 @@ namespace AmusementParkAPI.Controllers
             {
                 commodityType.Display_Category = request.DisplayCategory;
             }
+
+            commodityType.Is_Stock_Low = commodityType.Stock_Quantity < commodityType.Stock_Floor;
 
             await _context.SaveChangesAsync();
 
@@ -404,6 +419,9 @@ namespace AmusementParkAPI.Controllers
         [Range(0, int.MaxValue)]
         public int StockQuantity { get; set; }
 
+        [Range(0, int.MaxValue)]
+        public int StockFloor { get; set; } = 0;
+
         [MaxLength(255)]
         public string? Description { get; set; }
 
@@ -425,6 +443,9 @@ namespace AmusementParkAPI.Controllers
 
         [Range(0, int.MaxValue)]
         public int? StockQuantity { get; set; }
+
+        [Range(0, int.MaxValue)]
+        public int? StockFloor { get; set; }
 
         [MaxLength(255)]
         public string? Description { get; set; }

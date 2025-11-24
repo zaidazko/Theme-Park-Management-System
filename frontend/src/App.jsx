@@ -26,7 +26,24 @@ import RideDetail from "./components/RideDetail";
 import Merchandise from "./components/Merchandise";
 import "./App.css";
 
-import { authAPI, ridesAPI } from "./api";
+import { authAPI, ridesAPI, commodityAPI } from "./api";
+
+const computeLowStockCount = (items) => {
+  if (!Array.isArray(items)) {
+    return 0;
+  }
+
+  return items.reduce((count, item) => {
+    const quantity = Number(item?.stockQuantity ?? 0);
+    const floor = Number(item?.stockFloor ?? 0);
+    const isLow =
+      item?.isLowStock !== undefined
+        ? Boolean(item.isLowStock)
+        : floor > 0 && quantity < floor;
+
+    return isLow ? count + 1 : count;
+  }, 0);
+};
 
 function App() {
   const [currentView, setCurrentView] = useState("landing");
@@ -36,6 +53,7 @@ function App() {
   const [weatherCondition, setWeatherCondition] = useState("Regular");
   const [selectedWeather, setSelectedWeather] = useState("Regular");
   const [isUpdatingWeather, setIsUpdatingWeather] = useState(false);
+  const [merchAlerts, setMerchAlerts] = useState(0);
 
   const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -104,11 +122,6 @@ function App() {
     setIsLoading(false); // Set loading to false after checking
   }, []);
 
-  // loading spinner while checking
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     localStorage.setItem("user", JSON.stringify(userData));
@@ -136,6 +149,39 @@ function App() {
     user?.role?.roleId === 2 ||
     user?.roleName === "Admin" ||
     user?.RoleName === "Admin";
+
+  useEffect(() => {
+    if (isLoading || !user || !isEmployee) {
+      setMerchAlerts(0);
+      return;
+    }
+
+    let canceled = false;
+
+    const fetchLowStockAlerts = async () => {
+      try {
+        const items = await commodityAPI.getCommodityTypes();
+        if (!canceled) {
+          setMerchAlerts(computeLowStockCount(items));
+        }
+      } catch (error) {
+        console.error("Error fetching merchandise alerts:", error);
+      }
+    };
+
+    fetchLowStockAlerts();
+    const intervalId = setInterval(fetchLowStockAlerts, 60000);
+
+    return () => {
+      canceled = true;
+      clearInterval(intervalId);
+    };
+  }, [user, isEmployee, isLoading]);
+
+  // loading spinner while checking
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="App">
@@ -389,7 +435,12 @@ function App() {
                     }}
                   >
                     <span style={styles.navIcon}>🛍️</span>
-                    Manage Merchandise
+                    <span style={{ flex: 1 }}>Manage Merchandise</span>
+                    {merchAlerts > 0 && (
+                      <span style={styles.alertBadge}>
+                        {merchAlerts > 9 ? "9+" : merchAlerts}
+                      </span>
+                    )}
                   </button>
                 </div>
 
@@ -837,7 +888,7 @@ function App() {
         {currentView === "manage-food" && user && isEmployee && <ManageFood />}
 
         {currentView === "manage-merch" && user && isEmployee && (
-          <ManageMerch />
+          <ManageMerch onAlertsChange={setMerchAlerts} />
         )}
 
         {currentView === "maintenance-request" && user && isEmployee && (
@@ -1028,6 +1079,16 @@ const styles = {
     cursor: "pointer",
     fontSize: "14px",
     fontWeight: "600",
+  },
+  alertBadge: {
+    marginLeft: "12px",
+    padding: "2px 8px",
+    backgroundColor: "#ef4444",
+    color: "#fff",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700",
+    lineHeight: 1.4,
   },
 };
 
