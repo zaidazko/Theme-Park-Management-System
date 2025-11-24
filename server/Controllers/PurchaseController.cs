@@ -110,9 +110,9 @@ namespace AmusementParkAPI.Controllers
                             return NotFound(new { message = $"Ticket type {item.TypeId} not found." });
                         }
 
-                        if (ticketType.Is_Discontinued)
+                        if (ticketType.LifecycleStatus != LifecycleStatus.Active)
                         {
-                            return Conflict(new { message = $"Ticket type '{ticketType.Type_Name}' is discontinued." });
+                            return Conflict(new { message = $"Ticket type '{ticketType.Type_Name}' is unavailable." });
                         }
 
                         var ticketUnitPrice = ticketType.Base_Price;
@@ -148,9 +148,9 @@ namespace AmusementParkAPI.Controllers
                             return NotFound(new { message = $"Menu item {item.TypeId} not found." });
                         }
 
-                        if (menuType.Is_Discontinued)
+                        if (menuType.LifecycleStatus != LifecycleStatus.Active)
                         {
-                            return Conflict(new { message = $"Menu item '{menuType.Food_Name}' is discontinued." });
+                            return Conflict(new { message = $"Menu item '{menuType.Food_Name}' is unavailable." });
                         }
 
                         var menuUnitPrice = menuType.Base_Price;
@@ -186,9 +186,9 @@ namespace AmusementParkAPI.Controllers
                             return NotFound(new { message = $"Merchandise item {item.TypeId} not found." });
                         }
 
-                        if (commodityType.Is_Discontinued)
+                        if (commodityType.LifecycleStatus != LifecycleStatus.Active)
                         {
-                            return Conflict(new { message = $"Merchandise item '{commodityType.Commodity_Name}' is discontinued." });
+                            return Conflict(new { message = $"Merchandise item '{commodityType.Commodity_Name}' is unavailable." });
                         }
 
                         if (commodityType.Stock_Quantity < item.Quantity)

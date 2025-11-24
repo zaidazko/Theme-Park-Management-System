@@ -22,7 +22,7 @@ namespace AmusementParkAPI.Controllers
         public async Task<ActionResult<IEnumerable<object>>> GetTicketTypes()
         {
             var ticketTypes = await _context.TicketTypes
-                .Where(t => !t.Is_Discontinued)
+                .Where(t => t.LifecycleStatus == LifecycleStatus.Active)
                 .Include(t => t.Ride)
                 .Select(t => new
                 {
@@ -32,8 +32,9 @@ namespace AmusementParkAPI.Controllers
                     rideId = t.Ride_ID,
                     rideName = t.Ride != null ? t.Ride.Ride_Name : null,
                     description = t.Description,
-                        rideImage = t.Ride != null ? t.Ride.Image : null,
-                        isDiscontinued = t.Is_Discontinued
+                    rideImage = t.Ride != null ? t.Ride.Image : null,
+                    status = t.LifecycleStatus,
+                    isDiscontinued = t.LifecycleStatus == LifecycleStatus.Discontinued
                 })
                 .OrderBy(t => t.ticketTypeId)
                 .ToListAsync();
@@ -46,7 +47,7 @@ namespace AmusementParkAPI.Controllers
         public async Task<ActionResult<IEnumerable<object>>> GetDiscontinuedTicketTypes()
         {
             var ticketTypes = await _context.TicketTypes
-                .Where(t => t.Is_Discontinued)
+                .Where(t => t.LifecycleStatus == LifecycleStatus.Discontinued)
                 .Include(t => t.Ride)
                 .Select(t => new
                 {
@@ -56,8 +57,9 @@ namespace AmusementParkAPI.Controllers
                     rideId = t.Ride_ID,
                     rideName = t.Ride != null ? t.Ride.Ride_Name : null,
                     description = t.Description,
-                        rideImage = t.Ride != null ? t.Ride.Image : null,
-                        isDiscontinued = t.Is_Discontinued
+                    rideImage = t.Ride != null ? t.Ride.Image : null,
+                    status = t.LifecycleStatus,
+                    isDiscontinued = t.LifecycleStatus == LifecycleStatus.Discontinued
                 })
                 .OrderBy(t => t.ticketTypeId)
                 .ToListAsync();
@@ -81,7 +83,7 @@ namespace AmusementParkAPI.Controllers
             }
 
             var rideInUse = await _context.TicketTypes
-                .AnyAsync(t => !t.Is_Discontinued && t.Ride_ID == request.RideId);
+                .AnyAsync(t => t.LifecycleStatus == LifecycleStatus.Active && t.Ride_ID == request.RideId);
             if (rideInUse)
             {
                 return Conflict(new { message = "A ticket type is already assigned to this ride." });
@@ -95,7 +97,7 @@ namespace AmusementParkAPI.Controllers
                 Description = string.IsNullOrWhiteSpace(request.Description)
                     ? null
                     : request.Description.Trim(),
-                Is_Discontinued = false
+                LifecycleStatus = LifecycleStatus.Active
             };
 
             _context.TicketTypes.Add(ticketType);
@@ -111,7 +113,8 @@ namespace AmusementParkAPI.Controllers
                     price = ticketType.Base_Price,
                     rideId = ticketType.Ride_ID,
                     description = ticketType.Description,
-                    isDiscontinued = ticketType.Is_Discontinued
+                    status = ticketType.LifecycleStatus,
+                    isDiscontinued = ticketType.LifecycleStatus == LifecycleStatus.Discontinued
                 });
         }
 
@@ -139,7 +142,7 @@ namespace AmusementParkAPI.Controllers
                 }
 
                 var rideInUse = await _context.TicketTypes
-                    .AnyAsync(t => !t.Is_Discontinued && t.Ride_ID == request.RideId.Value && t.TicketType_ID != id);
+                    .AnyAsync(t => t.LifecycleStatus == LifecycleStatus.Active && t.Ride_ID == request.RideId.Value && t.TicketType_ID != id);
                 if (rideInUse)
                 {
                     return Conflict(new { message = "A ticket type is already assigned to this ride." });
@@ -165,9 +168,15 @@ namespace AmusementParkAPI.Controllers
                     : request.Description.Trim();
             }
 
-            if (request.IsDiscontinued.HasValue)
+            if (request.Status.HasValue)
             {
-                ticketType.Is_Discontinued = request.IsDiscontinued.Value;
+                ticketType.LifecycleStatus = request.Status.Value;
+            }
+            else if (request.IsDiscontinued.HasValue)
+            {
+                ticketType.LifecycleStatus = request.IsDiscontinued.Value
+                    ? LifecycleStatus.Discontinued
+                    : LifecycleStatus.Active;
             }
 
             await _context.SaveChangesAsync();
@@ -185,12 +194,17 @@ namespace AmusementParkAPI.Controllers
                 return NotFound();
             }
 
-            if (ticketType.Is_Discontinued)
+            if (ticketType.LifecycleStatus == LifecycleStatus.Discontinued)
             {
                 return NoContent();
             }
 
-            ticketType.Is_Discontinued = true;
+            if (ticketType.LifecycleStatus == LifecycleStatus.Deleted)
+            {
+                return NoContent();
+            }
+
+            ticketType.LifecycleStatus = LifecycleStatus.Discontinued;
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -206,19 +220,40 @@ namespace AmusementParkAPI.Controllers
                 return NotFound();
             }
 
-            if (!ticketType.Is_Discontinued)
+            if (ticketType.LifecycleStatus != LifecycleStatus.Discontinued)
             {
                 return NoContent();
             }
 
             var rideInUse = await _context.TicketTypes
-                .AnyAsync(t => !t.Is_Discontinued && t.Ride_ID == ticketType.Ride_ID && t.TicketType_ID != id);
+                .AnyAsync(t => t.LifecycleStatus == LifecycleStatus.Active && t.Ride_ID == ticketType.Ride_ID && t.TicketType_ID != id);
             if (rideInUse)
             {
                 return Conflict(new { message = "Another active ticket type is already assigned to this ride." });
             }
 
-            ticketType.Is_Discontinued = false;
+            ticketType.LifecycleStatus = LifecycleStatus.Active;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // PUT: api/ticket/types/{id}/delete
+        [HttpPut("types/{id}/delete")]
+        public async Task<ActionResult> DeleteTicketTypePermanently(int id)
+        {
+            var ticketType = await _context.TicketTypes.FindAsync(id);
+            if (ticketType == null)
+            {
+                return NotFound();
+            }
+
+            if (ticketType.LifecycleStatus == LifecycleStatus.Deleted)
+            {
+                return NoContent();
+            }
+
+            ticketType.LifecycleStatus = LifecycleStatus.Deleted;
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -338,5 +373,8 @@ namespace AmusementParkAPI.Controllers
         public string? Description { get; set; }
 
         public bool? IsDiscontinued { get; set; }
+
+        [Range(0, byte.MaxValue)]
+        public byte? Status { get; set; }
     }
 }

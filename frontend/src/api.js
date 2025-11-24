@@ -311,6 +311,13 @@ export const ticketAPI = {
     );
     return response.data;
   },
+
+  permanentlyDeleteTicketType: async (ticketTypeId) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/ticket/types/${ticketTypeId}/delete`
+    );
+    return response.data;
+  },
 };
 
 export const commodityAPI = {
@@ -355,6 +362,13 @@ export const commodityAPI = {
     );
     return response.data;
   },
+
+  permanentlyDeleteCommodityType: async (commodityTypeId) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/commodity/types/${commodityTypeId}/delete`
+    );
+    return response.data;
+  },
 };
 
 export const menuAPI = {
@@ -396,6 +410,13 @@ export const menuAPI = {
   restoreMenuType: async (menuTypeId) => {
     const response = await axios.put(
       `${API_BASE_URL}/menu/types/${menuTypeId}/restore`
+    );
+    return response.data;
+  },
+
+  permanentlyDeleteMenuType: async (menuTypeId) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/menu/types/${menuTypeId}/delete`
     );
     return response.data;
   },

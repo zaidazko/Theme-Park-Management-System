@@ -21,8 +21,11 @@ const ManageFood = () => {
   const [editingId, setEditingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [restoringId, setRestoringId] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [activeTab, setActiveTab] = useState("active");
+  const [confirmDeleteTarget, setConfirmDeleteTarget] = useState(null);
 
   useEffect(() => {
     loadMenuData();
@@ -38,6 +41,7 @@ const ManageFood = () => {
       ]);
       setMenuItems(active);
       setDiscontinued(discontinuedItems);
+  setConfirmDeleteTarget(null);
     } catch (err) {
       console.error("Error loading menu types", err);
       setError("Unable to load menu items. Please try again.");
@@ -51,6 +55,8 @@ const ManageFood = () => {
     setEditingId(null);
     setDeletingId(null);
     setRestoringId(null);
+    setRemovingId(null);
+  setConfirmDeleteTarget(null);
   };
 
   const handleEdit = (item) => {
@@ -152,6 +158,34 @@ const ManageFood = () => {
       setError(responseMessage || "Unable to discontinue menu item.");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handlePermanentDelete = async (item) => {
+    if (removingId === item.menuTypeId) {
+      return;
+    }
+
+    setRemovingId(item.menuTypeId);
+    setError("");
+    setSuccess("");
+
+    try {
+      await menuAPI.permanentlyDeleteMenuType(item.menuTypeId);
+
+      if (editingId === item.menuTypeId) {
+        resetForm();
+      }
+
+      setSuccess(`${item.foodName} deleted from the menu.`);
+      await loadMenuData();
+    } catch (err) {
+      console.error("Error deleting menu item", err);
+      const responseMessage = err?.response?.data?.message;
+      setError(responseMessage || "Unable to delete menu item.");
+    } finally {
+      setRemovingId(null);
+  setConfirmDeleteTarget(null);
     }
   };
 
@@ -281,7 +315,6 @@ const ManageFood = () => {
                     description: event.target.value,
                   }))
                 }
-                placeholder="Optional description for staff reference"
               />
             </div>
 
@@ -319,10 +352,37 @@ const ManageFood = () => {
         <div className="theme-park-card">
           <div className="theme-park-card-header">
             <h3 className="theme-park-card-title">
-              <span>📋</span> Active Menu Items
+              <span>📋</span> Menu Items
             </h3>
-            <div className="theme-park-badge theme-park-badge-info">
-              {menuItems.length} item{menuItems.length === 1 ? "" : "s"}
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className={`theme-park-btn theme-park-btn-sm ${
+                  activeTab === "active"
+                    ? "theme-park-btn-primary"
+                    : "theme-park-btn-outline"
+                }`}
+                onClick={() => {
+                  setActiveTab("active");
+                  setConfirmDeleteTarget(null);
+                }}
+              >
+                Active ({menuItems.length})
+              </button>
+              <button
+                type="button"
+                className={`theme-park-btn theme-park-btn-sm ${
+                  activeTab === "discontinued"
+                    ? "theme-park-btn-primary"
+                    : "theme-park-btn-outline"
+                }`}
+                onClick={() => {
+                  setActiveTab("discontinued");
+                  setConfirmDeleteTarget(null);
+                }}
+              >
+                Discontinued ({discontinued.length})
+              </button>
             </div>
           </div>
 
@@ -339,14 +399,16 @@ const ManageFood = () => {
                 </tr>
               </thead>
               <tbody>
-                {menuItems.length === 0 ? (
+                {(activeTab === "active" ? menuItems : discontinued).length === 0 ? (
                   <tr>
                     <td colSpan={6} style={{ textAlign: "center", padding: "20px" }}>
-                      No menu items configured yet.
+                      {activeTab === "active"
+                        ? "No menu items configured yet."
+                        : "No discontinued menu items."}
                     </td>
                   </tr>
                 ) : (
-                  menuItems.map((item) => (
+                  (activeTab === "active" ? menuItems : discontinued).map((item) => (
                     <tr key={item.menuTypeId}>
                       <td>#{item.menuTypeId}</td>
                       <td>{item.foodName}</td>
@@ -370,21 +432,61 @@ const ManageFood = () => {
                       <td>{item.description || "—"}</td>
                       <td>
                         <div style={{ display: "flex", gap: "8px" }}>
-                          <button
-                            className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
-                            onClick={() => handleEdit(item)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="theme-park-btn theme-park-btn-danger theme-park-btn-sm"
-                            onClick={() => handleDelete(item)}
-                            disabled={deletingId === item.menuTypeId}
-                          >
-                            {deletingId === item.menuTypeId
-                              ? "Updating..."
-                              : "Discontinue"}
-                          </button>
+                          {activeTab === "active" ? (
+                            <>
+                              <button
+                                className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+                                onClick={() => handleEdit(item)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="theme-park-btn theme-park-btn-danger theme-park-btn-sm"
+                                onClick={() => handleDelete(item)}
+                                disabled={deletingId === item.menuTypeId}
+                              >
+                                {deletingId === item.menuTypeId
+                                  ? "Updating..."
+                                  : "Discontinue"}
+                              </button>
+                              <button
+                                className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+                                style={{ borderColor: "#ef4444", color: "#ef4444" }}
+                                onClick={() => {
+                                  setConfirmDeleteTarget(item);
+                                  setSuccess("");
+                                  setError("");
+                                }}
+                                disabled={removingId === item.menuTypeId}
+                              >
+                                Delete
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                className="theme-park-btn theme-park-btn-success theme-park-btn-sm"
+                                onClick={() => handleRestore(item)}
+                                disabled={restoringId === item.menuTypeId}
+                              >
+                                {restoringId === item.menuTypeId
+                                  ? "Restoring..."
+                                  : "Restore"}
+                              </button>
+                              <button
+                                className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+                                style={{ borderColor: "#ef4444", color: "#ef4444" }}
+                                onClick={() => {
+                                  setConfirmDeleteTarget(item);
+                                  setSuccess("");
+                                  setError("");
+                                }}
+                                disabled={removingId === item.menuTypeId}
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -394,78 +496,81 @@ const ManageFood = () => {
             </table>
           </div>
         </div>
-
-        <div className="theme-park-card" style={{ marginTop: "24px" }}>
-          <div className="theme-park-card-header">
-            <h3 className="theme-park-card-title">
-              <span>🗂️</span> Discontinued Menu Items
-            </h3>
-            <div className="theme-park-badge theme-park-badge-warning">
-              {discontinued.length} item{discontinued.length === 1 ? "" : "s"}
+      </div>
+      {confirmDeleteTarget && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px",
+            zIndex: 80,
+          }}
+          onClick={() => setConfirmDeleteTarget(null)}
+          role="presentation"
+        >
+          <div
+            className="theme-park-card"
+            style={{
+              width: "100%",
+              maxWidth: "420px",
+              position: "relative",
+              boxShadow: "0 25px 60px rgba(15,23,42,0.35)",
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              onClick={() => setConfirmDeleteTarget(null)}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "16px",
+                border: "none",
+                background: "transparent",
+                fontSize: "20px",
+                cursor: "pointer",
+              }}
+              aria-label="Close delete confirmation"
+            >
+              ×
+            </button>
+            <div className="theme-park-card-header">
+              <h3 className="theme-park-card-title">Confirm Delete</h3>
+            </div>
+            <div style={{ padding: "24px", display: "grid", gap: "16px" }}>
+              <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
+                Are you sure you want to delete
+                {" "}
+                <strong>{confirmDeleteTarget.foodName}</strong>
+                ? Guests and staff will no longer see this menu item, but past sales will stay in reports.
+              </p>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  className="theme-park-btn theme-park-btn-outline"
+                  onClick={() => setConfirmDeleteTarget(null)}
+                  disabled={removingId === confirmDeleteTarget.menuTypeId}
+                  style={{ flex: 1 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="theme-park-btn theme-park-btn-danger theme-park-btn-lg"
+                  onClick={() => handlePermanentDelete(confirmDeleteTarget)}
+                  disabled={removingId === confirmDeleteTarget.menuTypeId}
+                  style={{ flex: 1 }}
+                >
+                  {removingId === confirmDeleteTarget.menuTypeId
+                    ? "Deleting..."
+                    : "Delete Item"}
+                </button>
+              </div>
             </div>
           </div>
-
-          <div className="theme-park-table-container">
-            <table className="theme-park-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Base Price</th>
-                  <th>Image</th>
-                  <th>Description</th>
-                  <th style={{ width: "120px" }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {discontinued.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} style={{ textAlign: "center", padding: "20px" }}>
-                      No discontinued menu items.
-                    </td>
-                  </tr>
-                ) : (
-                  discontinued.map((item) => (
-                    <tr key={item.menuTypeId}>
-                      <td>#{item.menuTypeId}</td>
-                      <td>{item.foodName}</td>
-                      <td>${formatPrice(item.basePrice)}</td>
-                      <td>
-                        {item.imageUrl ? (
-                          <a
-                            href={item.imageUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ color: "var(--primary-color)" }}
-                          >
-                            {item.imageUrl === DEFAULT_IMAGE_URL
-                              ? "Default"
-                              : "View"}
-                          </a>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td>{item.description || "—"}</td>
-                      <td>
-                        <button
-                          className="theme-park-btn theme-park-btn-success theme-park-btn-sm"
-                          onClick={() => handleRestore(item)}
-                          disabled={restoringId === item.menuTypeId}
-                        >
-                          {restoringId === item.menuTypeId
-                            ? "Restoring..."
-                            : "Restore"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

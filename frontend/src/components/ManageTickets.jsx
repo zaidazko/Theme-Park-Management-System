@@ -19,8 +19,11 @@ const ManageTickets = () => {
   const [editingId, setEditingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [restoringId, setRestoringId] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [activeTab, setActiveTab] = useState("active");
+  const [confirmDeleteTarget, setConfirmDeleteTarget] = useState(null);
 
   const parsedSelectedRideId = Number.parseInt(formState.rideId, 10);
   const selectedRideId = Number.isNaN(parsedSelectedRideId)
@@ -55,6 +58,7 @@ const ManageTickets = () => {
         setRides(rideList);
         setTicketTypes(activeTickets);
         setDiscontinued(discontinuedTickets);
+        setConfirmDeleteTarget(null);
       } catch (err) {
         console.error("Error loading ticket types", err);
         setError("Unable to load ticket types. Please try again.");
@@ -74,6 +78,7 @@ const ManageTickets = () => {
       ]);
       setTicketTypes(activeTickets);
       setDiscontinued(discontinuedTickets);
+      setConfirmDeleteTarget(null);
     } catch (err) {
       console.error("Error refreshing ticket types", err);
       setError("Unable to refresh ticket types. Please try again.");
@@ -85,6 +90,8 @@ const ManageTickets = () => {
     setEditingId(null);
     setDeletingId(null);
     setRestoringId(null);
+    setRemovingId(null);
+    setConfirmDeleteTarget(null);
   };
 
   const handleEdit = (ticket) => {
@@ -108,7 +115,7 @@ const ManageTickets = () => {
     const typeName = formState.typeName.trim();
     const basePrice = parseFloat(formState.basePrice);
     const rideId = parseInt(formState.rideId, 10);
-  const description = formState.description.trim();
+    const description = formState.description.trim();
 
     if (!typeName) {
       setError("Please provide a ticket name.");
@@ -187,6 +194,34 @@ const ManageTickets = () => {
       setError(responseMessage || "Unable to discontinue ticket type.");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handlePermanentDelete = async (ticket) => {
+    if (removingId === ticket.ticketTypeId) {
+      return;
+    }
+
+    setRemovingId(ticket.ticketTypeId);
+    setError("");
+    setSuccess("");
+
+    try {
+      await ticketAPI.permanentlyDeleteTicketType(ticket.ticketTypeId);
+
+      if (editingId === ticket.ticketTypeId) {
+        resetForm();
+      }
+
+      setSuccess(`${ticket.typeName} deleted from ticket offerings.`);
+      await loadTicketData();
+    } catch (err) {
+      console.error("Error deleting ticket type", err);
+      const responseMessage = err?.response?.data?.message;
+      setError(responseMessage || "Unable to delete ticket type.");
+    } finally {
+      setRemovingId(null);
+      setConfirmDeleteTarget(null);
     }
   };
 
@@ -383,10 +418,37 @@ const ManageTickets = () => {
         <div className="theme-park-card">
           <div className="theme-park-card-header">
             <h3 className="theme-park-card-title">
-              <span>🎟️</span> Active Ticket Types
+              <span>🎟️</span> Ticket Types
             </h3>
-            <div className="theme-park-badge theme-park-badge-info">
-              {ticketTypes.length} item{ticketTypes.length === 1 ? "" : "s"}
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className={`theme-park-btn theme-park-btn-sm ${
+                  activeTab === "active"
+                    ? "theme-park-btn-primary"
+                    : "theme-park-btn-outline"
+                }`}
+                onClick={() => {
+                  setActiveTab("active");
+                  setConfirmDeleteTarget(null);
+                }}
+              >
+                Active ({ticketTypes.length})
+              </button>
+              <button
+                type="button"
+                className={`theme-park-btn theme-park-btn-sm ${
+                  activeTab === "discontinued"
+                    ? "theme-park-btn-primary"
+                    : "theme-park-btn-outline"
+                }`}
+                onClick={() => {
+                  setActiveTab("discontinued");
+                  setConfirmDeleteTarget(null);
+                }}
+              >
+                Discontinued ({discontinued.length})
+              </button>
             </div>
           </div>
 
@@ -403,14 +465,16 @@ const ManageTickets = () => {
                 </tr>
               </thead>
               <tbody>
-                {ticketTypes.length === 0 ? (
+                {(activeTab === "active" ? ticketTypes : discontinued).length === 0 ? (
                   <tr>
                     <td colSpan={5} style={{ textAlign: "center", padding: "20px" }}>
-                      No ticket types configured yet.
+                      {activeTab === "active"
+                        ? "No ticket types configured yet."
+                        : "No discontinued ticket types."}
                     </td>
                   </tr>
                 ) : (
-                  ticketTypes.map((ticket) => (
+                  (activeTab === "active" ? ticketTypes : discontinued).map((ticket) => (
                     <tr key={ticket.ticketTypeId}>
                       <td>#{ticket.ticketTypeId}</td>
                       <td>{ticket.typeName}</td>
@@ -419,21 +483,61 @@ const ManageTickets = () => {
                       <td>{ticket.description || "—"}</td>
                       <td>
                         <div style={{ display: "flex", gap: "8px" }}>
-                          <button
-                            className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
-                            onClick={() => handleEdit(ticket)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="theme-park-btn theme-park-btn-danger theme-park-btn-sm"
-                            onClick={() => handleDelete(ticket)}
-                            disabled={deletingId === ticket.ticketTypeId}
-                          >
-                            {deletingId === ticket.ticketTypeId
-                              ? "Updating..."
-                              : "Discontinue"}
-                          </button>
+                          {activeTab === "active" ? (
+                            <>
+                              <button
+                                className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+                                onClick={() => handleEdit(ticket)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="theme-park-btn theme-park-btn-danger theme-park-btn-sm"
+                                onClick={() => handleDelete(ticket)}
+                                disabled={deletingId === ticket.ticketTypeId}
+                              >
+                                {deletingId === ticket.ticketTypeId
+                                  ? "Updating..."
+                                  : "Discontinue"}
+                              </button>
+                              <button
+                                className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+                                style={{ borderColor: "#ef4444", color: "#ef4444" }}
+                                onClick={() => {
+                                  setConfirmDeleteTarget(ticket);
+                                  setSuccess("");
+                                  setError("");
+                                }}
+                                disabled={removingId === ticket.ticketTypeId}
+                              >
+                                Delete
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                className="theme-park-btn theme-park-btn-success theme-park-btn-sm"
+                                onClick={() => handleRestore(ticket)}
+                                disabled={restoringId === ticket.ticketTypeId}
+                              >
+                                {restoringId === ticket.ticketTypeId
+                                  ? "Restoring..."
+                                  : "Restore"}
+                              </button>
+                              <button
+                                className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+                                style={{ borderColor: "#ef4444", color: "#ef4444" }}
+                                onClick={() => {
+                                  setConfirmDeleteTarget(ticket);
+                                  setSuccess("");
+                                  setError("");
+                                }}
+                                disabled={removingId === ticket.ticketTypeId}
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -443,63 +547,79 @@ const ManageTickets = () => {
             </table>
           </div>
         </div>
-
-        <div className="theme-park-card" style={{ marginTop: "24px" }}>
-          <div className="theme-park-card-header">
-            <h3 className="theme-park-card-title">
-              <span>🗂️</span> Discontinued Ticket Types
-            </h3>
-            <div className="theme-park-badge theme-park-badge-warning">
-              {discontinued.length} item{discontinued.length === 1 ? "" : "s"}
+      </div>
+      {confirmDeleteTarget && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px",
+            zIndex: 80,
+          }}
+          onClick={() => setConfirmDeleteTarget(null)}
+          role="presentation"
+        >
+          <div
+            className="theme-park-card"
+            style={{
+              width: "100%",
+              maxWidth: "420px",
+              position: "relative",
+              boxShadow: "0 25px 60px rgba(15,23,42,0.35)",
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              onClick={() => setConfirmDeleteTarget(null)}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "16px",
+                border: "none",
+                background: "transparent",
+                fontSize: "20px",
+                cursor: "pointer",
+              }}
+              aria-label="Close delete confirmation"
+            >
+              ×
+            </button>
+            <div className="theme-park-card-header">
+              <h3 className="theme-park-card-title">Confirm Delete</h3>
+            </div>
+            <div style={{ padding: "24px", display: "grid", gap: "16px" }}>
+              <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
+                Are you sure you want to delete <strong>{confirmDeleteTarget.typeName}</strong>?
+                Guests will no longer see this ticket option, but historical sales remain intact.
+              </p>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  className="theme-park-btn theme-park-btn-outline"
+                  onClick={() => setConfirmDeleteTarget(null)}
+                  disabled={removingId === confirmDeleteTarget.ticketTypeId}
+                  style={{ flex: 1 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="theme-park-btn theme-park-btn-danger theme-park-btn-lg"
+                  onClick={() => handlePermanentDelete(confirmDeleteTarget)}
+                  disabled={removingId === confirmDeleteTarget.ticketTypeId}
+                  style={{ flex: 1 }}
+                >
+                  {removingId === confirmDeleteTarget.ticketTypeId
+                    ? "Deleting..."
+                    : "Delete Ticket"}
+                </button>
+              </div>
             </div>
           </div>
-
-          <div className="theme-park-table-container">
-            <table className="theme-park-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Base Price</th>
-                  <th>Ride</th>
-                  <th>Description</th>
-                  <th style={{ width: "120px" }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {discontinued.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={{ textAlign: "center", padding: "20px" }}>
-                      No discontinued ticket types.
-                    </td>
-                  </tr>
-                ) : (
-                  discontinued.map((ticket) => (
-                    <tr key={ticket.ticketTypeId}>
-                      <td>#{ticket.ticketTypeId}</td>
-                      <td>{ticket.typeName}</td>
-                      <td>${formatPrice(ticket.price)}</td>
-                      <td>{ticket.rideName || "—"}</td>
-                      <td>{ticket.description || "—"}</td>
-                      <td>
-                        <button
-                          className="theme-park-btn theme-park-btn-success theme-park-btn-sm"
-                          onClick={() => handleRestore(ticket)}
-                          disabled={restoringId === ticket.ticketTypeId}
-                        >
-                          {restoringId === ticket.ticketTypeId
-                            ? "Restoring..."
-                            : "Restore"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

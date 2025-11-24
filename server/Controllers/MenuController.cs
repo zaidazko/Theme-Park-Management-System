@@ -22,7 +22,7 @@ namespace AmusementParkAPI.Controllers
         public async Task<ActionResult<IEnumerable<object>>> GetMenuTypes()
         {
             var menuTypes = await _context.MenuTypes
-                .Where(mt => !mt.Is_Discontinued)
+                .Where(mt => mt.LifecycleStatus == LifecycleStatus.Active)
                 .Select(mt => new
                 {
                     menuTypeId = mt.MenuType_ID,
@@ -30,7 +30,8 @@ namespace AmusementParkAPI.Controllers
                     basePrice = mt.Base_Price,
                     description = mt.Description,
                     imageUrl = mt.Image_Url,
-                    isDiscontinued = mt.Is_Discontinued
+                    status = mt.LifecycleStatus,
+                    isDiscontinued = mt.LifecycleStatus == LifecycleStatus.Discontinued
                 })
                 .ToListAsync();
 
@@ -42,7 +43,7 @@ namespace AmusementParkAPI.Controllers
         public async Task<ActionResult<IEnumerable<object>>> GetDiscontinuedMenuTypes()
         {
             var menuTypes = await _context.MenuTypes
-                .Where(mt => mt.Is_Discontinued)
+                .Where(mt => mt.LifecycleStatus == LifecycleStatus.Discontinued)
                 .Select(mt => new
                 {
                     menuTypeId = mt.MenuType_ID,
@@ -50,7 +51,8 @@ namespace AmusementParkAPI.Controllers
                     basePrice = mt.Base_Price,
                     description = mt.Description,
                     imageUrl = mt.Image_Url,
-                    isDiscontinued = mt.Is_Discontinued
+                    status = mt.LifecycleStatus,
+                    isDiscontinued = mt.LifecycleStatus == LifecycleStatus.Discontinued
                 })
                 .ToListAsync();
 
@@ -76,7 +78,11 @@ namespace AmusementParkAPI.Controllers
                 Image_Url = string.IsNullOrWhiteSpace(request.ImageUrl)
                     ? null
                     : request.ImageUrl.Trim(),
-                Is_Discontinued = request.IsDiscontinued ?? false
+                LifecycleStatus = request.Status.HasValue
+                    ? request.Status.Value
+                    : (request.IsDiscontinued ?? false)
+                        ? LifecycleStatus.Discontinued
+                        : LifecycleStatus.Active
             };
 
             _context.MenuTypes.Add(menuType);
@@ -92,7 +98,8 @@ namespace AmusementParkAPI.Controllers
                     basePrice = menuType.Base_Price,
                     description = menuType.Description,
                     imageUrl = menuType.Image_Url,
-                    isDiscontinued = menuType.Is_Discontinued
+                    status = menuType.LifecycleStatus,
+                    isDiscontinued = menuType.LifecycleStatus == LifecycleStatus.Discontinued
                 });
         }
 
@@ -136,9 +143,15 @@ namespace AmusementParkAPI.Controllers
                     : request.ImageUrl.Trim();
             }
 
-            if (request.IsDiscontinued.HasValue)
+            if (request.Status.HasValue)
             {
-                menuType.Is_Discontinued = request.IsDiscontinued.Value;
+                menuType.LifecycleStatus = request.Status.Value;
+            }
+            else if (request.IsDiscontinued.HasValue)
+            {
+                menuType.LifecycleStatus = request.IsDiscontinued.Value
+                    ? LifecycleStatus.Discontinued
+                    : LifecycleStatus.Active;
             }
 
             await _context.SaveChangesAsync();
@@ -157,12 +170,17 @@ namespace AmusementParkAPI.Controllers
                 return NotFound();
             }
 
-            if (menuType.Is_Discontinued)
+            if (menuType.LifecycleStatus == LifecycleStatus.Discontinued)
             {
                 return NoContent();
             }
 
-            menuType.Is_Discontinued = true;
+            if (menuType.LifecycleStatus == LifecycleStatus.Deleted)
+            {
+                return NoContent();
+            }
+
+            menuType.LifecycleStatus = LifecycleStatus.Discontinued;
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -179,12 +197,34 @@ namespace AmusementParkAPI.Controllers
                 return NotFound();
             }
 
-            if (!menuType.Is_Discontinued)
+            if (menuType.LifecycleStatus != LifecycleStatus.Discontinued)
             {
                 return NoContent();
             }
 
-            menuType.Is_Discontinued = false;
+            menuType.LifecycleStatus = LifecycleStatus.Active;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // PUT: api/menu/types/{id}/delete
+        [HttpPut("types/{id}/delete")]
+        public async Task<ActionResult> DeleteMenuTypePermanently(int id)
+        {
+            var menuType = await _context.MenuTypes.FindAsync(id);
+
+            if (menuType == null)
+            {
+                return NotFound();
+            }
+
+            if (menuType.LifecycleStatus == LifecycleStatus.Deleted)
+            {
+                return NoContent();
+            }
+
+            menuType.LifecycleStatus = LifecycleStatus.Deleted;
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -265,6 +305,9 @@ namespace AmusementParkAPI.Controllers
         public string? ImageUrl { get; set; }
 
         public bool? IsDiscontinued { get; set; }
+
+        [Range(0, byte.MaxValue)]
+        public byte? Status { get; set; }
     }
 
     public class MenuTypeUpdateDto
@@ -282,5 +325,8 @@ namespace AmusementParkAPI.Controllers
         public string? ImageUrl { get; set; }
 
         public bool? IsDiscontinued { get; set; }
+
+        [Range(0, byte.MaxValue)]
+        public byte? Status { get; set; }
     }
 }

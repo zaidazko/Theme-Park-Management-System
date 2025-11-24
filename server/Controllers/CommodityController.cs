@@ -22,7 +22,7 @@ namespace AmusementParkAPI.Controllers
         public async Task<ActionResult<IEnumerable<object>>> GetCommodityTypes()
         {
             var commodityTypes = await _context.CommodityTypes
-                .Where(c => c.Category == "merchandise" && !c.Is_Discontinued) // Only show active merchandise
+                .Where(c => c.Category == "merchandise" && c.LifecycleStatus == LifecycleStatus.Active) // Only show active merchandise
                 .Select(c => new
                 {
                     commodityTypeId = c.Commodity_TypeID,
@@ -34,7 +34,8 @@ namespace AmusementParkAPI.Controllers
                     displayCategory = c.Display_Category,
                     description = c.Description,
                     imageUrl = c.Image_Url,
-                    isDiscontinued = c.Is_Discontinued
+                    status = c.LifecycleStatus,
+                    isDiscontinued = c.LifecycleStatus == LifecycleStatus.Discontinued
                 })
                 .OrderBy(c => c.commodityTypeId)
                 .ToListAsync();
@@ -47,7 +48,7 @@ namespace AmusementParkAPI.Controllers
         public async Task<ActionResult<IEnumerable<object>>> GetDiscontinuedCommodityTypes()
         {
             var commodityTypes = await _context.CommodityTypes
-                .Where(c => c.Is_Discontinued)
+                .Where(c => c.LifecycleStatus == LifecycleStatus.Discontinued)
                 .Select(c => new
                 {
                     commodityTypeId = c.Commodity_TypeID,
@@ -56,7 +57,8 @@ namespace AmusementParkAPI.Controllers
                     stockQuantity = c.Stock_Quantity,
                     description = c.Description,
                     imageUrl = c.Image_Url,
-                    isDiscontinued = c.Is_Discontinued,
+                    status = c.LifecycleStatus,
+                    isDiscontinued = c.LifecycleStatus == LifecycleStatus.Discontinued,
                     category = c.Category,
                     displayCategory = c.Display_Category
                 })
@@ -89,7 +91,7 @@ namespace AmusementParkAPI.Controllers
                 Image_Url = string.IsNullOrWhiteSpace(request.ImageUrl)
                     ? null
                     : request.ImageUrl.Trim(),
-                Is_Discontinued = false
+                LifecycleStatus = LifecycleStatus.Active
             };
 
             _context.CommodityTypes.Add(commodityType);
@@ -108,7 +110,8 @@ namespace AmusementParkAPI.Controllers
                     category = commodityType.Category,
                     displayCategory = commodityType.Display_Category,
                     imageUrl = commodityType.Image_Url,
-                    isDiscontinued = commodityType.Is_Discontinued
+                    status = commodityType.LifecycleStatus,
+                    isDiscontinued = commodityType.LifecycleStatus == LifecycleStatus.Discontinued
                 });
         }
 
@@ -156,9 +159,15 @@ namespace AmusementParkAPI.Controllers
                     : request.ImageUrl.Trim();
             }
 
-            if (request.IsDiscontinued.HasValue)
+            if (request.Status.HasValue)
             {
-                commodityType.Is_Discontinued = request.IsDiscontinued.Value;
+                commodityType.LifecycleStatus = request.Status.Value;
+            }
+            else if (request.IsDiscontinued.HasValue)
+            {
+                commodityType.LifecycleStatus = request.IsDiscontinued.Value
+                    ? LifecycleStatus.Discontinued
+                    : LifecycleStatus.Active;
             }
 
             if (request.Category != null)
@@ -186,12 +195,17 @@ namespace AmusementParkAPI.Controllers
                 return NotFound();
             }
 
-            if (commodityType.Is_Discontinued)
+            if (commodityType.LifecycleStatus == LifecycleStatus.Discontinued)
             {
                 return NoContent();
             }
 
-            commodityType.Is_Discontinued = true;
+            if (commodityType.LifecycleStatus == LifecycleStatus.Deleted)
+            {
+                return NoContent();
+            }
+
+            commodityType.LifecycleStatus = LifecycleStatus.Discontinued;
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -207,12 +221,33 @@ namespace AmusementParkAPI.Controllers
                 return NotFound();
             }
 
-            if (!commodityType.Is_Discontinued)
+            if (commodityType.LifecycleStatus != LifecycleStatus.Discontinued)
             {
                 return NoContent();
             }
 
-            commodityType.Is_Discontinued = false;
+            commodityType.LifecycleStatus = LifecycleStatus.Active;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // PUT: api/commodity/types/{id}/delete
+        [HttpPut("types/{id}/delete")]
+        public async Task<ActionResult> DeleteCommodityTypePermanently(int id)
+        {
+            var commodityType = await _context.CommodityTypes.FindAsync(id);
+            if (commodityType == null)
+            {
+                return NotFound();
+            }
+
+            if (commodityType.LifecycleStatus == LifecycleStatus.Deleted)
+            {
+                return NoContent();
+            }
+
+            commodityType.LifecycleStatus = LifecycleStatus.Deleted;
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -311,7 +346,7 @@ namespace AmusementParkAPI.Controllers
         public async Task<ActionResult<IEnumerable<object>>> GetStoreProducts(int storeId)
         {
             var products = await _context.CommodityTypes
-                .Where(c => c.Commodity_Store == storeId && c.Category == "merchandise") // Only merchandise
+                .Where(c => c.Commodity_Store == storeId && c.Category == "merchandise" && c.LifecycleStatus == LifecycleStatus.Active) // Only merchandise and active
                 .Select(c => new
                 {
                     commodityTypeId = c.Commodity_TypeID,
@@ -395,6 +430,9 @@ namespace AmusementParkAPI.Controllers
         public string? Description { get; set; }
 
         public bool? IsDiscontinued { get; set; }
+
+        [Range(0, byte.MaxValue)]
+        public byte? Status { get; set; }
 
         public string? Category { get; set; }
         public string? DisplayCategory { get; set; }

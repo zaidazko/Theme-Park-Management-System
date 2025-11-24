@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using Lifecycle = AmusementParkAPI.Models.LifecycleStatus;
 
 namespace AmusementParkAPI.Models
 {
@@ -16,6 +17,7 @@ namespace AmusementParkAPI.Models
         [Column("Image_Url")]
         public string? Image_Url { get; set; }
 
-        public bool Is_Discontinued { get; set; } = false;
+    [Column("Is_Discontinued")]
+    public byte LifecycleStatus { get; set; } = Lifecycle.Active;
     }
 }
