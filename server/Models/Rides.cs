@@ -26,6 +26,9 @@ namespace AmusementParkAPI.Models
         [Column("Description")]
         public string Description { get; set; } = string.Empty;
 
+        [Column("Height_Requirement")]
+        public int? Height_Requirement {get; set;}
+
     }
 
 }

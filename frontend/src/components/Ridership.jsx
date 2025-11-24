@@ -44,7 +44,9 @@ const Ridership = () => {
         minTotalRidership: "",
         maxTotalRidership: "",
         minAverageRidership: "",
-        maxAverageRidership: ""
+        maxAverageRidership: "",
+        minCapacity: "",
+        maxCapacity: ""
     });
 
     const [availableRides, setAvailableRides] = useState(new Set());
@@ -107,7 +109,6 @@ const Ridership = () => {
             setRides(ridesData);
             setReviews(reviewsData);
             setTicketSales(salesWithRides);
-            setTicketTypes(ticketTypesData);
 
             const uniqueRides = new Set();
             ticketTypesData?.forEach((ticket) => {
@@ -119,6 +120,7 @@ const Ridership = () => {
 
         } catch (error) {
             console.error("Error fetching data:", error);
+            setError("Error fetching rides")
         } finally {
             setLoading(false);
         }
@@ -210,6 +212,16 @@ const Ridership = () => {
                 bValue = b.totalReviews || 0;
             }
 
+            else if (sortConfig.key === "heightRequirement") {
+                aValue = a.heightRequirement === "Any Height" ? 100 : parseInt(a.heightRequirement);
+                bValue = b.heightRequirement === "Any Height" ? 100 : parseInt(b.heightRequirement);
+            }
+
+            else if (sortConfig.key == "capacity") {
+                aValue = a.capacity || 0;
+                bValue = b.capacity || 0;
+            }
+
             if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
             if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
             return 0;
@@ -218,7 +230,6 @@ const Ridership = () => {
 
     const computeRideStats = () => {
         const rideStats = {};
-
         rides.forEach((ride) => {
             const rideName = ride.ride_Name;
 
@@ -244,6 +255,9 @@ const Ridership = () => {
                         totalRidership / totalDays
                     ).toFixed(1)
                     : 0;
+            
+            const capacity = ride.capacity
+            const heightRequirement = ride.height_Requirement ?? "Any Height"
 
             rideStats[rideName] = {
                 rideName,
@@ -252,6 +266,8 @@ const Ridership = () => {
                 averageRating,
                 totalReviews,
                 totalDays,
+                heightRequirement,
+                capacity
             };
         });
 
@@ -260,19 +276,11 @@ const Ridership = () => {
 
     const filterRideStats = (stats) => {
         return stats.filter((ride) => {
-            if (statFilters.minAverageRating && parseFloat(ride.averageRating) < parseFloat(statFilters.minAverageRating)) {
+            if (statFilters.minAverageRating && (ride.averageRating === "N/A" || parseFloat(ride.averageRating) < parseFloat(statFilters.minAverageRating))) {
                 return false;
             }
 
-            if (statFilters.maxAverageRating && parseFloat(ride.averageRating) > parseFloat(statFilters.maxAverageRating)) {
-                return false;
-            }
-
-            if (statFilters.minAverageRating && ride.averageRating === "N/A") {
-                return false;
-            }
-
-            if (statFilters.maxAverageRating && ride.averageRating === "N/A") {
+            if (statFilters.maxAverageRating && (ride.averageRating === "N/A" || parseFloat(ride.averageRating) > parseFloat(statFilters.maxAverageRating))) {
                 return false;
             }
 
@@ -289,6 +297,14 @@ const Ridership = () => {
             }
 
             if (statFilters.maxAverageRidership && parseFloat(ride.averageRidershipPerDay) > parseFloat(statFilters.maxAverageRidership)) {
+                return false;
+            }
+
+            if (statFilters.minCapacity && parseInt(ride.capacity) < parseInt(statFilters.minCapacity)){
+                return false;
+            }
+
+            if (statFilters.maxCapacity && parseInt(ride.capacity) > parseInt(statFilters.maxCapacity)){
                 return false;
             }
 
@@ -566,7 +582,7 @@ const Ridership = () => {
                                                         minTotalRidership: "",
                                                         maxTotalRidership: "",
                                                         minAverageRidership: "",
-                                                        maxAverageRidership: ""
+                                                        maxAverageRidership: "",
                                                     })
                                                 }}
                                                 style={{
@@ -856,7 +872,7 @@ const Ridership = () => {
                                             placeholder="0"
                                             min="0"
                                             name="minTotalRidership"
-                                            value={rideStats.minTotalRidership}
+                                            value={statFilters.minTotalRidership}
                                             onChange={handleStatFilterChange}
                                             style={{
                                                 padding: "10px 12px",
@@ -902,7 +918,7 @@ const Ridership = () => {
                                             placeholder="No Limit"
                                             min="0"
                                             name="maxTotalRidership"
-                                            value={rideStats.maxTotalRidership}
+                                            value={statFilters.maxTotalRidership}
                                             onChange={handleStatFilterChange}
                                             style={{
                                                 padding: "10px 12px",
@@ -949,7 +965,7 @@ const Ridership = () => {
                                             min="0"
                                             max="5"
                                             name="minAverageRating"
-                                            value={rideStats.minAverageRating}
+                                            value={statFilters.minAverageRating}
                                             onChange={handleStatFilterChange}
                                             style={{
                                                 padding: "10px 12px",
@@ -996,7 +1012,7 @@ const Ridership = () => {
                                             max="5"
                                             placeholder="5"
                                             name="maxAverageRating"
-                                            value={rideStats.maxAverageRating}
+                                            value={statFilters.maxAverageRating}
                                             onChange={handleStatFilterChange}
                                             style={{
                                                 padding: "10px 12px",
@@ -1042,7 +1058,7 @@ const Ridership = () => {
                                             min="0"
                                             placeholder="0"
                                             name="minAverageRidership"
-                                            value={rideStats.minAverageRidership}
+                                            value={statFilters.minAverageRidership}
                                             onChange={handleStatFilterChange}
                                             style={{
                                                 padding: "10px 12px",
@@ -1088,7 +1104,101 @@ const Ridership = () => {
                                             min="0"
                                             placeholder="No Limit"
                                             name="maxAverageRidership"
-                                            value={rideStats.maxAverageRidership}
+                                            value={statFilters.maxAverageRidership}
+                                            onChange={handleStatFilterChange}
+                                            style={{
+                                                padding: "10px 12px",
+                                                border: "1px solid #d1d5db",
+                                                borderRadius: "6px",
+                                                fontSize: "14px",
+                                                backgroundColor: "white",
+                                                transition: "all 0.2s",
+                                                outline: "none",
+                                            }}
+                                            onFocus={(e) => {
+                                                e.currentTarget.style.borderColor = "#3b82f6";
+                                                e.currentTarget.style.boxShadow =
+                                                    "0 0 0 3px rgba(59, 130, 246, 0.1)";
+                                            }}
+                                            onBlur={(e) => {
+                                                e.currentTarget.style.borderColor = "#d1d5db";
+                                                e.currentTarget.style.boxShadow = "none";
+                                            }}
+                                        />
+                                    </div>
+                                    
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            gap: "0.5rem",
+                                        }}
+                                    >
+                                        <label
+                                            style={{
+                                                fontSize: "0.875rem",
+                                                fontWeight: "600",
+                                                color: "#374151",
+                                                textTransform: "uppercase",
+                                                letterSpacing: "0.05em",
+                                            }}
+                                        >
+                                            Min Capacity
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="50"
+                                            placeholder="0"
+                                            name="minCapacity"
+                                            value={statFilters.minCapacity}
+                                            onChange={handleStatFilterChange}
+                                            style={{
+                                                padding: "10px 12px",
+                                                border: "1px solid #d1d5db",
+                                                borderRadius: "6px",
+                                                fontSize: "14px",
+                                                backgroundColor: "white",
+                                                transition: "all 0.2s",
+                                                outline: "none",
+                                            }}
+                                            onFocus={(e) => {
+                                                e.currentTarget.style.borderColor = "#3b82f6";
+                                                e.currentTarget.style.boxShadow =
+                                                    "0 0 0 3px rgba(59, 130, 246, 0.1)";
+                                            }}
+                                            onBlur={(e) => {
+                                                e.currentTarget.style.borderColor = "#d1d5db";
+                                                e.currentTarget.style.boxShadow = "none";
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            gap: "0.5rem",
+                                        }}
+                                    >
+                                        <label
+                                            style={{
+                                                fontSize: "0.875rem",
+                                                fontWeight: "600",
+                                                color: "#374151",
+                                                textTransform: "uppercase",
+                                                letterSpacing: "0.05em",
+                                            }}
+                                        >
+                                            Max Capacity
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="50"
+                                            placeholder="50"
+                                            name="maxCapacity"
+                                            value={statFilters.maxCapacity}
                                             onChange={handleStatFilterChange}
                                             style={{
                                                 padding: "10px 12px",
@@ -1238,6 +1348,80 @@ const Ridership = () => {
                                     </table>
                                 </div>
                             </div>
+
+                            {/*Ride Features Table*/}
+                            <div className="theme-park-card">
+                                <div className="theme-park-card-header">
+                                    <h3 className="theme-park-card-title">
+                                        Ride Features
+                                    </h3>
+                                </div>
+
+                                <div
+                                    className="theme-park-table-container"
+                                    style={{ overflowX: "auto", overflowY: "auto", width: "100%" }}
+                                >
+                                    <table className="theme-park-table" style={{ tableLayout: "fixed", width: "100%" }}>
+                                        <thead style={{ position: "sticky", top: "0", zIndex: "1" }}>
+                                            <tr>
+                                                <th
+                                                    onClick={() => handleSort("rideName")}
+                                                    className="sortable"
+                                                >
+                                                    Ride
+                                                    {sortConfig.key === "rideName" ?
+                                                        sortConfig.direction === "asc"
+                                                            ? " ↑"
+                                                            : " ↓"
+                                                        : ""}
+                                                </th>
+
+                                                <th
+                                                    onClick={() => handleSort("capacity")}
+                                                    className="sortable"
+                                                >
+                                                    Capacity
+                                                    {sortConfig.key === "capacity" ?
+                                                        sortConfig.direction === "asc"
+                                                            ? " ↑"
+                                                            : " ↓"
+                                                        : ""}
+                                                </th>
+
+                                                <th
+                                                    onClick={() => handleSort("heightRequirement")}
+                                                    className="sortable"
+                                                >
+                                                    Height Requirement
+                                                    {sortConfig.key === "heightRequirement" ?
+                                                        sortConfig.direction === "asc"
+                                                            ? " ↑"
+                                                            : " ↓"
+                                                        : ""}
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {sortedRideStats.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="2" style={{ textAlign: "center", padding: "20px" }}>
+                                                        No data available for the selected filters.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                sortedRideStats.map((stat) => (
+                                                    <tr key={stat.rideName}>
+                                                        <td>{stat.rideName}</td>
+                                                        <td>{stat.capacity}</td>
+                                                        <td>{isNaN(stat.heightRequirement) ? stat.heightRequirement : `${stat.heightRequirement}"`}</td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
                             {/*Ridership History Table*/}
                             <div className="theme-park-card">
                                 <div className="theme-park-card-header">

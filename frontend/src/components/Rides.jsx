@@ -73,12 +73,15 @@ const Rides = () => {
     ride_Name: "",
     capacity: "",
     image: "",
+    description: "",
+    heightRequirement: ""
   });
   const [createRideForm, setCreateRideForm] = useState({
     ride_Name: "",
     capacity: "",
     image: DEFAULT_IMAGE,
-    description: ""
+    description: "",
+    heightRequirement: ""
   });
   const [showRideDetailModal, setShowRideDetailModal] = useState(false);
   const [detailRide, setDetailRide] = useState(null);
@@ -141,7 +144,8 @@ const Rides = () => {
         capacity: Number.parseInt(createRideForm.capacity, 10) || 0,
         image: createRideForm.image || DEFAULT_IMAGE,
         status: "Operational",
-        description: createRideForm.description
+        description: createRideForm.description,
+        heightRequirement: createRideForm.heightRequirement
       };
 
       await ridesAPI.createRide(rideData);
@@ -150,7 +154,8 @@ const Rides = () => {
         ride_Name: "",
         capacity: "",
         image: DEFAULT_IMAGE,
-        description: ""
+        description: "",
+        heightRequirement: ""
       });
       setShowCreateRideModal(false);
       await loadRides();
@@ -192,7 +197,8 @@ const Rides = () => {
       ride_Name: ride.ride_Name || "",
       capacity: ride.capacity || "",
       image: ride.image || "",
-      description: ride.description || ""
+      description: ride.description || "",
+      heightRequirement: ride.height_Requirement || ""
     });
     setShowEditRideModal(true);
   };
@@ -211,7 +217,8 @@ const Rides = () => {
         Capacity: Number.parseInt(rideFormData.capacity, 10) || selectedRide.capacity,
         Image: rideFormData.image || selectedRide.image || DEFAULT_IMAGE,
         Status: selectedRide.status || "Operational",
-        Description: rideFormData.description || selectedRide.description
+        Description: rideFormData.description || selectedRide.description,
+        Height_Requirement: rideFormData.heightRequirement || selectedRide.heightRequirement
       };
 
       await ridesAPI.updateRideData(selectedRide.ride_ID, updateRideData);
@@ -226,6 +233,7 @@ const Rides = () => {
   };
 
   const handleViewDetails = async (ride) => {
+    console.log(ride)
     setDetailRide(ride);
     setShowRideDetailModal(true);
     setDetailLoading(true);
@@ -844,6 +852,21 @@ const Rides = () => {
                 />
               </div>
 
+              <div className="theme-park-form-row" style={{marginTop:"10px"}}>
+                <label className="theme-park-label">Height Requirement (Inches)</label>
+                <input
+                  type="number"
+                  value={createRideForm.heightRequirement}
+                  onChange={(e) =>
+                    setCreateRideForm({
+                      ...createRideForm,
+                      heightRequirement: e.target.value,
+                    })
+                  }
+                  className="theme-park-input"
+                />
+              </div>
+
               <div style={styles.modalFooter}>
                 <button
                   onClick={() => setShowCreateRideModal(false)}
@@ -928,6 +951,23 @@ const Rides = () => {
                     setRideFormData({
                       ...rideFormData,
                       description: e.target.value,
+                    })
+                  }
+                  className="theme-park-input"
+                />
+
+              </div>
+
+              <div className="theme-park-form-row" style={{marginTop:"10px"}}>
+                <label className="theme-park-label">Height Requirement (Inches)</label>
+
+                <input
+                  type="number"
+                  value={rideFormData.heightRequirement}
+                  onChange = {(e) =>
+                    setRideFormData({
+                      ...rideFormData,
+                      heightRequirement: e.target.value,
                     })
                   }
                   className="theme-park-input"
@@ -1026,7 +1066,8 @@ const Rides = () => {
                     🎢 {toRideName(detailRide)}
                   </h2>
                   <div style={{ color: "#475569", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                    <span>👥 Capacity {detailRide?.capacity ?? detailRide?.Capacity ?? "—"}</span>
+                    <span>👥 Capacity: {detailRide?.capacity ?? detailRide?.Capacity ?? "—"}</span>
+                    <span>📏 Height Requirement: {detailRide?.height_Requirement ? `${detailRide?.height_Requirement}"` : "Any Height"}</span>
                     <span>{getRideStatusBadge(detailRide?.status ?? detailRide?.Status)}</span>
                   </div>
                 </div>
