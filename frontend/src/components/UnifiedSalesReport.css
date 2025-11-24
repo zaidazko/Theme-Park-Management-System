@@ -11,6 +11,33 @@
   gap: 0.5rem;
 }
 
+/* Inline label:input layout for main filter controls */
+.filter-inline {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem;
+}
+.filter-inline > label {
+  display: inline-block;
+  min-width: auto;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text-color);
+  white-space: nowrap;
+}
+.filter-inline > label::after {
+  content: ":";
+  margin-left: 6px;
+  color: var(--muted-color, #6b7280);
+}
+.filter-inline > input,
+.filter-inline > select,
+.filter-inline > .quick-range-buttons {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 .theme-park-filter-item label {
   font-weight: 600;
   color: var(--text-color);
@@ -353,3 +380,177 @@
 .quick-highlight-value span:first-child {
   color: #111827;
 }
+
+/* Local component utility classes moved from inline JSX */
+.filters-actions-row {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+.apply-filters-btn {
+  padding: 0.625rem 1.5rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.12s ease;
+}
+.apply-filters-btn:hover { background-color: #2563eb; transform: translateY(-1px); }
+.filter-error { color: #dc2626; font-size: 0.875rem; display: flex; align-items: center; margin-left: 0.5rem; }
+
+.card--mt-lg { margin-top: 1.5rem; }
+.total-revenue-amount { font-size: 1.25rem; font-weight: 600; color: #1f2937; }
+.revenue-chart-wrapper { padding: 1.5rem; height: 400px; }
+.revenue-summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb; }
+.summary-item { text-align: center; }
+.summary-label { font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem; }
+.summary-value { font-size: 1.125rem; font-weight: 600; color: var(--meta-color, #111827); }
+
+/* category color hooks for summary tiles */
+.summary-item[data-category="tickets"] .summary-value { color: #3b82f6; }
+.summary-item[data-category="commodities"] .summary-value { color: #10b981; }
+.summary-item[data-category="menu"] .summary-value { color: #fbbf24; }
+
+.breakdown-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 1.5rem; }
+.breakdown-card .theme-park-card-header h3 { font-size: 1rem; }
+.breakdown-card .breakdown-value { font-size: 1.125rem; font-weight: 600; }
+.breakdown-inner { padding: 1rem; display: flex; flex-direction: column; height: 100%; }
+.breakdown-scroll { flex: 1; min-height: 0; overflow: auto; }
+.breakdown-chart-box { height: 280px; position: relative; }
+
+.no-data { text-align: center; padding: 2rem; color: #6b7280; }
+
+.theme-park-card-header.align-center { align-items: center; gap: 1rem; }
+.sales-history-header-right { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
+.pagination-info { display: flex; align-items: center; gap: 0.5rem; }
+.pagination-input { width: 50px; padding: 0.4rem 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.875rem; }
+.page-button { margin: 5px; }
+
+.table-footer { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-top: 1px solid #e5e7eb; font-size: 0.875rem; color: #6b7280; }
+.pagination-actions { display: flex; justify-content: center; align-items: center; margin: 20px 0; gap: 10px; }
+.muted-text { color: #6b7280; }
+
+/* Total revenue box + chart layout */
+.total-revenue-section .theme-park-card-header { margin-bottom: 8px; }
+.total-revenue-container { display: flex; gap: 16px; align-items: stretch; width: 100%; }
+.total-revenue-chart { flex: 1 1 0; min-width: 0; background: var(--card-bg, #fff); padding: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.total-revenue-left {
+  flex: 0 0 280px;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.total-revenue-box {
+  background: linear-gradient(180deg, rgba(59,130,246,0.06), rgba(59,130,246,0.03));
+  border: 1px solid rgba(59,130,246,0.12);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.04);
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+.most-profitable-box {
+  background: linear-gradient(180deg, rgba(16,185,129,0.03), rgba(16,185,129,0.01));
+  border: 1px solid rgba(16,185,129,0.08);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 4px 10px rgba(15,23,42,0.03);
+}
+.total-revenue-header { font-size: 0.9rem; color: #374151; font-weight: 600; }
+.total-revenue-value { font-size: 1.8rem; font-weight: 700; color: #0b2545; line-height: 1; }
+.most-profitable {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(15,23,42,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;  
+}
+.mp-label { font-size: 0.8rem; color: #6b7280; font-weight: 600; }
+.mp-name {
+  font-size: 1rem;
+  color: #111827;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  min-width: 0;
+  display: block;
+}
+
+
+
+.mp-stats { font-size: 0.85rem; color: #4b5563; }
+
+@media (max-width: 900px) {
+  .total-revenue-container { flex-direction: column; }
+  .total-revenue-box { width: 100%; }
+}
+
+/* Dropdown alignment hook: show menu anchored to the right edge of the control */
+.theme-park-filter-group.dropdown-left .theme-park-dropdown-menu {
+  left: auto;
+  right: 0;
+  width: 280px;
+}
+
+/* Quick range buttons */
+.quick-range-group .quick-range-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+.quick-range-btn {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(15,23,42,0.06);
+  background: linear-gradient(180deg, #ffffff, #fbfdff);
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #0b2545;
+  box-shadow: 0 2px 6px rgba(11,37,69,0.04);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+.quick-range-btn:hover { background: linear-gradient(180deg, #f8fafc, #eef6ff); transform: translateY(-2px); box-shadow: 0 6px 18px rgba(11,37,69,0.08); }
+.quick-range-btn:active { transform: translateY(1px); box-shadow: 0 2px 6px rgba(11,37,69,0.06); }
+.quick-range-btn:focus { outline: none; box-shadow: 0 0 0 4px rgba(59,130,246,0.12); }
+
+/* Slightly different size on very small screens */
+@media (max-width: 520px) {
+  .filter-inline > label { min-width: 90px; font-size: 0.95rem; }
+  .quick-range-btn { padding: 6px 8px; font-size: 0.82rem; }
+}
+
+/* Shrink text if needed to keep values inside the box */
+.total-revenue-value { font-size: clamp(1.2rem, 3.2vw, 1.8rem); }
+.mp-name {
+  font-size: clamp(0.75rem, 2.0vw, 1rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 100%;
+}
+.mp-stats { font-size: clamp(0.7rem, 1.8vw, 0.85rem); color: #4b5563; }
+
+/* Quick Highlights moved earlier but ensure spacing class exists */
+.quick-highlights-card { margin-top: 1rem; }
+.quick-highlights-grid { padding: 1rem; display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; }
+.quick-highlight-tile { text-align: center; background: #fff; padding: 0.6rem; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: center; gap: 0.5rem; transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease; }
+.quick-highlight-tile:hover { transform: translateY(-6px); box-shadow: 0 8px 28px rgba(15,23,42,0.08); background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%); }
+.quick-highlight-title { font-size: 0.875rem; color: #6b7280; letter-spacing: 0.2px; }
+.quick-highlight-value { display: flex; justify-content: center; align-items: baseline; gap: 0.5rem; font-size: 1rem; font-weight: 700; }
+.quick-highlight-count { font-size: 0.85rem; color: #9ca3af; font-weight: 600; }
+
+@media (max-width: 900px) { .quick-highlights-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .quick-highlights-grid { grid-template-columns: 1fr; } }

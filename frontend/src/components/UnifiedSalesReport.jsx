@@ -467,10 +467,10 @@ const UnifiedSalesReport = () => {
     const commodityRevenue = sumRevenue(filteredCommoditySales);
     const menuRevenue = sumRevenue(filteredMenuSales);
 
-    // Use unfiltered sales for breakdown (circle charts show all items, not filtered)
-    const ticketBreakdown = buildBreakdown(ticketSales);
-    const commodityBreakdown = buildBreakdown(commoditySales);
-    const menuBreakdown = buildBreakdown(menuSales);
+  // Use filtered sales for breakdown so charts update with the applied filters
+  const ticketBreakdown = buildBreakdown(filteredTicketSales);
+  const commodityBreakdown = buildBreakdown(filteredCommoditySales);
+  const menuBreakdown = buildBreakdown(filteredMenuSales);
 
     return {
       totalRevenue: ticketRevenue + commodityRevenue + menuRevenue,
@@ -494,6 +494,23 @@ const UnifiedSalesReport = () => {
     ],
     [filteredTicketSales, filteredCommoditySales, filteredMenuSales]
   );
+
+  // Most profitable item (based on currently applied filters)
+  const mostProfitableItem = useMemo(() => {
+    const map = new Map();
+    (allFilteredSales || []).forEach((s) => {
+      const name = (s.itemName || "Unknown").toString();
+      const qty = s.quantity && s.quantity > 0 ? s.quantity : 1;
+      const rev = Number.isFinite(s.amount) ? s.amount : 0;
+      const prev = map.get(name) ?? { units: 0, revenue: 0 };
+      prev.units += qty;
+      prev.revenue += rev;
+      map.set(name, prev);
+    });
+    const arr = Array.from(map.entries()).map(([name, v]) => ({ name, units: v.units, revenue: v.revenue }));
+    arr.sort((a, b) => b.revenue - a.revenue);
+    return arr.length > 0 ? arr[0] : { name: "N/A", units: 0, revenue: 0 };
+  }, [allFilteredSales]);
 
   const getSortedSales = (sales, sort) => {
     if (!sort.key) {
@@ -728,6 +745,46 @@ const UnifiedSalesReport = () => {
     }));
   };
 
+  const setQuickRange = (rangeLabel) => {
+    const today = new Date();
+    const end = new Date(today);
+    let start = null;
+
+    switch (rangeLabel) {
+      case "today":
+        start = new Date(today);
+        break;
+      case "7d":
+        start = new Date();
+        start.setDate(today.getDate() - 6);
+        break;
+      case "30d":
+        start = new Date();
+        start.setDate(today.getDate() - 29);
+        break;
+      case "6m":
+        start = new Date();
+        start.setMonth(today.getMonth() - 6);
+        break;
+      case "1y":
+        start = new Date();
+        start.setFullYear(today.getFullYear() - 1);
+        break;
+      case "all":
+      default:
+        start = null;
+        break;
+    }
+
+    const toISODate = (d) => d ? d.toISOString().slice(0,10) : "";
+
+    setPendingFilters((prev) => ({
+      ...prev,
+      startDate: start ? toISODate(start) : "",
+      endDate: end ? toISODate(end) : "",
+    }));
+  };
+
   const validateAndApplyFilters = () => {
     setFilterError("");
 
@@ -846,7 +903,7 @@ const UnifiedSalesReport = () => {
             </h3>
           </div>
           <div className="theme-park-filter-row">
-            <div className="theme-park-filter-item">
+            <div className="theme-park-filter-item filter-inline">
               <label>Start Date</label>
               <input
                 type="date"
@@ -855,7 +912,7 @@ const UnifiedSalesReport = () => {
                 onChange={handleFilterChange}
               />
             </div>
-            <div className="theme-park-filter-item">
+            <div className="theme-park-filter-item filter-inline">
               <label>End Date</label>
               <input
                 type="date"
@@ -864,7 +921,46 @@ const UnifiedSalesReport = () => {
                 onChange={handleFilterChange}
               />
             </div>
-            <div className="theme-park-filter-item">
+
+            <div className="theme-park-filter-item filter-inline quick-range-group">
+              <label>Quick Range</label>
+              <div className="quick-range-buttons">
+                <button type="button" className="quick-range-btn" onClick={() => setQuickRange('today')}>Today</button>
+                <button type="button" className="quick-range-btn" onClick={() => setQuickRange('7d')}>7 days</button>
+                <button type="button" className="quick-range-btn" onClick={() => setQuickRange('30d')}>30 days</button>
+                <button type="button" className="quick-range-btn" onClick={() => setQuickRange('6m')}>6 months</button>
+                <button type="button" className="quick-range-btn" onClick={() => setQuickRange('1y')}>1 year</button>
+                <button type="button" className="quick-range-btn" onClick={() => setQuickRange('all')}>All time</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="theme-park-filter-row">
+            <div className="theme-park-filter-item filter-inline">
+              <label>Min Item Revenue</label>
+              <input
+                type="number"
+                name="minRevenue"
+                value={pendingFilters.minRevenue}
+                onChange={handleFilterChange}
+                min="0"
+                step="0.01"
+                placeholder="0"
+              />
+            </div>
+            <div className="theme-park-filter-item filter-inline">
+              <label>Max Item Revenue</label>
+              <input
+                type="number"
+                name="maxRevenue"
+                value={pendingFilters.maxRevenue}
+                onChange={handleFilterChange}
+                min="0"
+                step="0.01"
+                placeholder="No limit"
+              />
+            </div>
+            <div className="theme-park-filter-item filter-inline">
               <label>Payment</label>
               <select
                 name="paymentMethod"
@@ -878,34 +974,6 @@ const UnifiedSalesReport = () => {
                 <option value="mobile">Mobile</option>
               </select>
             </div>
-            
-          </div>
-
-          <div className="theme-park-filter-row">
-            <div className="theme-park-filter-item">
-              <label>Min Item Revenue</label>
-              <input
-                type="number"
-                name="minRevenue"
-                value={pendingFilters.minRevenue}
-                onChange={handleFilterChange}
-                min="0"
-                step="0.01"
-                placeholder="0"
-              />
-            </div>
-            <div className="theme-park-filter-item">
-              <label>Max Item Revenue</label>
-              <input
-                type="number"
-                name="maxRevenue"
-                value={pendingFilters.maxRevenue}
-                onChange={handleFilterChange}
-                min="0"
-                step="0.01"
-                placeholder="No limit"
-              />
-            </div>
           </div>
 
           <div className="theme-park-filter-row">
@@ -916,7 +984,7 @@ const UnifiedSalesReport = () => {
               const dropdownDisabled = !pendingFilters.saleType[key];
 
               return (
-                <div className="theme-park-filter-group" key={`filter-${key}`}>
+                <div className={`theme-park-filter-group ${['tickets','commodities','menu'].includes(key) ? 'dropdown-left' : ''}`} key={`filter-${key}`}>
                   <div className="theme-park-filter-main">
                     <label className="theme-park-filter-label">
                       <input
@@ -982,29 +1050,15 @@ const UnifiedSalesReport = () => {
             })}
           </div>
 
-          <div style={{ marginTop: "1rem", display: "flex", gap: "1rem" }}>
+    <div className="filters-actions-row">
             <button
               onClick={validateAndApplyFilters}
-              style={{
-                padding: "0.625rem 1.5rem",
-                backgroundColor: "#3b82f6",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                fontSize: "1rem",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "background-color 0.2s",
-              }}
-              onMouseEnter={(e) => (e.target.style.backgroundColor = "#2563eb")}
-              onMouseLeave={(e) => (e.target.style.backgroundColor = "#3b82f6")}
+              className="apply-filters-btn"
             >
               Apply Filters
             </button>
             {filterError && (
-              <div style={{ color: "#dc2626", fontSize: "0.875rem", display: "flex", alignItems: "center" }}>
-                ⚠️ {filterError}
-              </div>
+              <div className="filter-error">⚠️ {filterError}</div>
             )}
           </div>
         </div>
@@ -1016,66 +1070,47 @@ const UnifiedSalesReport = () => {
           </div>
         )}
 
-        <div className="theme-park-card" style={{ marginTop: "1.5rem" }}>
+        <div className="theme-park-card card--mt-lg total-revenue-section">
           <div className="theme-park-card-header">
             <h3 className="theme-park-card-title">
               <span>💰</span> Total Revenue Breakdown
             </h3>
-            <div
-              style={{ fontSize: "1.25rem", fontWeight: "600", color: "#1f2937" }}
-            >
-              {formatCurrency(aggregateStats.totalRevenue)}
+          </div>
+
+          <div className="total-revenue-container">
+            <div className="total-revenue-left">
+              <div className="total-revenue-box">
+                <div className="total-revenue-header">Total Revenue</div>
+                <div className="total-revenue-value">{formatCurrency(aggregateStats.totalRevenue)}</div>
+              </div>
+
+              <div className="most-profitable-box">
+                <div className="mp-label">Most profitable item</div>
+                <div className="mp-name" title={mostProfitableItem.name}>{mostProfitableItem.name}</div>
+                <div className="mp-stats">{mostProfitableItem.units} sold • {formatCurrency(mostProfitableItem.revenue)}</div>
+              </div>
+            </div>
+
+            <div className="total-revenue-chart">
+              <Doughnut data={revenueChartData} options={revenueChartOptions} />
             </div>
           </div>
-          <div style={{ padding: "1.5rem", height: "400px" }}>
-            <Doughnut data={revenueChartData} options={revenueChartOptions} />
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "1rem",
-              padding: "1rem 1.5rem",
-              borderTop: "1px solid #e5e7eb",
-            }}
-          >
+
+          <div className="revenue-summary-grid">
             {CATEGORY_ORDER.map((key) => {
               const meta = CATEGORY_META[key];
               const revenue = aggregateStats[meta.revenueKey] ?? 0;
               return (
-                <div key={`summary-${key}`} style={{ textAlign: "center" }}>
-                  <div
-                    style={{
-                      fontSize: "0.875rem",
-                      color: "#6b7280",
-                      marginBottom: "0.25rem",
-                    }}
-                  >
-                    {meta.label} Revenue
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "1.125rem",
-                      fontWeight: "600",
-                      color: meta.color,
-                    }}
-                  >
-                    {formatCurrency(revenue)}
-                  </div>
+                <div key={`summary-${key}`} className="summary-item" data-category={key}>
+                  <div className="summary-label">{meta.label} Revenue</div>
+                  <div className="summary-value">{formatCurrency(revenue)}</div>
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "1.5rem",
-            marginTop: "1.5rem",
-          }}
-        >
+        <div className="breakdown-grid">
           {CATEGORY_ORDER.map((key) => {
             const meta = CATEGORY_META[key];
             const revenue = aggregateStats[meta.revenueKey] ?? 0;
@@ -1146,37 +1181,21 @@ const UnifiedSalesReport = () => {
             };
 
             return (
-              <div className="theme-park-card" key={`breakdown-${key}`}>
+              <div className="theme-park-card breakdown-card" key={`breakdown-${key}`} data-category={key}>
                 <div className="theme-park-card-header">
-                  <h3 className="theme-park-card-title" style={{ fontSize: "1rem" }}>
+                  <h3 className="theme-park-card-title">
                     <span>{meta.icon}</span> {meta.label} Revenue
                   </h3>
-                  <div
-                    style={{
-                      fontSize: "1.125rem",
-                      fontWeight: "600",
-                      color: meta.color,
-                    }}
-                  >
-                    {formatCurrency(revenue)}
-                  </div>
+                  <div className="breakdown-value">{formatCurrency(revenue)}</div>
                 </div>
-                <div style={{ padding: "1rem", display: "flex", flexDirection: "column", height: "100%" }}>
-                  <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+                <div className="breakdown-inner">
+                  <div className="breakdown-scroll">
                     {breakdown.length > 0 ? (
-                      <div style={{ height: "280px", position: "relative" }}>
+                      <div className="breakdown-chart-box">
                         <Doughnut data={chartData} options={chartOptions} />
                       </div>
                     ) : (
-                      <div
-                        style={{
-                          textAlign: "center",
-                          padding: "2rem",
-                          color: "#6b7280",
-                        }}
-                      >
-                        No {meta.label.toLowerCase()} sales data available
-                      </div>
+                      <div className="no-data">No {meta.label.toLowerCase()} sales data available</div>
                     )}
                   </div>
                 </div>
@@ -1218,11 +1237,11 @@ const UnifiedSalesReport = () => {
         </div>
 
         <div className="theme-park-card">
-          <div className="theme-park-card-header" style={{ alignItems: 'center', gap: '1rem' }}>
+          <div className="theme-park-card-header align-center">
               <h3 className="theme-park-card-title">
                 Sales History
               </h3>
-              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div className="sales-history-header-right">
                 <div className="history-search-wrapper">
                   <input
                     type="text"
@@ -1358,18 +1377,8 @@ const UnifiedSalesReport = () => {
             </table>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "1rem",
-              borderTop: "1px solid #e5e7eb",
-              fontSize: "0.875rem",
-              color: "#6b7280",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <div className="table-footer">
+            <div className="pagination-info">
               <label>Page:</label>
               <input
                 type="number"
@@ -1380,33 +1389,16 @@ const UnifiedSalesReport = () => {
                   const page = Math.max(1, Math.min(totalSalesPages, parseInt(e.target.value) || 1));
                   setCurrentSalesPage(page);
                 }}
-                style={{
-                  width: "50px",
-                  padding: "0.4rem 0.5rem",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "4px",
-                  fontSize: "0.875rem",
-                }}
+                className="pagination-input"
               />
               <span>of {totalSalesPages}</span>
             </div>
-            <div style={{ color: "#6b7280" }}>
-              {visibleSales.length} total sales
-            </div>
+            <div className="muted-text">{visibleSales.length} total sales</div>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              margin: "20px 0px 20px 0px",
-              gap: "10px",
-            }}
-          >
+          <div className="pagination-actions">
             <button
-              className="theme-park-btn theme-park-btn-primary theme-park-btn-sm"
-              style={{ margin: "5px" }}
+              className="theme-park-btn theme-park-btn-primary theme-park-btn-sm page-button"
               onClick={() => setCurrentSalesPage((page) => Math.max(page - 1, 1))}
               disabled={currentSalesPage === 1}
             >
@@ -1414,8 +1406,7 @@ const UnifiedSalesReport = () => {
             </button>
 
             <button
-              className="theme-park-btn theme-park-btn-primary theme-park-btn-sm"
-              style={{ margin: "5px" }}
+              className="theme-park-btn theme-park-btn-primary theme-park-btn-sm page-button"
               onClick={() => setCurrentSalesPage((page) => Math.min(page + 1, totalSalesPages))}
               disabled={currentSalesPage === totalSalesPages}
             >
@@ -1423,7 +1414,7 @@ const UnifiedSalesReport = () => {
             </button>
           </div>
           
-          <div className="theme-park-card quick-highlights-card" style={{ marginTop: '1rem' }}>
+          <div className="theme-park-card quick-highlights-card card--mt-lg">
             <div className="theme-park-card-header">
               <h3 className="theme-park-card-title">Sales Summary</h3>
             </div>
