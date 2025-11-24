@@ -1,124 +1,26 @@
 import { useState, useEffect } from "react";
 import "./ThemePark.css";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js/auto";
-import { Line } from "react-chartjs-2";
 import "./UnifiedSalesReport.css";
-import { ridesAPI, ReviewsAPI } from "../api";
+import { ReviewsAPI } from "../api";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-function Reviews({ onSwitchToMakeReview }) {
+const Reviews = () => {
   const [reviews, setReviews] = useState([]);
-  const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [ticketSales, setTicketSales] = useState([]);
-  const [ticketTypes, setTicketTypes] = useState([]);
-  const [filters, setFilters] = useState({
-    startDate: "",
-    endDate: "",
-    ride: "",
-  });
+  const [rides, setRides] = useState([])
 
-  const [availableRides, setAvailableRides] = useState(new Set());
-  
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "asc"
-  })
-
-  const [sortHistoryConfig, setSortHistoryConfig] = useState({
-    key: null,
-    direction: "asc"
-  })
+  const [message, setMessage] = useState("")
+  const [selectedReview, setSelectedReview] = useState(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const isEmployee =
     currentUser.userType === "Employee" || currentUser.userType === "Manager";
 
   useEffect(() => {
-    if (isEmployee) {
-      fetchRidershipData();
-    } else {
       fetchMyReviews();
-    }
+      fetchRides();
   }, []);
-
-  const fetchRidershipData = async () => {
-    setLoading(true);
-    try{
-      const[ticketSaleResponse, ticketTypeResponse, discontinuedTicketTypeResponse] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/ticket/sales`),
-        fetch(`${import.meta.env.VITE_API_URL}/ticket/types`),
-        fetch(`${import.meta.env.VITE_API_URL}/ticket/types/discontinued`)
-      ]);
-
-      if (!ticketSaleResponse.ok) throw new Error("Failed to fetch ticket sales");
-      if (!ticketTypeResponse.ok) throw new Error("Failed to fetch ticket types");
-      if (!discontinuedTicketTypeResponse.ok) throw new Error("Failed to fetch discontinued ticket types");
-
-      const [ridesData, reviewsData, ticketSalesData, ticketTypesData, discontinuedTicketTypesData] = await Promise.all([
-        ridesAPI.getAllRides(),
-        ReviewsAPI.getAllReviews(),
-        ticketSaleResponse.json(),
-        ticketTypeResponse.json(),
-        discontinuedTicketTypeResponse.json()
-      ]);
-
-      const salesWithRides = ticketSalesData.map((sale) => {
-        let ticketType = ticketTypesData.find((t) => t.typeName === sale.ticketType);
-        
-        if(!ticketType){
-          ticketType = discontinuedTicketTypesData.find((t) => t.typeName === sale.ticketType);
-        };
-
-        if(!ticketType) return sale 
-
-        const ride = ridesData.find((r) => r.ride_ID === ticketType.rideId)
-        return{
-          ...sale,
-          rideName: ride.ride_Name,
-        };
-      });
-
-      setRides(ridesData);
-      setReviews(reviewsData);
-      setTicketSales(salesWithRides);
-      setTicketTypes(ticketTypesData);
-
-      const uniqueRides = new Set();
-      ticketTypesData?.forEach((ticket) => {
-        if (ticket.rideName) {
-          uniqueRides.add(ticket.rideName);
-        }
-      });
-      setAvailableRides(uniqueRides);
-
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // For Customers - Show their reviews
   const fetchMyReviews = async () => {
@@ -137,6 +39,7 @@ function Reviews({ onSwitchToMakeReview }) {
       if (!response.ok) throw new Error("Failed to fetch reviews");
       const data = await response.json();
       setReviews(data);
+      console.log(data)
     } catch (err) {
       setError("Failed to load reviews");
       console.error(err);
@@ -145,272 +48,180 @@ function Reviews({ onSwitchToMakeReview }) {
     }
   };
 
-  const filterSales = () => {
-    return (ticketSales || []).filter((sale) => {
-      const rawDate = sale.purchaseDate;
-      if (!rawDate) return false;
-
-      const saleDateStr = sale.purchaseDate.split("T")[0];
-
-      if (filters.startDate && saleDateStr < filters.startDate) {
-        return false;
-      }
-
-      if (filters.endDate && saleDateStr > filters.endDate) {
-        return false;
-      }
-
-      if(filters.ride) {
-        const rideName = sale.rideName;
-        if (!rideName || rideName !== filters.ride) return false;
-      }
-      
-      return true;
-    });
-  };
-
-  const filteredSales = filterSales()
-
-  const handleFilterChange = (e) => {
-    const {name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }) );
-  };
-
-  const getDaysInFilterRange = (data) => {
-    if (!filters.startDate || !filters.endDate){
-      const totalDates = new Set(data.map(item => new Date(item.purchaseDate).toDateString()));
-      return totalDates.size;
+  const fetchRides = async () => {
+    if(!currentUser.customerId) {
+      setError("Please login first");
+      return;
     }
-    const start = new Date(filters.startDate);
-    const end = new Date(filters.endDate);
-    const diff = (end - start) / (1000 * 60 * 60 * 24);
-    return Math.max(1, Math.round(diff + 1));
+
+    try {
+      const [rideResponse, reviewResponse] = await Promise.all([
+        fetch(`${import.meta.env.VITE_API_URL}/rides`),
+        fetch(`${import.meta.env.VITE_API_URL}/reviews/customer/${currentUser.customerId}`)
+      ]);
+
+      if (!rideResponse.ok) throw new Error("Failed to fetch rides");
+      if (!reviewResponse.ok) throw new Error("Failed to fetch reviews")
+
+      const [rideData, reviewData] = await Promise.all([
+        rideResponse.json(),
+        reviewResponse.json()
+      ]);
+
+      const reviewedRides = reviewData.map(r => r.rideName);
+      const filteredRides = rideData.filter(r => !reviewedRides.includes(r.ride_Name));
+
+      setRides(filteredRides);
+    } catch (err) {
+      setError("Failed to load rides");
+    }
   };
+  
+  const [showMakeReviewModal, setShowMakeReviewModal] = useState(false);
+  const [makeReviewFormData, setMakeReviewFormData] = useState({
+    ride: "",
+    score: "",
+    feedback: "",
+  })
 
-  const handleSort = (key) => {
-    setSortConfig((prev) => {
-      if (prev.key === key) {
-        return {
-          key,
-          direction: prev.direction === "asc" ? "desc" : "asc",
-        };
-      }
-      return { key, direction: "asc" };
-    });
+  const handleChange = (e) => {
+    setMakeReviewFormData({ ...makeReviewFormData, [e.target.name]: e.target.value });
   };
-
-  const getSortedData = (data) => {
-    if (!sortConfig.key) return data;
-
-    return [...data].sort((a,b) => {
-      let aValue = a[sortConfig.key];
-      let bValue = b[sortConfig.key];
-
-      if (sortConfig.key === "rideName") {
-        aValue = a.rideName || "";
-        bValue = b.rideName || "";
-      }
-
-      else if (sortConfig.key === "totalRidership"){
-        aValue = a.totalRidership || 0;
-        bValue = b.totalRidership || 0;
-      }
-
-      else if (sortConfig.key ==="averageRidershipPerDay"){
-        aValue = parseFloat(a.averageRidershipPerDay) || 0;
-        bValue = parseFloat(b.averageRidershipPerDay) || 0;
-      }
-
-      else if (sortConfig.key === "averageRating"){
-        aValue = a.averageRating === "N/A" ? 0 : parseFloat(a.averageRating);
-        bValue = b.averageRating === "N/A" ? 0 : parseFloat(b.averageRating);
-      }
-
-      else if (sortConfig.key === "totalReviews"){
-        aValue = a.totalReviews || 0;
-        bValue = b.totalReviews || 0;
-      }
-
-      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-      return 0;
-    });
-  };
-
-  const computeRideStats = () => {
-    const rideStats = {};
-
-    rides.forEach((ride) => {
-      const rideName = ride.ride_Name;
-
-      const rideSales = filterSales().filter(
-        (sale) => sale.rideName === rideName
-      );
-
-      const rideReviews = reviews.filter((r) => r.rideName === rideName);
-
-      const totalRidership = rideSales.length;
-      const totalReviews = rideReviews.length;
-      const averageRating =
-        totalReviews > 0
-          ? (
-              rideReviews.reduce((sum, r) => sum + r.score, 0) / totalReviews
-            ).toFixed(2)
-          : "N/A";
-      
-      const totalDays = getDaysInFilterRange(rideSales)
-      const averageRidershipPerDay = 
-            totalDays > 0
-            ? (
-              totalRidership / totalDays
-            ).toFixed(1)
-            : 0;
-
-      rideStats[rideName] = {
-        rideName,
-        totalRidership,
-        averageRidershipPerDay,
-        averageRating,
-        totalReviews,
-        totalDays,
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    
+    if (!currentUser.customerId) {
+      setError("Please login first");
+      return;
+    }
+    
+    try {
+      const data = {
+        Ride_ID: parseInt(makeReviewFormData.ride),
+        Customer_ID: parseInt(currentUser.customerId),
+        Rating: parseInt(makeReviewFormData.score),
+        Feedback: makeReviewFormData.feedback,
+        Date: new Date().toISOString(),
       };
-    });
-
-    return Object.values(rideStats);
+      await ReviewsAPI.createReview(data);
+      setMessage("Review created successfully!")
+      setShowMakeReviewModal(false)
+      fetchMyReviews()
+    } catch (error) {
+      console.error("Submission error:", error);
+      if (error.response) {
+        console.error("Backend said:", error.response.data);
+      }
+      setError("Review submission failed");
+    } finally {
+      setLoading(false);
+    }
   };
-  const rideStats = computeRideStats();
-
-  const sortedRideStats = getSortedData(rideStats);
-
-  const handleHistorySort = (key) => {
-    setSortHistoryConfig((prev) => {
-      if (prev.key === key) {
-        return {
-          key,
-          direction: prev.direction === "asc" ? "desc" : "asc",
-        };
-      }
-      return { key, direction: "asc" };
+  
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [reviewEditFormData, setReviewEditFormData] = useState({
+    score: "",
+    feedback: ""
+  })
+  
+  const handleEditReview = (review) => {
+    setSelectedReview(review);
+    setReviewEditFormData({
+      score: review.score || "",
+      feedback: review.feedback || ""
     });
-  };
-
-  const ticketHistory = filteredSales.map((sale) => ({
-    ticketId: sale.ticketId,
-    rideName: sale.rideName,
-    customerName: sale.customerName,
-    date: sale.purchaseDate,
-  }));
-
-  const getSortedHistory = (data) => {
-    if (!sortHistoryConfig) return data;
-
-    return [...data].sort((a,b) => {
-      let aValue = a[sortHistoryConfig.key];
-      let bValue = b[sortHistoryConfig.key];
-
-      if(sortHistoryConfig.key === "ticketId"){
-        aValue = a.ticketId || 0;
-        bValue = b.ticketId || 0;
-      }
-
-      else if (sortHistoryConfig.key === "rideName") {
-        aValue = a.rideName || "";
-        bValue = b.rideName || "";
-      }
-
-      else if (sortHistoryConfig.key === "customerName"){
-        aValue = a.customerName || "";
-        bValue = b.customerName || "";
-      }
-
-      else if (sortHistoryConfig.key === "date"){
-        aValue = a.date ? new Date(a.date).getTime() : 0;
-        bValue = b.date ? new Date(b.date).getTime() : 0;
-      }
-
-      if (aValue < bValue) return sortHistoryConfig.direction === "asc" ? -1 : 1;
-      if (aValue > bValue) return sortHistoryConfig.direction === "asc" ? 1 : -1;
-      return 0;
-    })
+    setShowEditModal(true);
   }
 
-  const sortedHistory = getSortedHistory(ticketHistory);
+  const handleSaveReview = async () => {
+    setMessage("")
+    setError("")
+    if(!selectedReview) {return;}
 
-  const formatDateShort = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+    try{
+      const updateReviewData = {
+        Review_ID: selectedReview.reviewID,
+        Ride_ID: selectedReview.rideID,
+        Customer_ID: parseInt(currentUser.customerId),
+        Score: parseInt(reviewEditFormData.score) || selectedReview.score,
+        Feedback: reviewEditFormData.feedback || selectedReview.feedback || "",
+        Date: new Date().toISOString()
+      };
 
-  const computeRidershipByDay = () =>{
-    const dailyData = {};
-
-    filterSales().forEach((sale) => {
-      const date = sale.purchaseDate.split("T")[0];
-      const ride = sale.rideName;
-      const qty = sale.quantity || 1;
-
-      if (!dailyData[date]) dailyData[date] = {};
-      if (!dailyData[date][ride]) dailyData[date][ride] = 0;
-
-      dailyData[date][ride] += qty;
-    });
-
-    return dailyData;
+      await ReviewsAPI.updateReviewData(selectedReview.reviewID, updateReviewData);
+      setShowEditModal(false);
+      setSelectedReview(false);
+      await fetchMyReviews();
+      setMessage("Edited review successfully!")
+    } catch (err) {
+      console.error(error);
+      setError("Review edit failed");
+    }
   }
 
-  const buildLineChartData = () => {
-    const dailyData = computeRidershipByDay();
-
-    const dates = Object.keys(dailyData).sort();
-
-    const rideNames = new Set();
-    dates.forEach((d) => {
-      Object.keys(dailyData[d]).forEach((r) => rideNames.add(r));
-    });
-
-    const datasets = Array.from(rideNames).map((ride) => ({
-      label: ride,
-      data: dates.map((d) => dailyData[d][ride] || 0),
-      fill: false,
-      tension: 0.3,
-    }));
-
-    return { dates, datasets };
+  const handleConfirmDeleteReview = (review) => {
+    setSelectedReview(review);
+    setShowDeleteConfirm(true);
   };
 
-  const { dates, datasets } = buildLineChartData();
+  const handleDeleteReview = async () => {
+    setMessage("")
+    setError("")
+    if(!selectedReview){
+      return;
+    }
 
-  const lineChartData = {
-    labels: dates,
-    datasets,
-  };
+    try {
+      await ReviewsAPI.deleteReview(selectedReview.reviewID);
+      setShowDeleteConfirm(false)
+      setMessage("Review deleted successfully!")
+    } catch (err) {
+      console.error(err);
+      setError("Unable to delete this review. Please try again.");
+      return;
+    } finally {
+      await fetchMyReviews()
+    }
+  }
 
-  const lineChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "top" },
-      title: { display: true, text: "Daily Ridership" },
+  const [hover, setHover] = useState(0)
+  const [rating, setRating] = useState(0)
+
+  const styles = {
+    modal: {
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(75, 85, 99, 0.5)",
+      overflowY: "auto",
+      height: "100%",
+      width: "100%",
+      zIndex: 50,
+      marginLeft: "140px"
     },
-    scales: {
-      x: { title: { display: true, text: "Date" } },
-      y: {
-        title: { display: true, text: "Total Ridership" },
-        beginAtZero: true,
-        ticks: { stepSize: 1 },
-      },
+    modalContent: {
+      position: "relative",
+      top: "80px",
+      margin: "0 auto",
+      padding: "20px",
+      border: "1px solid #e5e7eb",
+      width: "450px",
+      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+      borderRadius: "6px",
+      backgroundColor: "white",
     },
-  };
-
-  const [currentHistoryPage, setCurrentHistoryPage] = useState(1);
-  const rowsPerPage = 10;
-  const currentHistoryRows = sortedHistory.slice((currentHistoryPage * rowsPerPage) - rowsPerPage ,currentHistoryPage * rowsPerPage);
-  const totalHistoryPages = Math.ceil(sortedHistory.length / rowsPerPage);
+    modalFooter: {
+      display: "flex",
+      justifyContent: "flex-end",
+      gap: "12px",
+      marginTop: "24px",
+    }
+  }
 
   return (
     <div className="theme-park-page" style={{ padding: "40px 10px" }}>
@@ -421,7 +232,7 @@ function Reviews({ onSwitchToMakeReview }) {
         <div className="theme-park-header">
         
           <h1 className="theme-park-title">
-            {isEmployee ? "Ridership Report" : "🎫 My Reviews"}
+            {"🎫 My Reviews"}
           </h1>
 
           {!isEmployee && (
@@ -441,7 +252,7 @@ function Reviews({ onSwitchToMakeReview }) {
                       right: 0,
                       marginBottom: "10px"
                     }}
-                onClick={onSwitchToMakeReview}
+                onClick={()=>setShowMakeReviewModal(true)}
               >
                 Make a Review
               </button>
@@ -465,6 +276,13 @@ function Reviews({ onSwitchToMakeReview }) {
         </div>
       )}
 
+      {message && (          
+        <div className = "theme-park-alert theme-park-alert-success">
+          <span style={{ fontSize: "24px" }}>🎉</span>
+          <span>{message}</span>
+        </div>
+      )}
+
       {loading ? (
         <div className="theme-park-page">
           <div className="theme-park-loading">
@@ -472,516 +290,284 @@ function Reviews({ onSwitchToMakeReview }) {
             <div className="theme-park-loading-text">Loading ride data...</div>
           </div>
         </div>
-      ) : reviews.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "40px", color: "#999" }}>
-          {isEmployee ? "No reviews yet" : "You haven't made any reviews yet"}
-        </div>
       ) : (
         <>
-          {isEmployee && (
-            <>
-
-              <div className="theme-park-card" style={{ marginTop: "1.5rem"}}>
-                <div className="theme-park-card-header">
-                  <h3 className="theme-park-card-title">
-                    <span>📊</span> Ridership Over Time
-                  </h3>
-                </div>
-
-                <div style={{ padding: "1.5rem", height: "400px", flex: 1 }}>
-                  <Line key={lineChartData.labels.join(",")} data={lineChartData} options={lineChartOptions} />
-                </div>
-              </div>
-              
-              {/*Filters*/}
-              <div className="theme-park-card">
-                <div className="theme-park-card-header">
-                  <h3 className="theme-park-card-title">
-                    <span>🔍</span> Filters
-                  </h3>
-                  {(filters.startDate ||
-                    filters.endDate ||
-                    filters.ride) && (
-                    <button
-                      onClick={() => {
-                        setFilters({
-                          startDate: "",
-                          endDate: "",
-                          ride: "",
-                        });
-                      }}
-                      style={{
-                        backgroundColor: "#ef4444",
-                        color: "white",
-                        border: "none",
-                        padding: "8px 16px",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        transition: "all 0.2s",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#dc2626";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "#ef4444";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }}
+          {reviews.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px", color: "#999" }}>
+              {isEmployee ? "No reviews yet" : "You haven't made any reviews yet"}
+            </div>
+          ) : (
+              <>
+              {!isEmployee && (
+                <div className="theme-park-card" style={{ padding: "30px 15px" }}>
+                    <div
+                      className="theme-park-table-container"
+                      style={{ overflowX: "auto", width: "100%" }}
                     >
-                      Clear Filters
-                    </button>
-                  )}
-                </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                    gap: "1.5rem",
-                    padding: "1rem 0",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize: "0.875rem",
-                        fontWeight: "600",
-                        color: "#374151",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      Start Date
-                    </label>
-                    <input
-                      type="date"
-                      name="startDate"
-                      value={filters.startDate}
-                      onChange={handleFilterChange}
-                      style={{
-                        padding: "10px 12px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "6px",
-                        fontSize: "14px",
-                        backgroundColor: "white",
-                        transition: "all 0.2s",
-                        outline: "none",
-                      }}
-                      onFocus={(e) => {
-                        e.currentTarget.style.borderColor = "#3b82f6";
-                        e.currentTarget.style.boxShadow =
-                          "0 0 0 3px rgba(59, 130, 246, 0.1)";
-                      }}
-                      onBlur={(e) => {
-                        e.currentTarget.style.borderColor = "#d1d5db";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize: "0.875rem",
-                        fontWeight: "600",
-                        color: "#374151",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      End Date
-                    </label>
-                    <input
-                      type="date"
-                      name="endDate"
-                      value={filters.endDate}
-                      onChange={handleFilterChange}
-                      style={{
-                        padding: "10px 12px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "6px",
-                        fontSize: "14px",
-                        backgroundColor: "white",
-                        transition: "all 0.2s",
-                        outline: "none",
-                      }}
-                      onFocus={(e) => {
-                        e.currentTarget.style.borderColor = "#3b82f6";
-                        e.currentTarget.style.boxShadow =
-                          "0 0 0 3px rgba(59, 130, 246, 0.1)";
-                      }}
-                      onBlur={(e) => {
-                        e.currentTarget.style.borderColor = "#d1d5db";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize: "0.875rem",
-                        fontWeight: "600",
-                        color: "#374151",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      Ride
-                    </label>
-                    <select
-                      name="ride"
-                      value={filters.ride}
-                      onChange={handleFilterChange}
-                      style={{
-                        padding: "10px 12px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "6px",
-                        fontSize: "14px",
-                        backgroundColor: "white",
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                        outline: "none",
-                      }}
-                      onFocus={(e) => {
-                        e.currentTarget.style.borderColor = "#3b82f6";
-                        e.currentTarget.style.boxShadow =
-                          "0 0 0 3px rgba(59, 130, 246, 0.1)";
-                      }}
-                      onBlur={(e) => {
-                        e.currentTarget.style.borderColor = "#d1d5db";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
-                    >
-                      <option value="">All Rides</option>
-                      {Array.from(availableRides)
-                        .sort()
-                        .map((ride) => (
-                          <option key={ride} value={ride}>
-                            {ride}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-              
-              {/*Ridership History Table*/}
-              <div className = "theme-park-card">
-                <div className="theme-park-card-header">
-                  <h3 className="theme-park-card-title">
-                    Ridership History
-                  </h3>
-                </div>
-
-                <div
-                  className="theme-park-table-container"
-                  style={{ overflowX: "auto", overflowY: "auto", width: "100%" }}
-                >
-
-                  <table className="theme-park-table" style={{ tableLayout: "fixed", width: "100%" }}>
-                    
-                    <thead style={{position: "sticky", top:"0", zIndex: "1"}}>
-                      <tr>
-                        <th
-                          onClick={() => handleHistorySort("ticketId")}
-                          className="sortable"
-                        >
-                          Ticket ID
-                          {sortHistoryConfig.key === "ticketId" ? 
-                            sortHistoryConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-                        <th
-                          onClick={() => handleHistorySort("rideName")}
-                          className="sortable"
-                        >
-                          Ride
-                          {sortHistoryConfig.key === "rideName" ? 
-                            sortHistoryConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-                        
-                        <th
-                          onClick={() => handleHistorySort("customerName")}
-                          className="sortable"
-                        >
-                          Customer Name
-                          {sortHistoryConfig.key === "customerName" ? 
-                            sortHistoryConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-
-                        <th
-                          onClick={() => handleHistorySort("date")}
-                          className="sortable"
-                        >
-                          Date
-                          {sortHistoryConfig.key === "date" ? 
-                            sortHistoryConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {currentHistoryRows.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan="4"
-                            style={{ textAlign: "center", padding: "40px"}}
-                          >
-                            <div className="theme-park-empty">
-                              <div className="theme-park-empty-icon">🔧</div>
-                              <div className="theme-park-empty-title">
-                                No Ridership History
-                              </div>
-                              <div className="theme-park-empty-text">
-                                No ridership data match the current filters.
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : (
-                        currentHistoryRows.map((rider) => (
-                          <tr
-                            key={rider.ticketId}
-                          >
-                            <td>{rider.ticketId}</td>
-                            <td>{rider.rideName}</td>
-                            <td>{rider.customerName}</td>
-                            <td>{formatDateShort(rider.date)}</td>
+                      <table
+                        className="theme-park-table"
+                        style={{ tableLayout: "fixed", width: "100%" }}
+                      >
+                        <thead>
+                          <tr>
+                            <th style={{ width: "10%", minWidth: "100px" }}>Ride</th>
+                            <th style={{ width: "10%", minWidth: "100px" }}>Rating</th>
+                            <th style={{ width: "10%", minWidth: "100px" }}>
+                              Feedback
+                            </th>
+                            <th style={{ width: "10%", minWidth: "100px" }}>
+                              Review Date
+                            </th>
+                            <th style={{ width: "15%", minWidth: "150px" }}>Actions</th>
                           </tr>
-                        ))
-                      )}
-
-                    </tbody>
-
-                  </table>
-
-                </div>
-                
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "left",
-                    margin: "20px 0px 20px 0px",
-                  }}
-                >
-                  <button
-                    className="theme-park-btn theme-park-btn-primary theme-park-btn-sm"
-                    style={{margin:"5px"}}  
-                    onClick={() => setCurrentHistoryPage((page) => Math.max(page - 1, 1))}
-                    disabled={currentHistoryPage === 1}
-                  >
-                    Prev
-                  </button>
-                  <button
-                    className="theme-park-btn theme-park-btn-primary theme-park-btn-sm"
-                    style={{margin:"5px"}}  
-                    onClick={() => setCurrentHistoryPage((page) => Math.min(page + 1, totalHistoryPages))}
-                    disabled={currentHistoryPage === totalHistoryPages}
-                  >
-                    Next
-                  </button>
-                </div>
-
-              </div>
-
-              <div className="theme-park-grid-3" style = {{display: "flex", justifyContent: "center"}}>
-                <div className="theme-park-card" style = {{width: "600px", height: "200px", marginRight: "40px"}}>
-                    <div className="theme-park-card-header">
-                      <h3>Total Ridership</h3>  
-                    </div>
-                    <div style={{fontSize: "30px", textAlign:"center", color: "#667eea"}}>
-                      <b>{(sortedRideStats.reduce((accumulator, ride) => accumulator + ride.totalRidership, 0))}</b> Total Riders
-                    </div>
-                </div>
-                <div className="theme-park-card" style = {{width: "600px"}}>
-                    <div className="theme-park-card-header">
-                      <h3>Total Average Ridership</h3>
-                    </div>
-                    <div style={{fontSize: "30px", textAlign:"center", color: "#667eea"}}>
-                      <b>{(() => {
-                        const allDays = (sortedRideStats.reduce((acc, ride) => acc + ride.totalDays, 0))
-                        const allRidership = (sortedRideStats.reduce((acc, ride) => acc + ride.totalRidership, 0))
-                        return allDays > 0
-                          ? (allRidership / allDays).toFixed(2)
-                          : 0
-                      })()}
-                      </b> Average Riders Per Day
+                        </thead>
+                        <tbody>
+                          {reviews.map((review) => (
+                            <tr
+                              key={review.reviewID}
+                              style={{transition: "background-color 0.2s"}}
+                            >
+                              <td style={{ textAlign: "center", padding: "40px"}}>{review.rideName}</td>
+                              <td style={{ textAlign: "center", padding: "40px"}}>
+                                {Array.from({ length: 5 }).map((_, star) => (
+                                  <span
+                                    key={star}
+                                    style={{
+                                      color: star < review.score ? "#facc15" : "#d1d5db",
+                                      fontSize: "20px"
+                                    }}
+                                  >
+                                    &#9733;
+                                  </span>
+                                ))}
+                              </td>
+                              <td style={{ textAlign: "center", padding: "40px"}}>{review.feedback}</td>
+                              <td style={{ textAlign: "center", padding: "40px"}}>
+                                {new Date(review.reviewDate).toLocaleDateString()}
+                              </td>
+                              <td style={{ display: "flex", gap: "8px"}}>
+                                <button
+                                  onClick={()=>handleEditReview(review)}
+                                  className="theme-park-btn theme-park-btn-outline theme-park-btn-sm"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="theme-park-btn theme-park-btn-danger theme-park-btn-sm"
+                                  onClick={()=>handleConfirmDeleteReview(review)}
+                                >
+                                  Delete Review
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                 </div>
-              </div>
-
-              <div className="theme-park-card" style={{ padding: "30px 15px" }}>
-                <div className="theme-park-card-header">
-                  <h3 className="theme-park-card-title">
-                    <span>📋</span> Ridership and Review Summary
-                  </h3>
-                </div>
-
-                {/* Stats Table */}
-                <div
-                  className="theme-park-table-container"
-                  style={{ overflowX: "auto", width: "100%" }}
-                >
-                  <table className="theme-park-table" style={{ tableLayout: "fixed", width: "100%" }}>
-                    <thead>
-                      <tr>
-                        <th
-                          onClick={() => handleSort("rideName")}
-                          className="sortable"
-                        >
-                          Ride
-                          {sortConfig.key === "rideName" ? 
-                            sortConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-
-                        <th
-                          onClick={() => handleSort("totalRidership")}
-                          className="sortable"
-                        >
-                          Total Ridership
-                          {sortConfig.key === "totalRidership" ? 
-                            sortConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-
-                        <th
-                          onClick={() => handleSort("averageRidershipPerDay")}
-                          className="sortable"
-                        >
-                          Average Ridership Per Day
-                          {sortConfig.key === "averageRidershipPerDay" ? 
-                            sortConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-
-                        <th
-                          onClick={() => handleSort("averageRating")}
-                          className="sortable"
-                        >
-                          Average Rating
-                          {sortConfig.key === "averageRating" ? 
-                            sortConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-
-                        <th
-                          onClick={() => handleSort("totalReviews")}
-                          className="sortable"
-                        >
-                          Total Reviews
-                          {sortConfig.key === "totalReviews" ? 
-                            sortConfig.direction === "asc"
-                              ? " ↑"
-                              : " ↓"
-                            : ""}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedRideStats.length === 0 ? (
-                        <tr>
-                          <td colSpan="5" style={{ textAlign: "center", padding: "20px" }}>
-                            No data available for the selected filters.
-                          </td>
-                        </tr>
-                      ) : (
-                        sortedRideStats.map((stat) => (
-                          <tr key={stat.rideName}>
-                            <td>{stat.rideName}</td>
-                            <td>{stat.totalRidership}</td>
-                            <td>{stat.averageRidershipPerDay}</td>
-                            <td>{stat.averageRating}</td>
-                            <td>{stat.totalReviews}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              )
+            }
             </>
           )}
 
+          {/*Make Review Modal*/}
+          {showMakeReviewModal && (
+            <div style={styles.modal}>
+              <div style={styles.modalContent}>
+                <h3 className="theme-park-card-title theme-park-modal-header">Make a Review</h3>
 
-          {!isEmployee && (
-            <div className="theme-park-card" style={{ padding: "30px 15px" }}>
-                <div
-                  className="theme-park-table-container"
-                  style={{ overflowX: "auto", width: "100%" }}
-                >
-                  <table
-                    className="theme-park-table"
-                    style={{ tableLayout: "fixed", width: "100%" }}
-                  >
-                    <thead>
-                      <tr>
-                        <th style={{ width: "10%", minWidth: "100px" }}>Ride</th>
-                        <th style={{ width: "10%", minWidth: "100px" }}>Rating</th>
-                        <th style={{ width: "10%", minWidth: "100px" }}>
-                          Feedback
-                        </th>
-                        <th style={{ width: "10%", minWidth: "100px" }}>
-                          Review Date
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reviews.map((review) => (
-                        <tr
-                          key={review.reviewID}
-                          style={{transition: "background-color 0.2s"}}
-                        >
-                          <td style={{ textAlign: "center", padding: "40px"}}>{review.rideName}</td>
-                          <td style={{ textAlign: "center", padding: "40px"}}>{review.score}</td>
-                          <td style={{ textAlign: "center", padding: "40px"}}>{review.feedback}</td>
-                          <td style={{ textAlign: "center", padding: "40px"}}>
-                            {new Date(review.reviewDate).toLocaleDateString()}
-                          </td>
-                        </tr>
+                <form onSubmit={handleSubmit} className="theme-park-form">
+                  <div className="theme-park-form-group" style={{marginTop:"10px"}}>
+                    <label className="theme-park-label">Ride:</label>
+                    <select
+                      name="ride"
+                      value={makeReviewFormData.ride}
+                      onChange={handleChange}
+                      style={{
+                        width: "100%",
+                        padding: "12px",
+                        fontSize: "16px",
+                        border: "2px solid #ddd",
+                        borderRadius: "6px",
+                      }}
+                      className="theme-park-select"
+                      required
+                    >
+                      <option value="">-- Choose a ride --</option>
+                      {rides.map((ride) => (
+                        <option key={ride.ride_ID} value={ride.ride_ID}>
+                          {ride.ride_Name}
+                        </option>
                       ))}
-                    </tbody>
-                  </table>
+                    </select>
+                  </div>
+
+                  <div className="theme-park-form-group" style={{marginTop:"10px"}}>
+                    <label className="theme-park-label">Rating:</label>
+                    <div style={{ display: "flex", gap: "8px", cursor: "pointer" }}>
+                      {[...Array(5)].map((_, star) => {
+                        return (
+                          <span 
+                            key={star + 1}
+                            style={{
+                              fontSize: "32px",
+                              color: star + 1 <= (hover || rating) ? "#facc15" : "#d1d5db",
+                              transition: "color 0.2s",
+                            }}
+                            onMouseEnter={() => setHover(star + 1)}
+                            onMouseLeave={() => setHover(0)}
+                            onClick={() => {
+                              setRating(star + 1);
+                              handleChange({target: {name: "score", value: star + 1}})
+                            }}
+                            >
+                            &#9733;
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="theme-park-form-group" style={{marginTop:"10px"}}>
+                    <label className="theme-park-label">Feedback:</label>
+                    <input
+                      type="text"
+                      name="feedback"
+                      value={makeReviewFormData.feedback}
+                      onChange={handleChange}
+                      className="theme-park-input"
+                    />
+                  </div>
+                  
+                  <div style = {styles.modalFooter}>
+                    <button
+                      onClick={()=>setShowMakeReviewModal(false)}
+                      className="theme-park-btn theme-park-btn-sm"
+                      type="button"
+                    >
+                      Cancel
+                    </button>
+                    
+                    <button className="theme-park-btn theme-park-btn-sm theme-park-btn-primary" type="submit">
+                      {loading ? "Submitting..." : "Submit"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/*Edit Modal*/}
+          {showEditModal && (
+            <div style={styles.modal}>
+              <div style={styles.modalContent}>
+                <h3 className="theme-park-card-title theme-park-modal-header">Edit Review</h3>
+
+                <div className="theme-park-form-group" style={{marginTop:"10px"}}>
+                  <label className="theme-park-label">Ride Name</label>
+                  <p style={{marginTop:"5px"}}>{selectedReview.rideName}</p>
                 </div>
+
+                <div className="theme-park-form-group" style={{marginTop:"20px"}}>
+                  <label className="theme-park-label">Rating</label>
+                  <div style={{ display: "flex", gap: "8px", cursor: "pointer"}}>
+                    {[...Array(5)].map((_, star) => {
+                      return (
+                        <span 
+                          key={star + 1}
+                          style={{
+                            fontSize: "32px",
+                            color: star + 1 <= (hover || rating) ? "#facc15" : "#d1d5db",
+                            transition: "color 0.2s",
+                          }}
+                          onMouseEnter={() => setHover(star + 1)}
+                          onMouseLeave={() => setHover(0)}
+                          onClick={() => {
+                            setRating(star + 1);
+                            setReviewEditFormData({
+                              ...reviewEditFormData,
+                              score: star + 1
+                            })
+                          }}
+                          >
+                          &#9733;
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="theme-park-form-group" style={{marginTop:"10px"}}>
+                  <label className="theme-park-label">Feedback</label>
+                  <input
+                    type="text"
+                    value={reviewEditFormData.feedback}
+                    onChange={(e) =>
+                      setReviewEditFormData({
+                        ...reviewEditFormData,
+                        feedback: e.target.value,
+                      })
+                    }
+                    className="theme-park-input"
+                  />
+                </div>
+
+                <div style={styles.modalFooter}>
+                  <button
+                    onClick={()=>setShowEditModal(false)}
+                    className="theme-park-btn theme-park-btn-sm"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={handleSaveReview}
+                    className="theme-park-btn theme-park-btn-sm theme-park-btn-primary"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+
+          {/*Delete Confirmation*/}
+          {showDeleteConfirm && (
+            <div
+              style={styles.modal}
+            >
+              <div
+                style={{
+                  ...styles.modalContent,
+                  top: "35%",
+                  width: "550px",
+                  height: "150px",
+                }}
+              >
+                <h3 className="theme-park-card-title">
+                  Are you sure you want to delete this review?
+                </h3>
+
+                <div
+                  style={styles.modalFooter}
+                >
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className='theme-park-btn theme-park-btn-sm theme-park-btn-outline'
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={handleDeleteReview}
+                    className='theme-park-btn theme-park-btn-sm theme-park-btn-danger'
+                  >
+                    Confirm
+                  </button>
+                </div>
+
+              </div>
             </div>
           )}
         </>

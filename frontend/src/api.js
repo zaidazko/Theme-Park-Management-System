@@ -438,5 +438,18 @@ export const ReviewsAPI = {
   getAllReviews: async () => {
     const response = await axios.get(`${API_BASE_URL}/reviews/ride`);
     return response.data;
+  },
+  
+  deleteReview: async (reviewId) => {
+    const response = await axios.delete(`${API_BASE_URL}/reviews/${reviewId}`);
+    return response.data;
+  },
+
+  updateReviewData: async (reviewId, reviewData) => {
+    const response = await axios.put(
+      `${API_BASE_URL}/reviews/${reviewId}`,
+      reviewData
+    );
+    return response.data;
   }
 };

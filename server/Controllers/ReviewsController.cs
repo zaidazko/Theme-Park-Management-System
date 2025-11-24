@@ -101,6 +101,8 @@ namespace AmusementParkAPI.Controllers
                     ride => ride.Ride_ID,
                     (review, ride) => new
                     {
+                        reviewID = review.Review_ID,
+                        rideID = ride.Ride_ID,
                         rideName = ride.Ride_Name,
                         reviewDate = review.Date,
                         score = review.Score,
@@ -111,6 +113,35 @@ namespace AmusementParkAPI.Controllers
                 .ToListAsync();
 
             return Ok(reviews);
+        }
+
+        // DELETE: api/reviews/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteReview(int id)
+        {
+            var review = await _context.Reviews.FindAsync(id);
+            if (review == null)
+            {
+                return NotFound();
+            }
+
+            _context.Reviews.Remove(review);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        // PUT: api/reviews/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutReview(int id, Reviews review)
+        {
+            if(id != review.Review_ID)
+            {
+                return BadRequest();
+            }
+
+            _context.Entry(review).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }

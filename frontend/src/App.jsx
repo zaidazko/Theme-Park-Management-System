@@ -15,8 +15,8 @@ import AssignMaintenance from "./components/AssignMaintenance";
 import SubmitMaintenance from "./components/SubmitMaintenance";
 import EmployeeDashboard from "./components/EmployeeDashboard";
 import Rides from "./components/Rides";
+import Ridership from "./components/Ridership";
 import Reviews from "./components/Reviews";
-import MakeReview from "./components/MakeReview";
 import ManageMerch from "./components/ManageMerch";
 import ManageFood from "./components/ManageFood";
 import ManageTickets from "./components/ManageTickets";
@@ -353,7 +353,7 @@ function App() {
                     }}
                   >
                     <span style={styles.navIcon}>🎢</span>
-                    Ride Manager
+                    Manage Rides
                   </button>
                   <button
                     onClick={() => setCurrentView("manage-tickets")}
@@ -441,10 +441,10 @@ function App() {
                 <div style={styles.navSection}>
                   <div style={styles.sectionTitle}>Reports</div>
                   <button
-                    onClick={() => setCurrentView("reviews")}
+                    onClick={() => setCurrentView("ridership")}
                     style={{
                       ...styles.navItem,
-                      ...(currentView === "reviews"
+                      ...(currentView === "ridership"
                         ? styles.navItemActive
                         : {}),
                     }}
@@ -818,11 +818,7 @@ function App() {
         )}
 
         {currentView === "my-reviews" && user && !isEmployee && (
-          <Reviews onSwitchToMakeReview={() => setCurrentView("make-review")} />
-        )}
-
-        {currentView === "make-review" && user && !isEmployee && (
-          <MakeReview onSwitchToReviews={() => setCurrentView("my-reviews")} />
+          <Reviews />
         )}
 
         {/* Employee Pages */}
@@ -868,7 +864,7 @@ function App() {
             user?.roleName === "Admin" ||
             user?.RoleName === "Admin") && <EmployeeDashboard />}
 
-        {currentView === "reviews" && user && isEmployee && <Reviews />}
+        {currentView === "ridership" && user && isEmployee && <Ridership />}
 
         {/* Restaurant Pages */}
         {currentView === "restaurant-sales" && user && isEmployee && (

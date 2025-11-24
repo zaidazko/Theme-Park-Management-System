@@ -67,6 +67,7 @@ const Rides = () => {
   const [error, setError] = useState("");
   const [showCreateRideModal, setShowCreateRideModal] = useState(false);
   const [showEditRideModal, setShowEditRideModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
   const [selectedRide, setSelectedRide] = useState(null);
   const [rideFormData, setRideFormData] = useState({
     ride_Name: "",
@@ -77,6 +78,7 @@ const Rides = () => {
     ride_Name: "",
     capacity: "",
     image: DEFAULT_IMAGE,
+    description: ""
   });
   const [showRideDetailModal, setShowRideDetailModal] = useState(false);
   const [detailRide, setDetailRide] = useState(null);
@@ -84,6 +86,7 @@ const Rides = () => {
   const [detailReviews, setDetailReviews] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
+  const [rideMessage, setRideMessage] = useState("");
 
   const currentUser = useMemo(
     () => JSON.parse(localStorage.getItem("user") || "{}"),
@@ -130,12 +133,15 @@ const Rides = () => {
   };
 
   const handleCreateRide = async () => {
+    setRideMessage("")
+    setError("")
     try {
       const rideData = {
         ride_Name: createRideForm.ride_Name,
         capacity: Number.parseInt(createRideForm.capacity, 10) || 0,
         image: createRideForm.image || DEFAULT_IMAGE,
         status: "Operational",
+        description: createRideForm.description
       };
 
       await ridesAPI.createRide(rideData);
@@ -144,26 +150,36 @@ const Rides = () => {
         ride_Name: "",
         capacity: "",
         image: DEFAULT_IMAGE,
+        description: ""
       });
       setShowCreateRideModal(false);
       await loadRides();
-      alert("Ride created successfully!");
+      setRideMessage("Ride created successfully!");
     } catch (err) {
       console.error("Failed to create ride", err);
-      alert("Unable to create ride. Please try again.");
+      setError("Unable to create ride. Please try again.");
     }
   };
 
-  const handleDeleteRide = async (rideId) => {
-    if (!window.confirm("Are you sure you want to delete this ride?")) {
+  const handleConfirmDeleteRide = (ride) => {
+    setSelectedRide(ride);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleDeleteRide = async () => {
+    setRideMessage("")
+    setError("")
+    if(!selectedRide){
       return;
     }
 
     try {
-      await ridesAPI.deleteRide(rideId);
+      await ridesAPI.deleteRide(selectedRide.ride_ID);
+      setShowDeleteConfirmModal(false)
+      setRideMessage("Ride deleted successfully!")
     } catch (err) {
       console.error("Failed to delete ride", err);
-      alert("Unable to delete this ride. Please try again.");
+      setError("Unable to delete this ride. Please try again.");
       return;
     } finally {
       await loadRides();
@@ -176,11 +192,14 @@ const Rides = () => {
       ride_Name: ride.ride_Name || "",
       capacity: ride.capacity || "",
       image: ride.image || "",
+      description: ride.description || ""
     });
     setShowEditRideModal(true);
   };
 
   const handleSaveRide = async () => {
+    setRideMessage("")
+    setError("")
     if (!selectedRide) {
       return;
     }
@@ -192,15 +211,17 @@ const Rides = () => {
         Capacity: Number.parseInt(rideFormData.capacity, 10) || selectedRide.capacity,
         Image: rideFormData.image || selectedRide.image || DEFAULT_IMAGE,
         Status: selectedRide.status || "Operational",
+        Description: rideFormData.description || selectedRide.description
       };
 
       await ridesAPI.updateRideData(selectedRide.ride_ID, updateRideData);
       setShowEditRideModal(false);
       setSelectedRide(null);
       await loadRides();
+      setRideMessage("Changes saved successfully!")
     } catch (err) {
       console.error("Error saving ride", err);
-      alert("Unable to save changes. Please try again.");
+      setError("Unable to save changes. Please try again.");
     }
   };
 
@@ -208,7 +229,7 @@ const Rides = () => {
     setDetailRide(ride);
     setShowRideDetailModal(true);
     setDetailLoading(true);
-  setDetailError("");
+    setDetailError("");
 
     const rideIdValue = toRideId(ride);
     if (!rideIdValue && rideIdValue !== 0) {
@@ -453,6 +474,7 @@ const Rides = () => {
       height: "100%",
       width: "100%",
       zIndex: 50,
+      marginLeft: "140px"
     },
     modalContent: {
       position: "relative",
@@ -460,7 +482,7 @@ const Rides = () => {
       margin: "0 auto",
       padding: "20px",
       border: "1px solid #e5e7eb",
-      width: "384px",
+      width: "450px",
       boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
       borderRadius: "6px",
       backgroundColor: "white",
@@ -630,6 +652,13 @@ const Rides = () => {
           </div>
         )}
 
+        {rideMessage && (
+          <div className = "theme-park-alert theme-park-alert-success">
+            <span style={{ fontSize: "24px" }}>🎉</span>
+            <span>{rideMessage}</span>
+          </div>
+        )}
+
         {rides.length === 0 ? (
           <div className="theme-park-empty">
             <div className="theme-park-empty-icon">🎢</div>
@@ -640,7 +669,6 @@ const Rides = () => {
           </div>
         ) : (
           <div>
-
             <div className="theme-park-grid">
               {rides.map((ride) => (
                 <div
@@ -734,7 +762,7 @@ const Rides = () => {
                         </button>
 
                         <button
-                          onClick={() => handleDeleteRide(ride.ride_ID)}
+                          onClick={() => handleConfirmDeleteRide(ride)}
                           className='theme-park-btn theme-park-btn-sm theme-park-btn-danger'
                         >
                           Delete
@@ -752,19 +780,12 @@ const Rides = () => {
         {/* Create Ride Modal */}
         {showCreateRideModal && (
           <div style={styles.modal}>
-            <div style={styles.modalContent}>
-              <h3
-                style={{
-                  fontSize: "18px",
-                  fontWeight: "500",
-                  color: "#111827",
-                  marginBottom: "16px",
-                }}
-              >
+            <div style={{...styles.modalContent}}>
+              <h3 className="theme-park-card-title theme-park-modal-header">
                 Create New Ride
               </h3>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Ride Name</label>
+              <div className="theme-park-form-row" style={{marginTop:"10px"}}>
+                <label className="theme-park-label">Ride Name</label>
                 <input
                   type="text"
                   value={createRideForm.ride_Name}
@@ -774,12 +795,12 @@ const Rides = () => {
                       ride_Name: e.target.value,
                     })
                   }
-                  style={styles.input}
+                  className="theme-park-input"
                   required
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Capacity</label>
+              <div className="theme-park-form-row" style={{marginTop:"10px"}}>
+                <label className="theme-park-label">Capacity</label>
                 <input
                   type="number"
                   value={createRideForm.capacity}
@@ -789,12 +810,12 @@ const Rides = () => {
                       capacity: e.target.value,
                     })
                   }
-                  style={styles.input}
+                  className="theme-park-input"
                   required
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Image</label>
+              <div className="theme-park-form-row" style={{marginTop:"10px"}}>
+                <label className="theme-park-label">Image</label>
                 <input
                   type="text"
                   value={createRideForm.image}
@@ -804,19 +825,35 @@ const Rides = () => {
                       image: e.target.value,
                     })
                   }
-                  style={styles.input}
+                  className="theme-park-input"
                 />
               </div>
+              
+              <div className="theme-park-form-row" style={{marginTop:"10px"}}>
+                <label className="theme-park-label">Description</label>
+                <input
+                  type="text"
+                  value={createRideForm.description}
+                  onChange={(e) =>
+                    setCreateRideForm({
+                      ...createRideForm,
+                      description: e.target.value,
+                    })
+                  }
+                  className="theme-park-input"
+                />
+              </div>
+
               <div style={styles.modalFooter}>
                 <button
                   onClick={() => setShowCreateRideModal(false)}
-                  style={styles.buttonSecondary}
+                  className="theme-park-btn theme-park-btn-sm"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleCreateRide}
-                  style={styles.button}
+                  className="theme-park-btn theme-park-btn-sm theme-park-btn-primary"
                 >
                   Create Ride
                 </button>
@@ -829,19 +866,12 @@ const Rides = () => {
         {showEditRideModal && (
           <div style={styles.modal}>
             <div style={styles.modalContent}>
-              <h3
-                style={{
-                  fontSize: "18px",
-                  fontWeight: "500",
-                  color: "#111827",
-                  marginBottom: "16px",
-                }}
-              >
+              <h3 className="theme-park-card-title theme-park-modal-header">
               Edit Ride
               </h3>
 
-              <div style={{ marginBottom: "16px"}}>
-                <label style={styles.label}>Ride Name</label>
+              <div className="theme-park-form-row" style={{marginTop:"10px"}}>
+                <label className="theme-park-label">Ride Name</label>
                 <input
                   type="text"
                   value={rideFormData.ride_Name}
@@ -851,12 +881,12 @@ const Rides = () => {
                       ride_Name: e.target.value,
                     })
                   }
-                  style={styles.input}
+                  className="theme-park-input"
                 />
               </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Capacity</label>
+              <div className="theme-park-form-row" style={{marginTop:"10px"}}>
+                <label className="theme-park-label">Capacity</label>
                 
                 <input
                   type="number"
@@ -867,12 +897,12 @@ const Rides = () => {
                       capacity: e.target.value,
                     })
                   }
-                  style={styles.input}
+                  className="theme-park-input"
                 />
               </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Image</label>
+              <div className="theme-park-form-row" style={{marginTop:"10px"}}>
+                <label className="theme-park-label">Image</label>
 
                 <input
                   type="text"
@@ -883,7 +913,24 @@ const Rides = () => {
                       image: e.target.value,
                     })
                   }
-                  style={styles.input}
+                  className="theme-park-input"
+                />
+
+              </div>
+
+              <div className="theme-park-form-row" style={{marginTop:"10px"}}>
+                <label className="theme-park-label">Description</label>
+
+                <input
+                  type="text"
+                  value={rideFormData.description}
+                  onChange = {(e) =>
+                    setRideFormData({
+                      ...rideFormData,
+                      description: e.target.value,
+                    })
+                  }
+                  className="theme-park-input"
                 />
 
               </div>
@@ -891,16 +938,44 @@ const Rides = () => {
               <div style={styles.modalFooter}>
                 <button
                   onClick={() => setShowEditRideModal(false)}
-                  style={styles.buttonSecondary}
+                  className="theme-park-btn theme-park-btn-sm"
                 >
                   Cancel
                 </button>
                 
                 <button
                   onClick={handleSaveRide}
-                  style={styles.button}
+                  className="theme-park-btn theme-park-btn-sm theme-park-btn-primary"
                 >
                   Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showDeleteConfirmModal && (
+          <div style={styles.modal}>
+            <div style={{...styles.modalContent, width: "500px", height: "150px", top:"35%"}}>
+              <h3 className="theme-park-card-title">
+                Are you sure you want to delete this ride?
+              </h3>
+
+              <div className = "theme-park-form-row"></div>
+
+              <div style={{...styles.modalFooter, justifyContent: "space-evenly"}}>
+                <button
+                  onClick={() => setShowDeleteConfirmModal(false)}
+                  className='theme-park-btn theme-park-btn-sm theme-park-btn-outline'
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handleDeleteRide}
+                  className='theme-park-btn theme-park-btn-sm theme-park-btn-danger'
+                >
+                  Confirm
                 </button>
               </div>
             </div>
