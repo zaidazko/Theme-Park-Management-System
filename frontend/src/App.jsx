@@ -26,11 +26,68 @@ import RideDetail from "./components/RideDetail";
 import Merchandise from "./components/Merchandise";
 import "./App.css";
 
+import { authAPI, ridesAPI } from "./api";
+
 function App() {
   const [currentView, setCurrentView] = useState("landing");
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRide, setSelectedRide] = useState(null);
+  const [weatherCondition, setWeatherCondition] = useState("Regular");
+  const [selectedWeather, setSelectedWeather] = useState("Regular");
+  const [isUpdatingWeather, setIsUpdatingWeather] = useState(false);
+
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+  // Fetch latest weather
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/weather`);
+        if (response.ok) {
+          const data = await response.json();
+          const condition = data.weatherCondition || "Regular";
+          setWeatherCondition(condition);
+          setSelectedWeather(condition);
+        }
+      } catch (error) {
+        console.error("Error fetching weather:", error);
+      }
+    };
+
+    fetchWeather();
+    const interval = setInterval(fetchWeather, 60000); // Refresh every minute
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleWeatherUpdate = async () => {
+    setIsUpdatingWeather(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/weather`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          weatherCondition: selectedWeather,
+          weatherDate: new Date().toISOString(),
+          reportedBy: user?.employeeId, // Use optional chaining in case employeeId is not present
+        }),
+      });
+
+      if (response.ok) {
+        setWeatherCondition(selectedWeather);
+        alert("Weather updated successfully!");
+      } else {
+        alert("Failed to update weather.");
+      }
+    } catch (error) {
+      console.error("Error updating weather:", error);
+      alert("Error updating weather.");
+    } finally {
+      setIsUpdatingWeather(false);
+    }
+  };
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -107,6 +164,153 @@ function App() {
 
           {/* Navigation Sections */}
           <nav style={styles.nav}>
+            {/* Current Weather Display (Visible to All) */}
+            <div
+              style={{
+                ...styles.navSection,
+                padding: "0 20px",
+                marginBottom: "16px",
+              }}
+            >
+              <div style={styles.sectionTitle}>Current Weather</div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "12px",
+                  backgroundColor: "rgba(255, 255, 255, 0.05)",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                }}
+              >
+                <span style={{ fontSize: "24px", marginRight: "12px" }}>
+                  {weatherCondition === "Raining"
+                    ? "🌧️"
+                    : weatherCondition === "Freezing"
+                    ? "❄️"
+                    : "☀️"}
+                </span>
+                <div>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      color: "#fff",
+                    }}
+                  >
+                    {weatherCondition}
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#94a3b8" }}>
+                    Park Conditions
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Admin Weather Control */}
+            {isAdmin && (
+              <div style={{ ...styles.navSection, padding: "0 20px" }}>
+                <div style={styles.sectionTitle}>Park Weather</div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  <div style={{ position: "relative", width: "100%" }}>
+                    <select
+                      value={selectedWeather}
+                      onChange={(e) => setSelectedWeather(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        backgroundColor: "#1e293b",
+                        border: "1px solid #475569",
+                        borderRadius: "8px",
+                        color: "#f1f5f9",
+                        fontSize: "14px",
+                        outline: "none",
+                        cursor: "pointer",
+                        appearance: "none",
+                        WebkitAppearance: "none",
+                        backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23cbd5e1%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")`,
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 12px center",
+                        backgroundSize: "10px",
+                        transition: "border-color 0.2s, box-shadow 0.2s",
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = "#3b82f6";
+                        e.target.style.boxShadow =
+                          "0 0 0 3px rgba(59, 130, 246, 0.2)";
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = "#475569";
+                        e.target.style.boxShadow = "none";
+                      }}
+                    >
+                      <option value="Regular">☀️ Regular</option>
+                      <option value="Raining">🌧️ Raining</option>
+                      <option value="Freezing">❄️ Freezing</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={handleWeatherUpdate}
+                    disabled={isUpdatingWeather}
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      backgroundColor: isUpdatingWeather
+                        ? "#475569"
+                        : "#3b82f6",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: isUpdatingWeather ? "not-allowed" : "pointer",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      transition: "all 0.2s",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      marginTop: "4px",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isUpdatingWeather)
+                        e.currentTarget.style.backgroundColor = "#2563eb";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isUpdatingWeather)
+                        e.currentTarget.style.backgroundColor = "#3b82f6";
+                    }}
+                  >
+                    {isUpdatingWeather ? (
+                      <>
+                        <span
+                          className="loading-spinner"
+                          style={{
+                            width: "12px",
+                            height: "12px",
+                            border: "2px solid rgba(255,255,255,0.3)",
+                            borderTop: "2px solid white",
+                            borderRadius: "50%",
+                            animation: "spin 1s linear infinite",
+                          }}
+                        ></span>
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <span>Update Weather</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Profile Section */}
             <div style={styles.navSection}>
               <div style={styles.sectionTitle}>Account</div>
