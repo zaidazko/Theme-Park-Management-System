@@ -39,12 +39,19 @@ button {
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* Loading Spinner Animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .App [style*="sidebar"] {
     width: 240px !important;
   }
-  
+
   .App [style*="mainContent"] {
     margin-left: 240px !important;
   }
@@ -55,4 +62,3 @@ body {
   margin: 0;
   padding: 0;
 }
-
