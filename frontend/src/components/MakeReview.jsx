@@ -24,6 +24,7 @@ function makeReview({ onSwitchToReviews }) {
   const fetchRides = async () => {
     if(!currentUser.customerId) {
       setError("Please login first");
+      setTimeout(() => setError(""), 3000);
       return;
     }
 
@@ -47,6 +48,7 @@ function makeReview({ onSwitchToReviews }) {
       setRides(filteredRides);
     } catch (err) {
       setError("Failed to load rides");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
@@ -61,6 +63,7 @@ function makeReview({ onSwitchToReviews }) {
 
     if (!currentUser.customerId) {
       setError("Please login first");
+      setTimeout(() => setError(""), 3000);
       return;
     }
 
@@ -74,12 +77,14 @@ function makeReview({ onSwitchToReviews }) {
       };
       await ReviewsAPI.createReview(data);
       setSuccessMessage("Review created successfully!")
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
       console.error("Submission error:", error);
       if (error.response) {
         console.error("Backend said:", error.response.data);
       }
       setError("Review submission failed");
+      setTimeout(() => setError(""), 3000);
     } finally {
       setLoading(false);
     }

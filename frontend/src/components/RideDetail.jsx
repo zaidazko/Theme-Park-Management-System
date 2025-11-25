@@ -25,6 +25,7 @@ function RideDetail({ rideName, onBack }) {
         setRide(foundRide);
       } else {
         setError("Ride not found");
+        setTimeout(() => setError(""), 3000);
       }
     } catch (err) {
       setError(err.message);

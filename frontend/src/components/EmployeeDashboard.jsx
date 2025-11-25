@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { authAPI, employeeAPI } from "../api";
+import "./ThemePark.css";
 
 const EmployeeDashboard = () => {
   const [customers, setCustomers] = useState([]);
@@ -13,6 +14,9 @@ const EmployeeDashboard = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [showCreateEmployeeModal, setShowCreateEmployeeModal] = useState(false);
+  const [error, setError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
+  const [warningMessage, setWarningMessage] = useState("")
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -107,6 +111,8 @@ const EmployeeDashboard = () => {
   };
 
   const handleSaveEmployee = async () => {
+    setError("")
+    setSuccessMessage("")
     try {
       if (selectedEmployee) {
         // Include the employeeId in the formData to match what the backend expects
@@ -132,15 +138,19 @@ const EmployeeDashboard = () => {
             console.error("Error updating password:", pwErr);
             // Surface server message if present
             if (pwErr?.response?.data?.message) {
-              alert(`Password update failed: ${pwErr.response.data.message}`);
+              setError(`Password update failed: ${pwErr.response.data.message}`);
+              setTimeout(() => setError(""), 3000);
             } else {
-              alert("Password update failed. See console for details.");
+              setError("Password update failed. See console for details.");
+              setTimeout(() => setError(""), 3000);
             }
             // Don't continue to close modal / reload if password update failed
             return;
           }
         }
       }
+      setSuccessMessage("Changes saved successfully!")
+      setTimeout(() => setSuccessMessage(""), 3000);
       setShowEditModal(false);
       setSelectedEmployee(null);
       loadAllData();
@@ -152,6 +162,8 @@ const EmployeeDashboard = () => {
   };
 
   const handlePromoteToEmployee = async () => {
+    setError("")
+    setSuccessMessage("")
     try {
       // Create the employee first
       await employeeAPI.createEmployee(formData);
@@ -163,24 +175,36 @@ const EmployeeDashboard = () => {
 
       setShowPromoteModal(false);
       setSelectedCustomer(null);
+      setSuccessMessage("Promoted customer successfully!")
+      setTimeout(() => setSuccessMessage(""), 3000);
       loadAllData();
       alert(`✓ Customer ${formData.firstName} ${formData.lastName} has been promoted to Employee!`);
     } catch (error) {
       console.error("Error promoting customer:", error);
-      alert("Error promoting customer to employee. Please try again.");
+      setError("Error promoting customer to employee. Please try again.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
+  const [showDeleteEmployeeConfirm, setShowDeleteEmployeeConfirm] = useState(false)
+  const [selectedEmployeeForDelete, setSelectedEmployeeForDelete] = useState(null)
+
+  const handleConfirmDeleteEmployee = (employee) => {
+    setSelectedEmployeeForDelete(employee)
+    setShowDeleteEmployeeConfirm(true);
+  }
+
   const handleDeleteEmployee = async (employeeId) => {
-    if (window.confirm("Are you sure you want to delete this employee?")) {
-      try {
-        console.log("Attempting to delete employeeId:", employeeId);
+    setShowDeleteEmployeeConfirm(false)
+
+    try {
+      console.log("Attempting to delete employeeId:", employeeId);
         const resp = await employeeAPI.deleteEmployee(employeeId);
         console.log("Delete employee API response:", resp);
-        loadAllData();
+      loadAllData();
         alert("✓ Employee has been successfully removed from the system.");
-      } catch (error) {
-        console.error("Error deleting employee:", error);
+    } catch (error) {
+      console.error("Error deleting employee:", error);
         let msg = "Error deleting employee.";
         if (error?.response?.data?.message) {
           msg += `\n${error.response.data.message}`;
@@ -188,14 +212,16 @@ const EmployeeDashboard = () => {
           msg += `\n${error.message}`;
         }
         alert(msg);
-      }
     }
   };
 
   const handleCreateEmployeeAccount = async () => {
+    setError("")
+    setSuccessMessage("")
     try {
       if (createEmployeeForm.password !== createEmployeeForm.confirmPassword) {
-        alert("Passwords do not match!");
+        setWarningMessage("Passwords do not match!");
+        setTimeout(() => setWarningMessage(""), 3000);
         return;
       }
 
@@ -231,10 +257,12 @@ const EmployeeDashboard = () => {
       });
       setShowCreateEmployeeModal(false);
       loadAllData();
-      alert(`✓ Employee account for ${employeeAccountData.firstName} ${employeeAccountData.lastName} has been created successfully!`);
+      setSuccessMessage("Employee account created successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
       console.error("Error creating employee account:", error);
-      alert("Error creating employee account. Please try again.");
+      setError("Error creating employee account. Please try again.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
@@ -252,9 +280,12 @@ const EmployeeDashboard = () => {
   };
 
   const handleAddDepartment = async () => {
+    setError("")
+    setSuccessMessage("")
     try {
       if (!departmentForm.departmentName.trim()) {
-        alert("Please enter a department name!");
+        setWarningMessage("Please enter a department name!");
+        setTimeout(() => setWarningMessage(""), 3000);
         return;
       }
 
@@ -268,17 +299,22 @@ const EmployeeDashboard = () => {
       setDepartmentForm({ departmentName: "" });
       setShowAddDepartmentModal(false);
       loadAllData();
-      alert("Department created successfully!");
+      setSuccessMessage("Department created successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
       console.error("Error creating department:", error);
-      alert("Error creating department. Please try again.");
+      setError("Error creating department. Please try again.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
   const handleAddRole = async () => {
+    setError("")
+    setSuccessMessage("")
     try {
       if (!roleForm.roleName.trim()) {
-        alert("Please enter a role name!");
+        setWarningMessage("Please enter a role name!");
+        setTimeout(() => setWarningMessage(""), 3000);
         return;
       }
 
@@ -293,10 +329,12 @@ const EmployeeDashboard = () => {
       setRoleForm({ roleName: "", description: "" });
       setShowAddRoleModal(false);
       loadAllData();
-      alert("Role created successfully!");
+      setSuccessMessage("Role created successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
       console.error("Error creating role:", error);
-      alert("Error creating role. Please try again.");
+      setError("Error creating role. Please try again.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
@@ -558,6 +596,27 @@ const EmployeeDashboard = () => {
         </p>
       </div>
 
+      {error && (
+          <div className="theme-park-alert theme-park-alert-error">
+            <span style={{ fontSize: "24px" }}>⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className = "theme-park-alert theme-park-alert-success">
+            <span style={{ fontSize: "24px" }}>🎉</span>
+            <span>{successMessage}</span>
+          </div>
+        )}
+
+        {warningMessage && (
+          <div className = "theme-park-alert theme-park-alert-warning">
+            <span style={{ fontSize: "24px" }}>⚠️</span>
+            <span>{warningMessage}</span>
+          </div>
+        )}
+
       {/* Tabs (removed department and role add tabs) */}
       <div style={styles.tabsContainer}>
         <nav style={styles.tabsNav}>
@@ -677,7 +736,7 @@ const EmployeeDashboard = () => {
                         </button>
                         <button
                           onClick={() =>
-                            handleDeleteEmployee(employee.employeeId)
+                            handleConfirmDeleteEmployee(employee)
                           }
                           style={{
                             ...styles.linkButton,
@@ -1425,6 +1484,62 @@ const EmployeeDashboard = () => {
               </button>
               <button onClick={handleAddRole} style={styles.button}>
                 Add Role
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/*Delete Employee Confirm*/}
+      {showDeleteEmployeeConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(75, 85, 99, 0.5)",
+            overflowY: "auto",
+            height: "100%",
+            width: "100%",
+            zIndex: 50,
+            marginLeft: "140px"
+          }}
+        >
+          <div
+            style={{
+              position: "relative",
+              top: "35%",
+              margin: "0 auto",
+              padding: "20px",
+              border: "1px solid #e5e7eb",
+              width: "450px",
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+              borderRadius: "6px",
+              backgroundColor: "white", 
+            }}
+          >
+            <h3>Are you sure you want to delete this employee?</h3>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "12px",
+                marginTop: "24px",
+              }}
+            >
+              <button
+                onClick={() => setShowDeleteEmployeeConfirm(false)}
+                className='theme-park-btn theme-park-btn-sm theme-park-btn-outline'
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteEmployee(selectedEmployeeForDelete.employeeId)}
+                className='theme-park-btn theme-park-btn-sm theme-park-btn-danger'
+              >
+                Confirm
               </button>
             </div>
           </div>

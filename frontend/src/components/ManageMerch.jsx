@@ -218,18 +218,20 @@ const ManageMerch = ({ onAlertsChange }) => {
     }
   };
 
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [showConfirmDiscontinue, setShowConfirmDiscontinue] = useState(false)
+
+  const handleDiscontinueConfirm = (item) => {
+    setSelectedItem(item);
+    setShowConfirmDiscontinue(true);
+  };
+
   const handleDelete = async (commodity) => {
     if (deletingId === commodity.commodityTypeId) {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Mark ${commodity.commodityName} as discontinued?`
-    );
-
-    if (!confirmed) {
-      return;
-    }
+    setShowConfirmDiscontinue(false);
 
     setDeletingId(commodity.commodityTypeId);
     setError("");
@@ -675,7 +677,7 @@ const ManageMerch = ({ onAlertsChange }) => {
                                 </button>
                                 <button
                                   className="theme-park-btn theme-park-btn-danger theme-park-btn-sm"
-                                  onClick={() => handleDelete(commodity)}
+                                  onClick={() => handleDiscontinueConfirm(commodity)}
                                   disabled={deletingId === commodity.commodityTypeId}
                                 >
                                   {deletingId === commodity.commodityTypeId
@@ -801,6 +803,62 @@ const ManageMerch = ({ onAlertsChange }) => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {showConfirmDiscontinue && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(75, 85, 99, 0.5)",
+            overflowY: "auto",
+            height: "100%",
+            width: "100%",
+            zIndex: 50,
+            marginLeft: "140px"
+          }}
+        >
+          <div
+            style={{
+              position: "relative",
+              top: "35%",
+              margin: "0 auto",
+              padding: "20px",
+              border: "1px solid #e5e7eb",
+              width: "450px",
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+              borderRadius: "6px",
+              backgroundColor: "white", 
+            }}
+          >
+            <h3>Mark {selectedItem.foodName} as discontinued?</h3>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "12px",
+                marginTop: "24px",
+              }}
+            >
+              <button
+                onClick={() => setShowConfirmDiscontinue(false)}
+                className='theme-park-btn theme-park-btn-sm theme-park-btn-outline'
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(selectedItem)}
+                className='theme-park-btn theme-park-btn-sm theme-park-btn-danger'
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+
         </div>
       )}
     </div>

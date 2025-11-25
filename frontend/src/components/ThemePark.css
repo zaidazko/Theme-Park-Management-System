@@ -547,6 +547,7 @@
   gap: 12px;
   font-weight: 500;
   animation: fadeIn 0.3s ease-out;
+  transition: opacity 0.3s ease-out;
 }
 
 .theme-park-alert-success {

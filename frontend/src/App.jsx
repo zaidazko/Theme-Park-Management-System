@@ -25,6 +25,7 @@ import Cart from "./components/Cart";
 import RideDetail from "./components/RideDetail";
 import Merchandise from "./components/Merchandise";
 import "./App.css";
+import "./components/ThemePark.css";
 
 import { authAPI, ridesAPI, commodityAPI, weatherAPI } from "./api";
 
@@ -54,6 +55,8 @@ function App() {
   const [selectedWeather, setSelectedWeather] = useState("Regular");
   const [isUpdatingWeather, setIsUpdatingWeather] = useState(false);
   const [merchAlerts, setMerchAlerts] = useState(0);
+  const [error, setError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
 
   // Fetch latest weather
   useEffect(() => {
@@ -74,6 +77,8 @@ function App() {
   }, []);
 
   const handleWeatherUpdate = async () => {
+    setError("")
+    setSuccessMessage("")
     setIsUpdatingWeather(true);
     try {
       await weatherAPI.updateWeather({
@@ -83,10 +88,12 @@ function App() {
       });
 
       setWeatherCondition(selectedWeather);
-      alert("Weather updated successfully!");
+      setSuccessMessage("Weather updated successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
       console.error("Error updating weather:", error);
-      alert("Error updating weather.");
+      setError("Error updating weather.");
+      setTimeout(() => setError(""), 3000);
     } finally {
       setIsUpdatingWeather(false);
     }
@@ -170,6 +177,45 @@ function App() {
 
   return (
     <div className="App">
+      
+      {error && (
+          <div
+            className="theme-park-alert theme-park-alert-error"
+            style={{
+              position: "fixed",
+              top: "20px",
+              right: "20px",
+              zIndex: "99999",
+              background: "linear-gradient(135deg, rgba(235, 51, 73, 1), rgba(244, 92, 67, 1))",
+              color: "white",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+              opacity: error ? 1 : 0
+            }}
+          >
+            <span style={{ fontSize: "24px" }}>⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div 
+            className = "theme-park-alert theme-park-alert-success"
+            style={{
+              position: "fixed",
+              top: "20px",
+              right: "20px",
+              zIndex: "99999",
+              background: "linear-gradient(135deg, rgba(17,153,142,1), rgba(54, 201, 110, 1))",
+              color: "white",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+              opacity: successMessage ? 1 : 0
+            }}  
+          >
+            <span style={{ fontSize: "24px" }}>🎉</span>
+            <span>{successMessage}</span>
+          </div>
+        )}
+
       {/* Sidebar Navigation - Show only when logged in */}
       {user && (
         <div style={styles.sidebar}>

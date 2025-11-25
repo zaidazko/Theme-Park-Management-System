@@ -11,6 +11,7 @@ const CommodityPurchase = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [warningMessage, setWarningMessage] = useState("")
 
   const categories = [
     { name: "All", icon: "🛍️" },
@@ -39,6 +40,7 @@ const CommodityPurchase = () => {
       setFilteredCommodities(data);
     } catch (err) {
       setError("Failed to load items");
+      setTimeout(() => setError(""), 3000);
       console.log(err);
     }
   };
@@ -70,8 +72,8 @@ const CommodityPurchase = () => {
 
     // Check if size is required but not selected
     if (isApparel && !sizes[item.commodityTypeId]) {
-      setError("Please select a size for this apparel item");
-      setTimeout(() => setError(""), 3000);
+      setWarningMessage("Please select a size for this apparel item");
+      setTimeout(() => setWarningMessage(""), 3000);
       return;
     }
 
@@ -209,6 +211,13 @@ const CommodityPurchase = () => {
           <div className="theme-park-alert theme-park-alert-error">
             <span style={{ fontSize: "24px" }}>⚠️</span>
             <span>{error}</span>
+          </div>
+        )}
+
+        {warningMessage && (
+          <div className="theme-park-alert theme-park-alert-warning">
+            <span style={{ fontSize: "24px" }}>⚠️</span>
+            <span>{warningMessage}</span>
           </div>
         )}
 

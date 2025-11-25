@@ -107,6 +107,7 @@ const Rides = () => {
     } catch (err) {
       console.error("Failed to load rides", err);
       setError("Failed to load rides");
+      setTimeout(() => setError(""), 3000);
       setRides([]);
     } finally {
       setLoading(false);
@@ -160,9 +161,11 @@ const Rides = () => {
       setShowCreateRideModal(false);
       await loadRides();
       setRideMessage("Ride created successfully!");
+      setTimeout(() => setRideMessage(""), 3000);
     } catch (err) {
       console.error("Failed to create ride", err);
       setError("Unable to create ride. Please try again.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
@@ -182,9 +185,11 @@ const Rides = () => {
       await ridesAPI.deleteRide(selectedRide.ride_ID);
       setShowDeleteConfirmModal(false)
       setRideMessage("Ride deleted successfully!")
+      setTimeout(() => setRideMessage(""), 3000);
     } catch (err) {
       console.error("Failed to delete ride", err);
       setError("Unable to delete this ride. Please try again.");
+      setTimeout(() => setError(""), 3000);
       return;
     } finally {
       await loadRides();
@@ -226,9 +231,11 @@ const Rides = () => {
       setSelectedRide(null);
       await loadRides();
       setRideMessage("Changes saved successfully!")
+      setTimeout(() => setRideFormData(""), 3000);
     } catch (err) {
       console.error("Error saving ride", err);
       setError("Unable to save changes. Please try again.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 

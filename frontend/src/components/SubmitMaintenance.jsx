@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { maintenanceRequestAPI } from "../api";
+import "./ThemePark.css";
 
 const SubmitMaintenance = ({ user }) => {
   const [assignedRequests, setAssignedRequests] = useState([]);
@@ -10,6 +11,7 @@ const SubmitMaintenance = ({ user }) => {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [workDetails, setWorkDetails] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const loadAssignedRequests = useCallback(async () => {
     if (!user?.employeeId) return;
@@ -45,8 +47,11 @@ const SubmitMaintenance = ({ user }) => {
   };
 
   const handleSubmitCompletion = async () => {
+    setError("")
+    setSuccessMessage("")
+
     if (!workDetails.trim()) {
-      alert("Please provide details about the work performed.");
+      setError("Please provide details about the work performed.");
       return;
     }
 
@@ -72,10 +77,10 @@ const SubmitMaintenance = ({ user }) => {
       setShowCompleteModal(false);
       setWorkDetails("");
       setSelectedRequestId(null);
-      alert("Maintenance task completed successfully!");
+      setSuccessMessage("Maintenance task completed successfully!");
     } catch (err) {
       console.error("Error completing request:", err);
-      alert("Failed to complete maintenance task. Please try again.");
+      setError("Failed to complete maintenance task. Please try again.");
     }
   };
 
@@ -208,6 +213,20 @@ const SubmitMaintenance = ({ user }) => {
           Refresh
         </button>
       </div>
+
+      {error && (
+          <div className="theme-park-alert theme-park-alert-error">
+            <span style={{ fontSize: "24px" }}>⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className = "theme-park-alert theme-park-alert-success">
+            <span style={{ fontSize: "24px" }}>🎉</span>
+            <span>{successMessage}</span>
+          </div>
+        )}
 
       {/* Status Summary Cards */}
       <div style={styles.summaryCards}>

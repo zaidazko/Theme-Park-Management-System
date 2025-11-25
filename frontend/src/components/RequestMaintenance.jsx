@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ridesAPI, maintenanceRequestAPI } from "../api";
+import "./ThemePark.css";
 
 const RequestMaintenance = ({ user }) => {
   const [rides, setRides] = useState([]);
@@ -7,6 +8,8 @@ const RequestMaintenance = ({ user }) => {
   const [maintenanceReason, setMaintenanceReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
 
   useEffect(() => {
     loadRides();
@@ -29,14 +32,17 @@ const RequestMaintenance = ({ user }) => {
   };
 
   const handleSubmit = async (e) => {
+    setError("")
+    setSuccessMessage("")
+
     e.preventDefault();
     if (!selectedRide || !maintenanceReason.trim()) {
-      alert("Please select a ride and provide a reason for maintenance.");
+      setError("Please select a ride and provide a reason for maintenance.");
       return;
     }
 
     if (!user || !user.employeeId) {
-      alert("Error: User information not available. Please log in again.");
+      setError("Error: User information not available. Please log in again.");
       return;
     }
 
@@ -50,12 +56,12 @@ const RequestMaintenance = ({ user }) => {
 
       await maintenanceRequestAPI.createMaintenanceRequest(requestData);
 
-      alert("Maintenance request submitted successfully!");
+      setSuccessMessage("Maintenance request submitted successfully!");
       setMaintenanceReason("");
       setSelectedRide(null);
     } catch (error) {
       console.error("Error submitting maintenance request:", error);
-      alert("Error submitting maintenance request. Please try again.");
+      setError("Error submitting maintenance request. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -242,6 +248,20 @@ const RequestMaintenance = ({ user }) => {
         </p>
       </div>
 
+      {error && (
+          <div className="theme-park-alert theme-park-alert-error">
+            <span style={{ fontSize: "24px" }}>⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className = "theme-park-alert theme-park-alert-success">
+            <span style={{ fontSize: "24px" }}>🎉</span>
+            <span>{successMessage}</span>
+          </div>
+        )}
+
       <div style={styles.ridesGrid}>
         {rides.map((ride) => {
           const isUnderMaintenance = isRideUnderMaintenance(ride);
@@ -296,7 +316,7 @@ const RequestMaintenance = ({ user }) => {
           <form onSubmit={handleSubmit}>
             <div style={styles.formGroup}>
               <label style={styles.label} htmlFor="maintenanceReason">
-                Reason for Maintenance *
+                Reason for Maintenance (10 characters minimum)*
               </label>
               <textarea
                 id="maintenanceReason"

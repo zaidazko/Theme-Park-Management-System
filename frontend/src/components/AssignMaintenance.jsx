@@ -37,6 +37,8 @@ const AssignMaintenance = () => {
   const [showWorkDetailsModal, setShowWorkDetailsModal] = useState(false);
   const [selectedWorkDetails, setSelectedWorkDetails] = useState("");
   const [selectedTimeTakenHours, setSelectedTimeTakenHours] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("")
+  const [warningMessage, setWarningMessage]= useState("")
 
   const [filters, setFilters] = useState({
     startDate: "",
@@ -200,6 +202,7 @@ const AssignMaintenance = () => {
     } catch (err) {
       console.error("Error fetching data:", err);
       setError(`Failed to load maintenance data: ${err.message}`);
+      setTimeout(() => setError(""), 3000);
       setMaintenanceRequests([]);
     } finally {
       setLoading(false);
@@ -349,8 +352,12 @@ const AssignMaintenance = () => {
   };
 
   const handleAssignRequest = async (requestId) => {
+    setSuccessMessage("")
+    setError("")
+    setWarningMessage("")
+
     if (!selectedEmployee) {
-      alert("Please select an employee to assign this request to");
+      setWarningMessage("Please select an employee to assign this request to");
       return;
     }
 
@@ -364,31 +371,39 @@ const AssignMaintenance = () => {
       await fetchAllData();
       setSelectedRequest(null);
       setSelectedEmployee("");
-      alert("Maintenance request assigned successfully!");
+      setSuccessMessage("Maintenance request assigned successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err) {
       console.error("Error assigning request:", err);
-      alert("Failed to assign maintenance request. Please try again.");
+      setError("Failed to assign maintenance request. Please try again.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
+  const [selectedRequestToCancel, setSelectedRequestToCancel] = useState(null)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+
+  const handleConfirmCancelRequest = async (request) => {
+    setSelectedRequestToCancel(request)
+    setShowCancelConfirm(true)
+  }
+
   const handleCancelRequest = async (requestId) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to cancel this unassigned maintenance request? This action cannot be undone."
-      )
-    ) {
-      return;
-    }
+    setSuccessMessage("")
+    setError("")
+    setShowCancelConfirm(false)
 
     try {
       await maintenanceRequestAPI.cancelMaintenanceRequest(requestId);
 
       // Reload data to get updated status
       await fetchAllData();
-      alert("Maintenance request cancelled successfully!");
+      setSuccessMessage("Maintenance request cancelled successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err) {
       console.error("Error cancelling request:", err);
-      alert("Failed to cancel maintenance request. Please try again.");
+      setError("Failed to cancel maintenance request. Please try again.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
@@ -846,6 +861,20 @@ const AssignMaintenance = () => {
           <div className="theme-park-alert theme-park-alert-error">
             <span className="theme-park-alert-icon">⚠️</span>
             <span>{error}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="theme-park-alert theme-park-alert-success">
+            <span className="theme-park-alert-icon">🎉</span>
+            <span>{successMessage}</span>
+          </div>
+        )}
+
+        {warningMessage && (
+          <div className="theme-park-alert theme-park-alert-warning">
+            <span className="theme-park-alert-icon">⚠️</span>
+            <span>{warningMessage}</span>
           </div>
         )}
 
@@ -2539,7 +2568,7 @@ const AssignMaintenance = () => {
                             </button>
                             <button
                               onClick={() =>
-                                handleCancelRequest(request.requestId)
+                                handleConfirmCancelRequest(request)
                               }
                               style={{
                                 backgroundColor:
@@ -3418,6 +3447,66 @@ const AssignMaintenance = () => {
                     </div>
                   );
                 })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showCancelConfirm && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(75, 85, 99, 0.5)",
+              overflowY: "auto",
+              height: "100%",
+              width: "100%",
+              zIndex: 50,
+              marginLeft: "140px"
+            }}
+          >
+            <div
+              style={{
+                position: "relative",
+                top: "35%",
+                margin: "0 auto",
+                padding: "20px",
+                border: "1px solid #e5e7eb",
+                width: "700px",
+                height: "180px",
+                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                borderRadius: "6px",
+                backgroundColor: "white",
+              }}
+            >
+              <h3>
+                Are you sure you want to cancel this unassigned maintenance request?
+              </h3> 
+              <h3>This action cannot be undone.</h3>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "12px",
+                  marginTop: "30px",
+                }}
+              >
+                <button
+                  onClick={() => setShowCancelConfirm(false)}
+                  className='theme-park-btn theme-park-btn-sm theme-park-btn-outline'
+                >
+                  Cancel
+                  </button>
+                <button
+                  onClick={() => handleCancelRequest(selectedRequestToCancel.requestId)}
+                  className='theme-park-btn theme-park-btn-sm theme-park-btn-danger'
+                >
+                  Confirm
+                </button>
               </div>
             </div>
           </div>

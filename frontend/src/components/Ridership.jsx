@@ -121,6 +121,7 @@ const Ridership = () => {
         } catch (error) {
             console.error("Error fetching data:", error);
             setError("Error fetching rides")
+            setTimeout(() => setError(""), 3000);
         } finally {
             setLoading(false);
         }

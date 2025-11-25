@@ -5,6 +5,7 @@ const CommoditySales = () => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [warningMessage, setWarningMessage] = useState("")
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const isEmployee =
@@ -28,6 +29,7 @@ const CommoditySales = () => {
       setSales(data);
     } catch (err) {
       setError("Failed to load commodity sales");
+      setTimeout(() => setError(""), 3000);
       console.log(err);
     } finally {
       setLoading(false);
@@ -36,7 +38,8 @@ const CommoditySales = () => {
 
   const fetchMySales = async () => {
     if (!currentUser.customerId) {
-      setError("Please login to view your purchases");
+      setWarningMessage("Please login to view your purchases");
+      setTimeout(() => setWarningMessage(""), 3000);
       setLoading(false);
       return;
     }
@@ -91,6 +94,13 @@ const CommoditySales = () => {
           <div className="theme-park-alert theme-park-alert-error">
             <span style={{ fontSize: "24px" }}>⚠️</span>
             <span>{error}</span>
+          </div>
+        )}
+
+        {warningMessage && (
+          <div className="theme-park-alert theme-park-alert-error">
+            <span style={{ fontSize: "24px" }}>⚠️</span>
+            <span>{warningMessage}</span>
           </div>
         )}
 
