@@ -17,8 +17,8 @@ namespace AmusementParkAPI.Models
         [Column("Ride_ID")]
         public int? RideId { get; set; }
 
-        [Column("Performed_By")]
-        public int PerformedBy { get; set; }
+    [Column("Performed_By")]
+    public int? PerformedBy { get; set; }
 
         [Column("Work_Details")]
         public string WorkDetails { get; set; } = string.Empty;
@@ -38,8 +38,8 @@ namespace AmusementParkAPI.Models
         [JsonIgnore] // Prevent circular reference - we don't need this in the response
         public virtual Rides? Ride { get; set; }
 
-        [ForeignKey("PerformedBy")]
-        [JsonIgnore] // Prevent circular reference - we don't need this in the response
-        public virtual Employee? PerformedByEmployee { get; set; }
+    [ForeignKey("PerformedBy")]
+    [JsonIgnore] // Prevent circular reference - we don't need this in the response
+    public virtual Employee? PerformedByEmployee { get; set; }
     }
 }

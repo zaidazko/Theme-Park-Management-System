@@ -745,17 +745,19 @@ function Profile({ user, onLogout }) {
                         >
                           Status: {request.status || "N/A"}
                         </span>
-                        {request.reporter && (
-                          <span>
-                            Reported by:{" "}
-                            {request.reporter.firstName ||
-                              request.reporter.FirstName ||
-                              ""}{" "}
-                            {request.reporter.lastName ||
-                              request.reporter.LastName ||
-                              ""}
-                          </span>
-                        )}
+                        <span>
+                          Reported by:{" "}
+                          {request.reporter ? (
+                            <>
+                              {request.reporter.firstName || request.reporter.FirstName || ""}{" "}
+                              {request.reporter.lastName || request.reporter.LastName || ""}
+                            </>
+                          ) : (
+                            <span style={{ color: "#9ca3af", fontStyle: "italic" }}>
+                              Former Employee
+                            </span>
+                          )}
+                        </span>
                       </div>
                     </div>
                   );

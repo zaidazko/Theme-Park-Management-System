@@ -119,6 +119,29 @@ namespace AmusementParkAPI.Data
                 .IsRequired(false) // AlertId is optional (nullable)
                 .OnDelete(DeleteBehavior.SetNull); // Set AlertId to null if alert is deleted
 
+            // Configure MaintenanceRequest -> Employee (Reporter & Assignee)
+            modelBuilder.Entity<MaintenanceRequest>()
+                .HasOne(m => m.Reporter)
+                .WithMany()
+                .HasForeignKey(m => m.ReportedBy)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<MaintenanceRequest>()
+                .HasOne(m => m.Assignee)
+                .WithMany()
+                .HasForeignKey(m => m.AssignedTo)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure MaintenanceLog -> Employee (PerformedBy) to set FK to NULL when employee is deleted
+            modelBuilder.Entity<MaintenanceLog>()
+                .HasOne(l => l.PerformedByEmployee)
+                .WithMany()
+                .HasForeignKey(l => l.PerformedBy)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+
             base.OnModelCreating(modelBuilder);
         }
     }

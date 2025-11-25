@@ -2357,8 +2357,16 @@ const AssignMaintenance = () => {
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {request.reporter?.firstName}{" "}
-                        {request.reporter?.lastName}
+                        {request.reporter ? (
+                          <>
+                            {request.reporter.firstName}{" "}
+                            {request.reporter.lastName}
+                          </>
+                        ) : (
+                          <span style={{ color: "#9ca3af", fontStyle: "italic" }}>
+                            Former Employee
+                          </span>
+                        )}
                       </td>
                       <td
                         style={{
@@ -2375,7 +2383,7 @@ const AssignMaintenance = () => {
                           <span
                             style={{ color: "#9ca3af", fontStyle: "italic" }}
                           >
-                            Unassigned
+                            Former Employee
                           </span>
                         )}
                       </td>

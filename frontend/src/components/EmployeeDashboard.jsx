@@ -144,8 +144,10 @@ const EmployeeDashboard = () => {
       setShowEditModal(false);
       setSelectedEmployee(null);
       loadAllData();
+      alert(`✓ Employee ${formData.firstName} ${formData.lastName} has been updated successfully!`);
     } catch (error) {
       console.error("Error saving employee:", error);
+      alert("Error updating employee. Please try again.");
     }
   };
 
@@ -162,6 +164,7 @@ const EmployeeDashboard = () => {
       setShowPromoteModal(false);
       setSelectedCustomer(null);
       loadAllData();
+      alert(`✓ Customer ${formData.firstName} ${formData.lastName} has been promoted to Employee!`);
     } catch (error) {
       console.error("Error promoting customer:", error);
       alert("Error promoting customer to employee. Please try again.");
@@ -171,10 +174,20 @@ const EmployeeDashboard = () => {
   const handleDeleteEmployee = async (employeeId) => {
     if (window.confirm("Are you sure you want to delete this employee?")) {
       try {
-        await employeeAPI.deleteEmployee(employeeId);
+        console.log("Attempting to delete employeeId:", employeeId);
+        const resp = await employeeAPI.deleteEmployee(employeeId);
+        console.log("Delete employee API response:", resp);
         loadAllData();
+        alert("✓ Employee has been successfully removed from the system.");
       } catch (error) {
         console.error("Error deleting employee:", error);
+        let msg = "Error deleting employee.";
+        if (error?.response?.data?.message) {
+          msg += `\n${error.response.data.message}`;
+        } else if (error?.message) {
+          msg += `\n${error.message}`;
+        }
+        alert(msg);
       }
     }
   };
@@ -218,7 +231,7 @@ const EmployeeDashboard = () => {
       });
       setShowCreateEmployeeModal(false);
       loadAllData();
-      alert("Employee account created successfully!");
+      alert(`✓ Employee account for ${employeeAccountData.firstName} ${employeeAccountData.lastName} has been created successfully!`);
     } catch (error) {
       console.error("Error creating employee account:", error);
       alert("Error creating employee account. Please try again.");
@@ -541,7 +554,7 @@ const EmployeeDashboard = () => {
       <div style={styles.header}>
         <h1 style={styles.title}>User Management Dashboard</h1>
         <p style={styles.subtitle}>
-          Manage employees, departments, roles, and permissions
+          Manage employees, departments and roles
         </p>
       </div>
 
@@ -606,6 +619,7 @@ const EmployeeDashboard = () => {
                   <tr>
                     <th style={styles.tableHeaderCell}>Name</th>
                     <th style={styles.tableHeaderCell}>Email</th>
+                    <th style={styles.tableHeaderCell}>Department</th>
                     <th style={styles.tableHeaderCell}>Role</th>
                     <th style={styles.tableHeaderCell}>Hire Date</th>
                     <th style={styles.tableHeaderCell}>Salary</th>
@@ -633,6 +647,9 @@ const EmployeeDashboard = () => {
                         </div>
                       </td>
                       <td style={styles.tableCell}>{employee.email}</td>
+                      <td style={styles.tableCell}>
+                        {employee.department?.departmentName || "N/A"}
+                      </td>
                       <td style={styles.tableCell}>
                         {employee.role?.roleName || "N/A"}
                       </td>
@@ -1079,23 +1096,6 @@ const EmployeeDashboard = () => {
               />
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Department</label>
-              <select
-                value={formData.departmentId}
-                onChange={(e) =>
-                  setFormData({ ...formData, departmentId: e.target.value })
-                }
-                style={styles.select}
-              >
-                <option value="">Select Department</option>
-                {departments.map((dept) => (
-                  <option key={dept.departmentId} value={dept.departmentId}>
-                    {dept.departmentName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div style={styles.formGroup}>
               <label style={styles.label}>Role</label>
               <select
                 value={formData.roleId}
@@ -1283,27 +1283,6 @@ const EmployeeDashboard = () => {
                 style={styles.input}
                 required
               />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Department</label>
-              <select
-                value={createEmployeeForm.departmentId}
-                onChange={(e) =>
-                  setCreateEmployeeForm({
-                    ...createEmployeeForm,
-                    departmentId: e.target.value,
-                  })
-                }
-                style={styles.select}
-                required
-              >
-                <option value="">Select Department</option>
-                {departments.map((dept) => (
-                  <option key={dept.departmentId} value={dept.departmentId}>
-                    {dept.departmentName}
-                  </option>
-                ))}
-              </select>
             </div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Role</label>

@@ -336,11 +336,19 @@ const SubmitMaintenance = ({ user }) => {
                     </div>
                   </td>
                   <td style={styles.tableCell}>
-                    {request.reporter?.firstName} {request.reporter?.lastName}
-                    <br />
-                    <small style={styles.smallText}>
-                      (ID: {request.reportedBy})
-                    </small>
+                    {request.reporter ? (
+                      <>
+                        {request.reporter.firstName} {request.reporter.lastName}
+                        <br />
+                        <small style={styles.smallText}>
+                          (ID: {request.reportedBy})
+                        </small>
+                      </>
+                    ) : (
+                      <span style={{ color: "#9ca3af", fontStyle: "italic" }}>
+                        Former Employee
+                      </span>
+                    )}
                   </td>
                   <td style={styles.tableCell}>
                     {formatDate(request.requestDate)}
