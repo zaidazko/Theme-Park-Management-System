@@ -442,6 +442,20 @@ function App() {
                       </span>
                     )}
                   </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setCurrentView("employee-dashboard")}
+                      style={{
+                        ...styles.navItem,
+                        ...(currentView === "employee-dashboard"
+                          ? styles.navItemActive
+                          : {}),
+                      }}
+                    >
+                      <span style={styles.navIcon}>👥</span>
+                      Employee Dashboard
+                    </button>
+                  )}
                 </div>
 
                 {/* Maintenance Section */}
@@ -515,20 +529,6 @@ function App() {
                     <span style={styles.navIcon}>📊</span>
                     Sales Report
                   </button>
-                  {isAdmin && (
-                    <button
-                      onClick={() => setCurrentView("employee-dashboard")}
-                      style={{
-                        ...styles.navItem,
-                        ...(currentView === "employee-dashboard"
-                          ? styles.navItemActive
-                          : {}),
-                      }}
-                    >
-                      <span style={styles.navIcon}>👥</span>
-                      Employee Dashboard
-                    </button>
-                  )}
                 </div>
               </>
             )}
@@ -868,9 +868,7 @@ function App() {
           <MyPurchases />
         )}
 
-        {currentView === "my-reviews" && user && !isEmployee && (
-          <Reviews />
-        )}
+        {currentView === "my-reviews" && user && !isEmployee && <Reviews />}
 
         {/* Employee Pages */}
         {currentView === "ticket-sales" && user && isEmployee && (
