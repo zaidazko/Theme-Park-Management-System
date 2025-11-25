@@ -595,6 +595,13 @@ const AssignMaintenance = () => {
     });
   };
 
+  const filteredRequests = getSortedData(getFilteredRequests());
+
+  const [currentRequestsPage, setCurrentRequestsPage] = useState(1)
+  const rowsPerPage = 10;
+  const currentRequestsRows = filteredRequests.slice((currentRequestsPage * rowsPerPage) - rowsPerPage, currentRequestsPage * rowsPerPage);
+  const totalRequestsPages = Math.ceil(filteredRequests.length / rowsPerPage);
+
   const getStatusColor = (status) => {
     switch ((status || "").toLowerCase()) {
       case "open":
@@ -793,8 +800,6 @@ const AssignMaintenance = () => {
       </div>
     );
   }
-
-  const filteredRequests = getSortedData(getFilteredRequests());
 
   // Get worker's maintenance requests (in progress and completed)
   const getWorkerRequests = (workerId) => {
@@ -2203,8 +2208,8 @@ const AssignMaintenance = () => {
                 <span>📋</span> All Maintenance Requests
               </h3>
               <div className="theme-park-badge theme-park-badge-primary">
-                {filteredRequests.length}{" "}
-                {filteredRequests.length === 1 ? "Request" : "Requests"}
+                {currentRequestsRows.length}{" "}
+                {currentRequestsRows.length === 1 ? "Request" : "Requests"}
               </div>
             </div>
 
@@ -2285,7 +2290,7 @@ const AssignMaintenance = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredRequests.length === 0 ? (
+                {currentRequestsRows.length === 0 ? (
                   <tr>
                     <td
                       colSpan="8"
@@ -2303,7 +2308,7 @@ const AssignMaintenance = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredRequests.map((request) => (
+                  currentRequestsRows.map((request) => (
                     <tr
                       key={request.requestId}
                       style={{
@@ -2623,6 +2628,75 @@ const AssignMaintenance = () => {
               </tbody>
             </table>
           </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingTop: "1rem",
+                borderTop: "1px solid #e5e7eb",
+                fontSize: "0.875rem",
+                color: "#6b7280",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px"
+                }}
+              >
+
+                <label>Page:</label>
+                <input
+                  type="number"
+                  min="1"
+                  max={totalRequestsPages}
+                  value={currentRequestsPage}
+                  onChange={(e) => {
+                    const page = Math.max(1, Math.min(totalRequestsPages, parseInt(e.target.value) || 1));
+                    setCurrentRequestsPage(page)
+                  }}
+                  style={{
+                    width: "50px",
+                    padding: "0.4rem 0.5rem",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "4px",
+                    fontSize: "0.875rem"
+                  }}
+                />
+                <span>of {totalRequestsPages}</span>
+              </div>
+              <div style={{color: "#6b7280"}}>
+                {filteredRequests.length} total requests
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <button
+                className="theme-park-btn theme-park-btn-primary theme-park-btn-sm"
+                style={{ margin: "5px" }}
+                onClick={() => setCurrentRequestsPage((page) => Math.max(page - 1, 1))}
+                disabled={currentRequestsPage === 1}
+              >
+                Prev
+              </button>
+              <button
+                className="theme-park-btn theme-park-btn-primary theme-park-btn-sm"
+                style={{ margin: "5px" }}
+                onClick={() => setCurrentRequestsPage((page) => Math.min(page + 1, totalRequestsPages))}
+                disabled={currentRequestsPage === totalRequestsPages}
+              >
+                Next
+              </button>
+            </div>
+
           </div>
             </div>
           )}

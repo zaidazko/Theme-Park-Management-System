@@ -1565,7 +1565,7 @@ const Ridership = () => {
                                         <span> of {totalHistoryPages}</span>
                                     </div>
                                     <div style={{ color: "#6b7280" }}>
-                                        {filteredHistoryByStats.length} total sales
+                                        {filteredHistoryByStats.length} total history
                                     </div>
                                 </div>
 
