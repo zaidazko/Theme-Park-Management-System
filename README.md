@@ -1,4 +1,4 @@
-# Project Name
+# Theme Park Management System
 
 This project uses a **Vite + React** frontend and a **C# / .NET** backend.
 
