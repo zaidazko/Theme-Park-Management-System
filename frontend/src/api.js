@@ -453,3 +453,15 @@ export const ReviewsAPI = {
     return response.data;
   }
 };
+
+export const weatherAPI = {
+  getLatestWeather: async () => {
+    const response = await axios.get(`${API_BASE_URL}/weather`);
+    return response.data;
+  },
+
+  updateWeather: async (weatherData) => {
+    const response = await axios.post(`${API_BASE_URL}/weather`, weatherData);
+    return response.data;
+  },
+};

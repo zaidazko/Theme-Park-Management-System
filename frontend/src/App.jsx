@@ -26,7 +26,7 @@ import RideDetail from "./components/RideDetail";
 import Merchandise from "./components/Merchandise";
 import "./App.css";
 
-import { authAPI, ridesAPI, commodityAPI } from "./api";
+import { authAPI, ridesAPI, commodityAPI, weatherAPI } from "./api";
 
 const computeLowStockCount = (items) => {
   if (!Array.isArray(items)) {
@@ -55,19 +55,14 @@ function App() {
   const [isUpdatingWeather, setIsUpdatingWeather] = useState(false);
   const [merchAlerts, setMerchAlerts] = useState(0);
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL;
-
   // Fetch latest weather
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/weather`);
-        if (response.ok) {
-          const data = await response.json();
-          const condition = data.weatherCondition || "Regular";
-          setWeatherCondition(condition);
-          setSelectedWeather(condition);
-        }
+        const data = await weatherAPI.getLatestWeather();
+        const condition = data.weatherCondition || "Regular";
+        setWeatherCondition(condition);
+        setSelectedWeather(condition);
       } catch (error) {
         console.error("Error fetching weather:", error);
       }
@@ -81,24 +76,14 @@ function App() {
   const handleWeatherUpdate = async () => {
     setIsUpdatingWeather(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/weather`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          weatherCondition: selectedWeather,
-          weatherDate: new Date().toISOString(),
-          reportedBy: user?.employeeId, // Use optional chaining in case employeeId is not present
-        }),
+      await weatherAPI.updateWeather({
+        weatherCondition: selectedWeather,
+        weatherDate: new Date().toISOString(),
+        reportedBy: user?.employeeId,
       });
 
-      if (response.ok) {
-        setWeatherCondition(selectedWeather);
-        alert("Weather updated successfully!");
-      } else {
-        alert("Failed to update weather.");
-      }
+      setWeatherCondition(selectedWeather);
+      alert("Weather updated successfully!");
     } catch (error) {
       console.error("Error updating weather:", error);
       alert("Error updating weather.");
